@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Card Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Game Header -->
+        <header class="game-header">
+            <h1>Strategic Card Game</h1>
+            <div class="game-info">
+                <div id="trump-display" class="trump-indicator">
+                    <span>Trump: None</span>
+                </div>
+                <div id="score-display" class="score-board">
+                    <span>Player: 0 | Computer: 0</span>
+                </div>
+                <div id="round-info" class="round-info">
+                    <span>Round: 1</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Game Area -->
+        <div class="game-board">
+            <!-- Computer Area -->
+            <div class="computer-area">
+                <div class="player-label">Computer</div>
+                <div class="computer-cards">
+                    <!-- Computer Hand (hidden) -->
+                    <div id="computer-hand" class="card-area computer-hand">
+                        <div class="hand-label">Hand (Hidden)</div>
+                        <div class="cards-container"></div>
+                    </div>
+                    
+                    <!-- Computer Face-Up Cards -->
+                    <div id="computer-faceup" class="card-area face-up-cards">
+                        <div class="cards-label">Face-Up Cards</div>
+                        <div class="cards-container"></div>
+                    </div>
+                    
+                    <!-- Computer Won Tricks -->
+                    <div id="computer-tricks" class="won-tricks">
+                        <div class="tricks-label">Tricks Won: <span class="trick-count">0</span></div>
+                        <div class="tricks-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Play Area -->
+            <div class="center-area">
+                <!-- Current Trick Display -->
+                <div id="current-trick" class="current-trick">
+                    <div class="trick-label">Current Trick</div>
+                    <div class="trick-cards"></div>
+                </div>
+                
+                <div id="game-log-container" class="game-log">
+                    <div class="log-header">
+                        <h4>Game Log</h4>
+                        <button id="clear-log" class="clear-log-btn">Clear</button>
+                    </div>
+                    <div id="game-log" class="log-content">
+                        <div class="log-message">Game ready to start...</div>
+                    </div>
+                </div>
+
+                <!-- Game Controls -->
+                <div class="game-controls">
+                    <button id="start-game" class="control-btn">Start Game</button>
+                    <button id="new-round" class="control-btn" style="display: none;">New Round</button>
+                    <button id="restart-game" class="control-btn">Restart Game</button>
+                </div>
+                
+                <!-- Game Status Messages -->
+                <div id="game-status" class="game-status">
+                    <span>Click "Start Game" to begin</span>
+                </div>
+            </div>
+
+            <!-- Player Area -->
+            <div class="player-area">
+                <div class="player-label">Player</div>
+                <div class="player-cards">
+                    <!-- Player Won Tricks -->
+                    <div id="player-tricks" class="won-tricks">
+                        <div class="tricks-label">Tricks Won: <span class="trick-count">0</span></div>
+                        <div class="tricks-container"></div>
+                    </div>
+                    
+                    <!-- Player Face-Up Cards -->
+                    <div id="player-faceup" class="card-area face-up-cards">
+                        <div class="cards-label">Face-Up Cards</div>
+                        <div class="cards-container"></div>
+                    </div>
+                    
+                    <!-- Player Hand -->
+                    <div id="player-hand" class="card-area player-hand">
+                        <div class="hand-label">Your Hand</div>
+                        <div class="cards-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trump Selection Modal -->
+        <div id="trump-selection-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Select Trump Suit</h3>
+                </div>
+                <div class="trump-options">
+                    <button class="trump-btn hearts" data-suit="hearts">
+                        <span class="suit-symbol">♥</span>
+                        <span class="suit-name">Hearts</span>
+                    </button>
+                    <button class="trump-btn diamonds" data-suit="diamonds">
+                        <span class="suit-symbol">♦</span>
+                        <span class="suit-name">Diamonds</span>
+                    </button>
+                    <button class="trump-btn clubs" data-suit="clubs">
+                        <span class="suit-symbol">♣</span>
+                        <span class="suit-name">Clubs</span>
+                    </button>
+                    <button class="trump-btn spades" data-suit="spades">
+                        <span class="suit-symbol">♠</span>
+                        <span class="suit-name">Spades</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Game Over!</h3>
+                </div>
+                <div class="game-over-content">
+                    <div id="winner-announcement" class="winner-text"></div>
+                    <div id="final-scores" class="final-scores"></div>
+                    <div class="game-over-actions">
+                        <button id="play-again" class="control-btn">Play Again</button>
+                        <button id="exit-game" class="control-btn">Exit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading/Thinking Indicator -->
+        <div id="thinking-indicator" class="thinking-indicator" style="display: none;">
+            <div class="thinking-content">
+                <div class="spinner"></div>
+                <span>Computer is thinking...</span>
+            </div>
+        </div>
+
+        <!-- Help/Rules Modal -->
+        <div id="rules-modal" class="modal" style="display: none;">
+            <div class="modal-content large-modal">
+                <div class="modal-header">
+                    <h3>Game Rules</h3>
+                    <button class="close-modal" id="close-rules">&times;</button>
+                </div>
+                <div class="rules-content">
+                    <h4>Game Concept:</h4>
+                    <p>A strategic 30-card trick-taking game for two players using a custom deck.</p>
+                    
+                    <h4>Deck Setup:</h4>
+                    <ul>
+                        <li>30 cards: All ranks 8 through Ace (24 cards) + 7♥ and 7♠</li>
+                        <li>7s are lowest in their suits (7 < 8 < ... < A)</li>
+                    </ul>
+                    
+                    <h4>Card Distribution:</h4>
+                    <ul>
+                        <li>Each player gets 5 cards in hand</li>
+                        <li>5 face-down cards (hidden)</li>
+                        <li>5 face-up cards (covering face-down cards)</li>
+                    </ul>
+                    
+                    <h4>Trump Selection:</h4>
+                    <ul>
+                        <li>Alternates between players each round</li>
+                        <li>Declarer chooses any suit as trump</li>
+                    </ul>
+                    
+                    <h4>Gameplay:</h4>
+                    <ul>
+                        <li>Players can play from hand or face-up piles</li>
+                        <li>Playing face-up cards reveals the face-down card beneath</li>
+                        <li>Must follow lead suit if possible</li>
+                        <li>Can only play trump when void in lead suit or trump was led</li>
+                    </ul>
+                    
+                    <h4>Scoring:</h4>
+                    <ul>
+                        <li>Target is 7 tricks per round</li>
+                        <li>Score = |tricks won - 7|</li>
+                        <li>Game ends when either player reaches 10+ points</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Button -->
+        <button id="show-rules" class="help-btn">?</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
