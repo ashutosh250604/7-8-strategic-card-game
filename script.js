@@ -669,12 +669,12 @@ function calculateRoundScore() {
     // Determine who selected trump and calculate scores
     if (gameState.lastTrumpSelector === 'player') {
         // Player selected trump (target: 8), Computer (target: 7)
-        playerRoundScore = Math.max(0, playerTricks - 8);     // Only points for exceeding target
-        computerRoundScore = Math.max(0, computerTricks - 7); // Only points for exceeding target
+        playerRoundScore = Math.max(0, playerTricks - 8);      // Points for exceeding target
+        computerRoundScore = Math.max(0, computerTricks - 7);  // Points for exceeding target
     } else {
         // Computer selected trump (target: 8), Player (target: 7)
-        computerRoundScore = Math.max(0, computerTricks - 8); // Only points for exceeding target
-        playerRoundScore = Math.max(0, playerTricks - 7);     // Only points for exceeding target
+        computerRoundScore = Math.max(0, computerTricks - 8);  // Points for exceeding target
+        playerRoundScore = Math.max(0, playerTricks - 7);      // Points for exceeding target
     }
     
     // Add to cumulative scores
@@ -690,8 +690,8 @@ function calculateRoundScore() {
 }
 
 function checkGameEnd() {
-    if (gameState.player.score >= 1 || gameState.computer.score >= 1) {
-        const winner = gameState.player.score >= 1 ? 'Player' : 'Computer';
+    if (gameState.player.score >= 5 || gameState.computer.score >= 5) {
+        const winner = gameState.player.score >= 5 ? 'Player' : 'Computer';
         gameState.gameOver = true;
         addToLog(`Game Over! ${winner} wins with ${winner === 'Player' ? gameState.player.score : gameState.computer.score} points!`, 'trick-won');
         showGameOver(winner);
@@ -787,7 +787,7 @@ function setTrump(suit) {
 // Display functions
 function createCardElement(card, isBack = false) {
     const cardElement = document.createElement('div');
-    cardElement.className = 'card';
+    cardElement.className = 'card card-deal-animation';
     
     if (isBack) {
         cardElement.classList.add('card-back');
@@ -801,7 +801,7 @@ function createCardElement(card, isBack = false) {
     cardElement.innerHTML = `
         <div class="card-rank">${rank}</div>
         <div class="card-suit">${getSuitSymbol(suit)}</div>
-        <div class="card-rank" style="transform: rotate(180deg);">${rank}</div>
+        <div class="card-rank bottom-rank">${rank}</div>
     `;
     
     return cardElement;
@@ -990,13 +990,41 @@ function showGameOver(winner) {
     const finalScores = document.getElementById('final-scores');
     
     if (modal && winnerText && finalScores) {
-        winnerText.textContent = `${winner} Wins!`;
+        if (winner === 'Player') {
+            winnerText.textContent = `🎉 Congratulations! You Win! 🎉`;
+            // Trigger confetti
+            createConfetti();
+        } else {
+            winnerText.textContent = `Better Luck Next Time!`;
+        }
         finalScores.innerHTML = `
-            Final Scores:<br>
-            Player: ${gameState.player.score} points<br>
-            Computer: ${gameState.computer.score} points
+            <p>Final Score</p>
+            <p>Player: ${gameState.player.score} | Computer: ${gameState.computer.score}</p>
         `;
         modal.style.display = 'flex';
+    }
+}
+
+// Confetti animation function
+function createConfetti() {
+    const colors = ['#ffdd44', '#ff4444', '#4CAF50', '#2196F3', '#ff6b6b', '#ffd700'];
+    const confettiCount = 100;
+    
+    for (let i = 0; i < confettiCount; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDelay = Math.random() * 3 + 's';
+            confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            document.body.appendChild(confetti);
+            
+            // Remove confetti after animation
+            setTimeout(() => {
+                confetti.remove();
+            }, 5000);
+        }, i * 30);
     }
 }
 

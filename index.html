@@ -166,41 +166,79 @@
                     <button class="close-modal" id="close-rules">&times;</button>
                 </div>
                 <div class="rules-content">
-                    <h4>Game Concept:</h4>
-                    <p>A strategic 30-card trick-taking game for two players using a custom deck.</p>
+                    <h4>🎯 Objective:</h4>
+                    <p>Win tricks strategically to score points. First player to reach <strong>5 points wins</strong> the game!</p>
                     
-                    <h4>Deck Setup:</h4>
+                    <h4>🃏 The Special Deck (30 Cards):</h4>
                     <ul>
-                        <li>30 cards: All ranks 8 through Ace (24 cards) + 7♥ and 7♠</li>
-                        <li>7s are lowest in their suits (7 < 8 < ... < A)</li>
+                        <li><strong>Regular Cards:</strong> 8, 9, 10, Jack, Queen, King, Ace in all four suits (28 cards)</li>
+                        <li><strong>Special Cards:</strong> 7 of Hearts (♥) and 7 of Spades (♠) only (2 cards)</li>
+                        <li><strong>Card Power:</strong> 7 is the weakest, followed by 8, 9, 10, J, Q, K, and Ace is the strongest</li>
                     </ul>
                     
-                    <h4>Card Distribution:</h4>
+                    <h4>📋 Setup Phase:</h4>
+                    <p>Each player receives <strong>15 cards</strong> divided into three groups:</p>
                     <ul>
-                        <li>Each player gets 5 cards in hand</li>
-                        <li>5 face-down cards (hidden)</li>
-                        <li>5 face-up cards (covering face-down cards)</li>
+                        <li><strong>5 Hand Cards:</strong> Cards you can see and play from (dealt first)</li>
+                        <li><strong>5 Face-Up Cards:</strong> Visible cards on the table (dealt after trump selection)</li>
+                        <li><strong>5 Face-Down Cards:</strong> Hidden cards beneath face-up cards (dealt after trump selection)</li>
                     </ul>
                     
-                    <h4>Trump Selection:</h4>
+                    <h4>🎴 Trump Selection - The Key Decision!</h4>
                     <ul>
-                        <li>Alternates between players each round</li>
-                        <li>Declarer chooses any suit as trump</li>
+                        <li>Players <strong>take turns</strong> selecting the trump suit each round</li>
+                        <li>Look at your <strong>5 hand cards</strong> and choose wisely!</li>
+                        <li>The trump selector faces a <strong>tougher challenge</strong>:</li>
+                        <ul style="margin-left: 20px;">
+                            <li>Trump Selector's Target: <strong>8 tricks</strong></li>
+                            <li>Opponent's Target: <strong>7 tricks</strong></li>
+                        </ul>
+                        <li><strong>Strategy Tip:</strong> Choose a suit where you have high cards (Kings, Aces) or many cards</li>
                     </ul>
                     
-                    <h4>Gameplay:</h4>
+                    <h4>🎮 How to Play:</h4>
                     <ul>
-                        <li>Players can play from hand or face-up piles</li>
-                        <li>Playing face-up cards reveals the face-down card beneath</li>
-                        <li>Must follow lead suit if possible</li>
-                        <li>Can only play trump when void in lead suit or trump was led</li>
+                        <li><strong>Leading:</strong> The starting player can play any card from their hand or face-up cards</li>
+                        <li><strong>Following:</strong> Must play the same suit if you have it (in hand or face-up cards)</li>
+                        <li><strong>Going Void:</strong> If you don't have the lead suit, you can play any card</li>
+                        <li><strong>Trump Power:</strong> Trump cards beat any non-trump card, regardless of rank!</li>
+                        <li><strong>Trick Winner:</strong> 
+                            <ul style="margin-left: 20px;">
+                                <li>Highest trump wins if any trump is played</li>
+                                <li>Otherwise, highest card of the lead suit wins</li>
+                            </ul>
+                        </li>
+                        <li><strong>Revealing Secrets:</strong> When you play a face-up card, the face-down card beneath it is revealed!</li>
                     </ul>
                     
-                    <h4>Scoring:</h4>
+                    <h4>🏆 Scoring System:</h4>
                     <ul>
-                        <li>Target is 7 tricks per round</li>
-                        <li>Score = |tricks won - 7|</li>
-                        <li>Game ends when either player reaches 10+ points</li>
+                        <li>At the end of each round, count your tricks won</li>
+                        <li><strong>Points = How much you exceed your target</strong></li>
+                        <li>Examples:</li>
+                        <ul style="margin-left: 20px;">
+                            <li>Trump selector wins 10 tricks → 10 - 8 = <strong>2 points</strong> ✓</li>
+                            <li>Trump selector wins 6 tricks → 6 - 8 = negative, so <strong>0 points</strong></li>
+                            <li>Opponent wins 9 tricks → 9 - 7 = <strong>2 points</strong> ✓</li>
+                            <li>Opponent wins 5 tricks → 5 - 7 = negative, so <strong>0 points</strong></li>
+                        </ul>
+                        <li><strong>Higher score is better!</strong> Try to exceed your target to score points</li>
+                    </ul>
+                    
+                    <h4>🎊 Winning the Game:</h4>
+                    <ul>
+                        <li>The game continues through multiple rounds</li>
+                        <li><strong>First player to reach 5 points WINS!</strong></li>
+                        <li>Play aggressively - try to win more tricks than your target to score points!</li>
+                    </ul>
+                    
+                    <h4>💡 Pro Tips:</h4>
+                    <ul>
+                        <li>Pay attention to which cards have been played</li>
+                        <li>Remember what face-up cards your opponent has</li>
+                        <li>Sometimes winning fewer tricks is better!</li>
+                        <li>Use trump cards wisely - they're powerful but limited</li>
+                        <li>Watch when face-down cards get revealed</li>
                     </ul>
                 </div>
             </div>
