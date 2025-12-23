@@ -291,8 +291,8 @@ function playCard(cardIndex, source) {
 
 // Computer AI
 function selectComputerTrump() {
-    const suitCounts = { hearts: 0, diamonds: 0, clubs: 0, spades: 0 };
-    const highCards = { hearts: 0, diamonds: 0, clubs: 0, spades: 0 };
+    const suitCounts = { Hearts: 0, Diamonds: 0, Clubs: 0, Spades: 0 };
+    const highCards = { Hearts: 0, Diamonds: 0, Clubs: 0, Spades: 0 };
     
     // Analyze ONLY hand cards (not face-up cards during trump selection)
     gameState.computer.hand.forEach(card => {
@@ -746,6 +746,12 @@ function showTrumpSelection() {
     const modal = document.getElementById('trump-selection-modal');
     modal.style.display = 'flex';
     
+    // Hide select trump button when modal opens
+    const selectTrumpBtn = document.getElementById('select-trump-btn');
+    if (selectTrumpBtn) {
+        selectTrumpBtn.style.display = 'none';
+    }
+    
     const trumpButtons = document.querySelectorAll('.trump-btn');
     trumpButtons.forEach(btn => {
         btn.onclick = () => {
@@ -756,9 +762,38 @@ function showTrumpSelection() {
     });
 }
 
+// Function to update select trump button visibility
+function updateSelectTrumpButtonVisibility() {
+    const selectTrumpBtn = document.getElementById('select-trump-btn');
+    if (!selectTrumpBtn) return;
+    
+    // Show button only if:
+    // 1. Trump is not selected (null)
+    // 2. It's player's turn to select trump
+    // 3. Game is in trump-selection phase
+    // 4. Trump modal is not visible
+    const trumpModal = document.getElementById('trump-selection-modal');
+    const isModalHidden = !trumpModal || trumpModal.style.display === 'none' || trumpModal.style.display === '';
+    
+    if (gameState.trumpSuit === null && 
+        gameState.lastTrumpSelector === 'player' && 
+        gameState.gamePhase === 'trump-selection' &&
+        isModalHidden) {
+        selectTrumpBtn.style.display = 'block';
+    } else {
+        selectTrumpBtn.style.display = 'none';
+    }
+}
+
 function setTrump(suit) {
     gameState.trumpSuit = suit;
     gameState.gamePhase = 'dealing-remaining';
+    
+    // Hide select trump button since trump is now selected
+    const selectTrumpBtn = document.getElementById('select-trump-btn');
+    if (selectTrumpBtn) {
+        selectTrumpBtn.style.display = 'none';
+    }
     
     const suitSymbol = getSuitSymbol(suit);
     
@@ -1069,12 +1104,17 @@ function initializeGame() {
             gameState.gameStarted = false;
             gameState.lastTrumpSelector = null;
             gameState.gamePhase = 'setup';
+            gameState.trumpSuit = null;
             
             // Hide modals
             const gameOverModal = document.getElementById('game-over-modal');
             const trumpModal = document.getElementById('trump-selection-modal');
             if (gameOverModal) gameOverModal.style.display = 'none';
             if (trumpModal) trumpModal.style.display = 'none';
+            
+            // Hide select trump button
+            const selectTrumpBtn = document.getElementById('select-trump-btn');
+            if (selectTrumpBtn) selectTrumpBtn.style.display = 'none';
             
             // Show start button
             if (startGameBtn) startGameBtn.style.display = 'block';
@@ -1129,11 +1169,19 @@ function initializeGame() {
     
     // Help/Rules modal
     const showRulesBtn = document.getElementById('show-rules');
+    const showRulesMobileBtn = document.getElementById('show-rules-mobile');
     const closeRulesBtn = document.getElementById('close-rules');
     const rulesModal = document.getElementById('rules-modal');
     
     if (showRulesBtn && rulesModal) {
         showRulesBtn.onclick = () => {
+            rulesModal.style.display = 'flex';
+        };
+    }
+    
+    // Mobile rules button
+    if (showRulesMobileBtn && rulesModal) {
+        showRulesMobileBtn.onclick = () => {
             rulesModal.style.display = 'flex';
         };
     }
@@ -1144,10 +1192,26 @@ function initializeGame() {
         };
     }
     
-    // Close modals when clicking outside
+    // Select Trump button (for when modal is accidentally closed)
+    const selectTrumpBtn = document.getElementById('select-trump-btn');
+    if (selectTrumpBtn) {
+        selectTrumpBtn.onclick = () => {
+            if (gameState.trumpSuit === null && 
+                gameState.lastTrumpSelector === 'player' && 
+                gameState.gamePhase === 'trump-selection') {
+                showTrumpSelection();
+            }
+        };
+    }
+    
+    // Close modals when clicking outside (with special handling for trump modal)
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
             e.target.style.display = 'none';
+            // If trump modal was closed and trump not selected, show select trump button
+            if (e.target.id === 'trump-selection-modal' && gameState.trumpSuit === null) {
+                updateSelectTrumpButtonVisibility();
+            }
         }
     });
     

@@ -107,6 +107,36 @@ body {
     font-size: 0.9em;
 }
 
+/* Round Info Wrapper for mobile - credits and rules on sides */
+.round-info-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.credits-link-mobile,
+.help-btn-mobile,
+.help-btn-mobile-wrapper,
+.credits-link-mobile-wrapper {
+    display: none;
+}
+
+/* Select Trump Button */
+.select-trump-btn {
+    background: linear-gradient(135deg, #ffdd44, #f5c400) !important;
+    color: #333 !important;
+    animation: pulseButton 1.5s ease-in-out infinite;
+}
+
+.select-trump-btn:hover {
+    background: linear-gradient(135deg, #f5c400, #e6b800) !important;
+}
+
+@keyframes pulseButton {
+    0%, 100% { box-shadow: 0 4px 8px rgba(255, 221, 68, 0.4); }
+    50% { box-shadow: 0 4px 20px rgba(255, 221, 68, 0.8); }
+}
+
 /* Main Game Board */
 .game-board {
     flex: 1;
@@ -740,6 +770,75 @@ body {
     .game-info {
         flex-direction: column;
         gap: 10px;
+    }
+    
+    /* Mobile: Make round-info-wrapper span full width with items at edges */
+    .round-info-wrapper {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    /* Mobile: Hide desktop credits link */
+    .credits-link {
+        display: none;
+    }
+    
+    /* Mobile: Show credits and rules around round info */
+    .credits-link-mobile-wrapper {
+        flex: 1;
+        display: flex;
+        justify-content: flex-start;
+    }
+    
+    .credits-link-mobile {
+        display: flex;
+        align-items: center;
+        color: #ffdd44;
+        text-decoration: none;
+        font-size: 0.75em;
+        font-weight: bold;
+        padding: 4px 8px;
+        border-radius: 5px;
+        background: rgba(255, 221, 68, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .credits-link-mobile:hover {
+        background: rgba(255, 221, 68, 0.2);
+        color: #fff;
+    }
+    
+    /* Container for help button to take equal space on right */
+    .help-btn-mobile-wrapper {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+    }
+    
+    .help-btn-mobile {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: none;
+        background: #ffdd44;
+        color: #333;
+        font-size: 1em;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .help-btn-mobile:hover {
+        transform: scale(1.1);
+    }
+    
+    /* Hide desktop help button on mobile */
+    .help-btn {
+        display: none;
     }
     
     .game-board {
