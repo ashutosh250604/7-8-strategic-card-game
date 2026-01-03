@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Strategic Card Game</title>
+    <title>7-8 Strategic Card Game</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+    <link rel="manifest" href="assets/site.webmanifest">
+    <link rel="shortcut icon" href="assets/favicon.ico">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,7 +17,7 @@
         <header class="game-header">
             <div class="header-top">
                 <h1>7-8 A Strategic Card Game</h1>
-                <a href="https://github.com/ashutosh250604" target="_blank" class="credits-link">Credits</a>
+                <button id="settings-btn" class="settings-btn">⚙️</button>
             </div>
             <div class="game-info">
                 <div id="trump-display" class="trump-indicator">
@@ -22,14 +27,14 @@
                     <span>Player: 0 | Computer: 0</span>
                 </div>
                 <div class="round-info-wrapper">
-                    <div class="credits-link-mobile-wrapper">
-                        <a href="https://github.com/ashutosh250604" target="_blank" class="credits-link-mobile">Credits</a>
+                    <div id="difficulty-display" class="difficulty-indicator">
+                        <span>Medium</span>
                     </div>
                     <div id="round-info" class="round-info">
                         <span>Round: 1</span>
                     </div>
-                    <div class="help-btn-mobile-wrapper">
-                        <button id="show-rules-mobile" class="help-btn-mobile">?</button>
+                    <div class="settings-btn-mobile-wrapper">
+                        <button id="settings-btn-mobile" class="settings-btn-mobile">⚙️</button>
                     </div>
                 </div>
             </div>
@@ -67,16 +72,6 @@
                 <div id="current-trick" class="current-trick">
                     <div class="trick-label">Current Trick</div>
                     <div class="trick-cards"></div>
-                </div>
-                
-                <div id="game-log-container" class="game-log">
-                    <div class="log-header">
-                        <h4>Game Log</h4>
-                        <button id="clear-log" class="clear-log-btn">Clear</button>
-                    </div>
-                    <div id="game-log" class="log-content">
-                        <div class="log-message">Game ready to start...</div>
-                    </div>
                 </div>
 
                 <!-- Game Controls -->
@@ -167,6 +162,32 @@
             <div class="thinking-content">
                 <div class="spinner"></div>
                 <span>Computer is thinking...</span>
+            </div>
+        </div>
+
+        <!-- Coin Toss Modal -->
+        <div id="coin-toss-modal" class="modal" style="display: none;">
+            <div class="modal-content coin-toss-modal">
+                <div class="modal-header">
+                    <h3><span class="coin-icon">$</span> Coin Toss</h3>
+                </div>
+                <div class="coin-toss-content">
+                    <p class="coin-toss-info">Winner chooses trump first!</p>
+                    <div class="coin-container">
+                        <div id="coin" class="coin">
+                            <div class="coin-face heads">H</div>
+                            <div class="coin-face tails">T</div>
+                        </div>
+                    </div>
+                    <div id="coin-result" class="coin-result" style="display: none;"></div>
+                    <div id="coin-choice" class="coin-choice">
+                        <p>Choose your side:</p>
+                        <div class="coin-buttons">
+                            <button class="coin-btn" data-choice="heads">Heads</button>
+                            <button class="coin-btn" data-choice="tails">Tails</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -261,7 +282,67 @@
         </div>
 
         <!-- Help Button -->
-        <button id="show-rules" class="help-btn">?</button>
+        <button id="show-rules" class="help-btn" style="display: none;">?</button>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal" style="display: none;">
+            <div class="modal-content settings-modal">
+                <div class="modal-header">
+                    <h3>⚙️ Settings</h3>
+                    <button class="close-modal" id="close-settings">&times;</button>
+                </div>
+                <div class="settings-content">
+                    <!-- Difficulty Section -->
+                    <div class="settings-section">
+                        <h4>🎯 Difficulty</h4>
+                        <p class="settings-note">Changes apply on new game/round</p>
+                        <div class="difficulty-options">
+                            <button class="difficulty-btn" data-difficulty="easy">Easy</button>
+                            <button class="difficulty-btn active" data-difficulty="medium">Medium</button>
+                            <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+                        </div>
+                        <div class="difficulty-description">
+                            <p id="difficulty-desc">Balanced AI that analyzes visible cards.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions Section -->
+                    <div class="settings-section">
+                        <h4>📋 Quick Actions</h4>
+                        <div class="settings-actions">
+                            <button id="settings-game-log" class="settings-action-btn">
+                                <span class="action-icon">📜</span>
+                                <span>Game Log</span>
+                            </button>
+                            <button id="settings-rules" class="settings-action-btn">
+                                <span class="action-icon">📖</span>
+                                <span>Game Rules</span>
+                            </button>
+                            <a href="https://github.com/ashutosh250604" target="_blank" class="settings-action-btn">
+                                <span class="action-icon">👤</span>
+                                <span>Credits</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Log Modal -->
+        <div id="game-log-modal" class="modal" style="display: none;">
+            <div class="modal-content log-modal">
+                <div class="modal-header">
+                    <h3>📜 Game Log</h3>
+                    <button class="close-modal" id="close-log-modal">&times;</button>
+                </div>
+                <div id="game-log" class="log-content">
+                    <div class="log-message">Game ready to start...</div>
+                </div>
+                <div class="log-footer">
+                    <button id="clear-log" class="control-btn clear-log-btn">Clear Log</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
