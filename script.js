@@ -1612,9 +1612,13 @@ function initializeGame() {
         };
     }
     
-    // Close modals when clicking outside (with special handling for trump modal)
+    // Close modals when clicking outside (with special handling for trump modal and coin toss)
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
+            // Don't close coin toss modal by clicking outside - it can't be reopened
+            if (e.target.id === 'coin-toss-modal') {
+                return;
+            }
             // Close these modals when clicking outside
             if (e.target.id === 'game-log-modal' || e.target.id === 'rules-modal' || e.target.id === 'settings-modal') {
                 e.target.style.display = 'none';
