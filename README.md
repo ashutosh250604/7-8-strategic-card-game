@@ -1,6 +1,6 @@
 # 7-8 Card Game
 
-A web-based version of the classic South Asian trick-taking card game.
+A web-based version of the classic Indian trick-taking card game.
 
 ## What is 7-8?
 
