@@ -113,12 +113,24 @@ Avoid multiplayer, online services, large feature expansions, and unnecessary de
   - Pacing: a full round now takes ~20 s of table time instead of ~90 s (beats are in `BEAT_MS` in `presentation.js`).
   - Scoreboard refreshes at round end (added one `updateDisplay()` call in `endRound`; view only). Engine got two read-only helpers: `isValidPlayFor`, `getTrickTarget`.
 - Rules/scoring/AI untouched; `>= 1` conditions untouched.
+- **P1 + P3 premium UI pass (milestone 3, complete)**:
+  - Setup is now a proper title screen: the namesake 7♥/8♠ fanned on the felt as a cover illustration, then eyebrow, title, tagline, facts and a larger primary action. The empty deck no longer floats on this screen.
+  - Seats are grouped and labelled (`Hand`, `Face-up`, counts), with the player's table cards and hand side by side on wide screens and stacked on phones.
+  - The centre has an oval felt inlay, empty trick placeholders that show where the two cards land, a trick caption and lead-suit chip, and a turn-pulse status dot.
+  - End of round is a result card on the cleared felt: targets, tricks won and points for both sides, with the next-round action centred beneath it. The engine's plain duplicate status line is suppressed while it shows.
+  - HUD brand lockup, score/round hierarchy, gold primary CTA, modal touch targets, muted-text contrast and card labels refined.
+  - Responsive: single-row HUD on short landscape (more table height), stacked HUD in portrait, tray/status sizing tuned down to 320×568, reduced-motion and keyboard paths preserved.
+  - Trump sheet no longer blurs the hand the choice is based on.
 
 ### Verification (latest run)
 
 - `node run-trace.js --compare baseline --group main --only slow --engine-only`: **12/12 identical** engine state, logs, status and AI plays vs the original baseline (up to first game over; patient profile only, see tests/README.md).
-- Restart group (24 scenarios, new animated view): 24/24 pass idle-state assertions, 0 console errors.
-- Real Edge (`browser-smoke.js --full`): full game in ~20 s, 0 console/page errors, no stuck/leaked cards; keyboard-only play and reduced-motion verified.
+- Restart group (24 scenarios, new animated view): 24/24 pass idle-state assertions, 0 console errors. The full-trace diff is expected: the recorded restart baseline predates the presentation refactor (see tests/README.md).
+- Real Edge (`browser-smoke.js --full`): full game in ~20 s, 0 console/page errors, no stuck/leaked cards.
+- Keyboard pass: focused card exposes `role=button`, `tabindex=0`, an `aria-label` and `:focus-visible`; Enter plays it, ArrowRight/Left moves focus between cards. Reduced-motion pass: two live tricks complete with zero `flying` cards or console errors.
+- Headless Edge UI matrix: 1440×900, 1024×768, 1024×600, 768×1024, 390×844, 360×640, 320×568 and 844×390 landscape; no document overflow, no clipped cards, status/tray collision fixed at 320 and 360 heights, round-result panel and New Round fit every size.
+- Forced end-of-round state through the real `endRound()` path: result card updates, status is muted, `.is-round-end` centres the felt, New Round appears, and starting the next round clears the result and restores the table.
+- Limitation: the in-app preview webview produced no frames for screenshots in this session; visual checks used headless Edge screenshots plus DOM geometry. Mobile landscape still needs a real-device pass.
 
 ### Measured findings (tests/sim/engine-sim.js, real engine, 2000 rounds per cell)
 
@@ -141,7 +153,8 @@ Human stand-in `sensible` = decent casual player. AI pts/round minus human pts/r
 - Tutorial, persisted settings, save/resume, stats/history, sound (hook `GameAudio.play(name)` exists; no `audio.js` yet), achievements.
 - Mobile landscape is only CSS-checked; test on a real device.
 - Rules modal text is the original; HUD shows targets but the rules are not yet taught interactively.
-- Game-over modal/coin/trump polished; settings/rules/log modals only restyled.
+- The 7–8 game is now the visual/interaction reference for the future collection. The multi-game launcher and the planned 3–2–5 and Coat & Shuffle games are intentionally not built yet.
+- The setup hero cards are decorative only; they are not part of the deck or gameplay.
 
 ### Next highest-value task (P4)
 

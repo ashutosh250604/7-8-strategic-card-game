@@ -160,6 +160,24 @@ const GameView = (() => {
         e.front.innerHTML = faceHTML(id);
     }
 
+    // The setup screen's cover illustration: the game's namesake 7 and 8 on the
+    // felt. Built from the same faceHTML as live cards so it never drifts from
+    // the deck's visual language. These are decorative and never enter `entries`.
+    function initHero() {
+        const fan = $('hero-fan');
+        if (!fan || fan.childElementCount) return;
+        [['7_hearts', 'left'], ['8_spades', 'right']].forEach(([id, spot]) => {
+            const suit = id.split('_')[1];
+            const card = document.createElement('div');
+            card.className = `hero-card ${spot}`;
+            const face = document.createElement('div');
+            face.className = `card-face card-front ${suit === 'hearts' || suit === 'diamonds' ? 'red' : 'black'} ${suit}`;
+            face.innerHTML = faceHTML(id);
+            card.appendChild(face);
+            fan.appendChild(card);
+        });
+    }
+
     function makeEntry(key, id, face) {
         const el = document.createElement('div');
         el.className = 'card';
@@ -446,11 +464,32 @@ const GameView = (() => {
         }
         prev.trump = gs.trumpSuit;
 
+        // Phase (lets the deck step back once the deal is complete)
+        if (c.board) c.board.dataset.phase = gs.gamePhase;
+
         // Scores / round
         const sp = $('score-player'), sc = $('score-computer'), ri = $('round-info');
         if (sp) sp.textContent = gs.player.score;
         if (sc) sc.textContent = gs.computer.score;
-        if (ri) ri.innerHTML = `<span>Round ${gs.roundNumber}</span>`;
+        if (ri) ri.innerHTML = `<small>Round</small><b>${gs.roundNumber}</b>`;
+
+        // Card-group counts and trick context
+        const count = (id, n) => { const el = $(id); if (el) el.textContent = n; };
+        count('player-hand-count', gs.player.hand.filter(Boolean).length);
+        count('player-faceup-count', gs.player.faceUp.filter(Boolean).length);
+        count('computer-hand-count', gs.computer.hand.filter(Boolean).length);
+        count('computer-faceup-count', gs.computer.faceUp.filter(Boolean).length);
+        const caption = $('trick-caption');
+        if (caption) caption.textContent = `Trick ${Math.min(gs.trickCount + 1, 15)} of 15`;
+        const lead = $('lead-chip');
+        if (lead) {
+            if (gs.trick.leadSuit) {
+                lead.hidden = false;
+                lead.innerHTML = `Lead <b>${GLYPH[gs.trick.leadSuit]}</b>`;
+            } else {
+                lead.hidden = true;
+            }
+        }
 
         // Tricks + targets + meters
         ['player', 'computer'].forEach((side) => {
@@ -473,6 +512,55 @@ const GameView = (() => {
         const pa = document.querySelector('.player-area'), ca = document.querySelector('.computer-area');
         if (pa) pa.classList.toggle('is-turn', !!playerTurn);
         if (ca) ca.classList.toggle('is-turn', !!computerTurn);
+        const statusEl = $('game-status');
+        if (statusEl) statusEl.classList.toggle('is-your-turn', !!playerTurn && gs.gamePhase === 'playing');
+
+        updateRoundSummary(gs);
+    }
+
+    // End-of-round feedback lives on the table, not in a modal: it keeps the
+    // final board readable while saying exactly why each side did or did not score.
+    function updateRoundSummary(gs) {
+        const el = $('round-summary');
+        if (!el) return;
+        const empty = (list) => !list.some(Boolean);
+        const roundDone = gs.gamePhase === 'playing' && gs.trickCount >= 15 &&
+            empty(gs.player.hand) && empty(gs.player.faceUp) && empty(gs.computer.hand) && empty(gs.computer.faceUp);
+        const pTarget = GameEngine.getTrickTarget('player');
+        const cTarget = GameEngine.getTrickTarget('computer');
+        const board = document.querySelector('.game-board');
+        if (!roundDone || pTarget === null || cTarget === null) {
+            if (board) board.classList.remove('is-round-end');
+            if (!el.hidden) { el.hidden = true; el.innerHTML = ''; }
+            const st = $('game-status');
+            if (st) st.classList.remove('is-muted');
+            return;
+        }
+        const pPts = Math.max(0, gs.player.tricksWon - pTarget);
+        const cPts = Math.max(0, gs.computer.tricksWon - cTarget);
+        const pill = (name, won, target, pts) =>
+            `<span class="round-pill${pts ? ' scored' : ''}"><b>${name}</b><span class="round-tricks">${won}<i> of ${target}</i></span><em>+${pts}</em></span>`;
+        el.hidden = false;
+        el.innerHTML = `<span class="round-summary-title">Round ${gs.roundNumber} complete</span>` +
+            pill('You', gs.player.tricksWon, pTarget, pPts) +
+            pill('Computer', gs.computer.tricksWon, cTarget, cPts);
+        el.setAttribute('aria-label', `Round ${gs.roundNumber} complete. You won ${gs.player.tricksWon} of ${pTarget} tricks for ${pPts} points. Computer won ${gs.computer.tricksWon} of ${cTarget} tricks for ${cPts} points.`);
+        if (board) board.classList.add('is-round-end');
+        // The engine's plain status line would repeat this result word for word.
+        const statusEl = $('game-status');
+        if (statusEl) statusEl.classList.add('is-muted');
+    }
+
+    function hideRoundSummary() {
+        const el = $('round-summary');
+        if (!el) return;
+        el.hidden = true;
+        el.innerHTML = '';
+        el.removeAttribute('aria-label');
+        const statusEl = $('game-status');
+        if (statusEl) statusEl.classList.remove('is-muted');
+        const board = document.querySelector('.game-board');
+        if (board) board.classList.remove('is-round-end');
     }
 
     // ------------------------------------------------------------------
@@ -527,7 +615,14 @@ const GameView = (() => {
     // Round / game buttons
     // ------------------------------------------------------------------
     function setDisplay(id, value) { const el = $(id); if (el) el.style.display = value; }
-    function setStartButton(show) { setDisplay('start-game', show ? 'block' : 'none'); }
+    // The start hero and the live table are two states of the same felt. The board
+    // class drives which one is visible; the button keeps its inline display so the
+    // engine/tests can still tell whether a game can be started.
+    function setStartButton(show) {
+        setDisplay('start-game', show ? 'block' : 'none');
+        const board = document.querySelector('.game-board');
+        if (board) board.classList.toggle('is-setup', !!show);
+    }
     function setNewRoundButton(show) { setDisplay('new-round', show ? 'block' : 'none'); }
     function hideSelectTrumpButton() { setDisplay('select-trump-btn', 'none'); }
 
@@ -747,24 +842,35 @@ const GameView = (() => {
         const sp = $('score-player'), sc = $('score-computer'), ri = $('round-info');
         if (sp) sp.textContent = '0';
         if (sc) sc.textContent = '0';
-        if (ri) ri.innerHTML = '<span>Round 1</span>';
+        if (ri) ri.innerHTML = '<small>Round</small><b>1</b>';
         ['player', 'computer'].forEach((side) => {
             const box = $(`${side}-tricks`);
             box.querySelector('.trick-count').textContent = '0';
             box.querySelector('.trick-target').textContent = '';
             box.querySelectorAll('.meter i').forEach((p) => p.classList.remove('won', 'target'));
         });
+        ['player-hand-count', 'player-faceup-count', 'computer-hand-count', 'computer-faceup-count'].forEach((id) => {
+            const el = $(id); if (el) el.textContent = '0';
+        });
+        const caption = $('trick-caption');
+        if (caption) caption.textContent = 'Trick 1 of 15';
+        const lead = $('lead-chip');
+        if (lead) { lead.hidden = true; lead.textContent = ''; }
+        hideRoundSummary();
+        const statusEl = $('game-status');
+        if (statusEl) statusEl.classList.remove('is-your-turn');
+        if (C && C.board) { C.board.dataset.phase = 'setup'; delete C.board.dataset.trump; }
         ['.player-area', '.computer-area'].forEach((s) => { const a = document.querySelector(s); if (a) a.classList.remove('is-turn', 'highlight-winner'); });
     }
 
-    function init() { containers(); bindInput(); }
+    function init() { initHero(); containers(); bindInput(); }
     document.addEventListener('DOMContentLoaded', init);
 
     return {
         beat,
         log, clearLog, status, thinking, toast,
         render, highlightTrickWinner,
-        setStartButton, setNewRoundButton, hideSelectTrumpButton, setSelectTrumpButton,
+        setStartButton, setNewRoundButton, hideSelectTrumpButton, setSelectTrumpButton, hideRoundSummary,
         showTrumpSelection,
         showCoinToss, coinTossBegin, coinTossReveal, hideCoinToss,
         showGameOver,
