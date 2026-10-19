@@ -1,0 +1,11 @@
+# Visual Studio / editor state
+.vs/
+
+# Local archive of abandoned work (not part of the project)
+_archive/
+
+# Dev tooling
+node_modules/
+tests/out/
+# Recorded regression traces (~8 MB, regenerable): see tests/README.md
+tests/traces/

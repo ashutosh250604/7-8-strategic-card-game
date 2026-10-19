@@ -38,32 +38,34 @@ const gameState = {
     isFirstRound: true // Track if this is the first round (for coin toss)
 };
 
-// Game Log Functions
-function addToLog(message, type = '') {
-    const logContent = document.getElementById('game-log');
-    if (!logContent) return;
-    
-    const logMessage = document.createElement('div');
-    logMessage.className = `log-message ${type}`;
-    logMessage.textContent = message;
-    
-    logContent.appendChild(logMessage);
-    
-    // Auto-scroll to bottom
-    logContent.scrollTop = logContent.scrollHeight;
-    
-    // Keep only last 50 messages
-    const messages = logContent.querySelectorAll('.log-message');
-    if (messages.length > 50) {
-        logContent.removeChild(messages[0]);
-    }
+// ---------------------------------------------------------------------------
+// Engine <-> presentation boundary
+// ---------------------------------------------------------------------------
+// The engine owns state and rules. It never touches the DOM and never decides how
+// long anything takes: everything the player sees goes through GameView
+// (presentation.js), and game flow advances by awaiting "beats" - Promises that
+// the view resolves when the matching presentation moment is over.
+//
+// flowSession is bumped by restartGame() so continuations that belong to the old
+// game are dropped instead of firing into the new one.
+let flowSession = 0;
+
+function runBeat(beat, payload, next) {
+    const session = flowSession;
+    GameView.beat(beat, payload).then(() => {
+        if (session !== flowSession) return; // cancelled by restartGame()
+        next();
+    }).catch(err => console.error(`Game flow error after beat "${beat}":`, err));
 }
 
-function clearLog() {
-    const logContent = document.getElementById('game-log');
-    if (logContent) {
-        logContent.innerHTML = '<div class="log-message">Log cleared...</div>';
-    }
+function addToLog(message, type = '') { GameView.log(message, type); }
+function clearLog() { GameView.clearLog(); }
+function showStatus(message) { GameView.status(message); }
+function showThinking(show) { GameView.thinking(show); }
+function updateDisplay() { GameView.render(); }
+function highlightTrickWinner(winner) { GameView.highlightTrickWinner(winner); }
+function showGameOver(winner) {
+    GameView.showGameOver(winner, { player: gameState.player.score, computer: gameState.computer.score });
 }
 
 // Card creation and deck setup
@@ -281,12 +283,12 @@ function playCard(cardIndex, source) {
     // Check if trick is complete
     if (gameState.trick.cards.length === 2) {
         gameState.resolvingTrick = true;
-        setTimeout(resolveTrick, 1500);
+        runBeat('trick-complete', {}, resolveTrick);
     } else {
         // Switch to computer
         gameState.currentPlayer = 'computer';
         showStatus("Computer is playing...");
-        setTimeout(computerPlay, 1000);
+        runBeat('computer-response', {}, computerPlay);
     }
     
     return true;
@@ -727,8 +729,8 @@ function computerPlay() {
     
     showThinking(true);
     
-    setTimeout(() => {
-        // Double-check conditions again after timeout
+    runBeat('computer-think', {}, () => {
+        // Double-check conditions again after the thinking delay
         if (gameState.resolvingTrick || 
             gameState.currentPlayer !== 'computer' || 
             gameState.gamePhase !== 'playing' ||
@@ -779,7 +781,7 @@ function computerPlay() {
             // Check if trick is complete
             if (gameState.trick.cards.length === 2) {
                 gameState.resolvingTrick = true;
-                setTimeout(resolveTrick, 1500);
+                runBeat('trick-complete', {}, resolveTrick);
             } else {
                 // Switch to player
                 gameState.currentPlayer = 'player';
@@ -789,7 +791,7 @@ function computerPlay() {
             gameState.computerThinking = false;
             showThinking(false);
         }
-    }, 1000);
+    });
 }
 
 
@@ -831,7 +833,7 @@ function resolveTrick() {
     gameState.currentPlayer = winner;
     gameState.resolvingTrick = false;
     
-    setTimeout(() => {
+    runBeat('trick-cleared', { winner }, () => {
         updateDisplay();
         
         // Check if round is complete
@@ -840,12 +842,12 @@ function resolveTrick() {
         } else {
             if (gameState.currentPlayer === 'computer') {
                 showStatus("Computer leads next trick");
-                setTimeout(computerPlay, 1000);
+                runBeat('computer-lead', {}, computerPlay);
             } else {
                 showStatus("You lead the next trick");
             }
         }
-    }, 1000);
+    });
 }
 
 function determineTrickWinner(card1, card2) {
@@ -887,6 +889,7 @@ function endRound() {
     const message = `Round ${gameState.roundNumber} Complete! Player: +${scores.playerRoundScore} points, Computer: +${scores.computerRoundScore} points`;
     showStatus(message);
     addToLog(message);
+    updateDisplay(); // refresh the scoreboard with the round's points (view only, no state change)
     
     // Check for game end
     if (checkGameEnd()) {
@@ -894,11 +897,11 @@ function endRound() {
     }
     
     // Prepare for next round
-    setTimeout(() => {
+    runBeat('round-end', {}, () => {
         gameState.roundNumber++;
-        document.getElementById('new-round').style.display = 'block';
+        GameView.setNewRoundButton(true);
         showStatus("Click 'New Round' to continue");
-    }, 3000);
+    });
 }
 
 function calculateRoundScore() {
@@ -990,118 +993,62 @@ function continueAfterCoinToss() {
         showTrumpSelection();
     } else {
         showStatus("Computer is selecting trump...");
-        setTimeout(selectComputerTrump, 1500);
+        runBeat('computer-trump', {}, selectComputerTrump);
     }
     
-    document.getElementById('new-round').style.display = 'none';
+    GameView.setNewRoundButton(false);
     updateDisplay();
 }
 
 // Coin Toss
 function showCoinToss() {
-    const modal = document.getElementById('coin-toss-modal');
-    const coin = document.getElementById('coin');
-    const coinChoice = document.getElementById('coin-choice');
-    const coinResult = document.getElementById('coin-result');
-    const coinBtns = document.querySelectorAll('.coin-btn');
-    
-    // Reset coin state
-    coin.className = 'coin';
-    coinChoice.style.display = 'block';
-    coinResult.style.display = 'none';
-    coinBtns.forEach(btn => btn.disabled = false);
-    
-    modal.style.display = 'flex';
-    
-    coinBtns.forEach(btn => {
-        btn.onclick = () => performCoinToss(btn.dataset.choice);
-    });
+    GameView.showCoinToss(performCoinToss);
 }
 
 function performCoinToss(playerChoice) {
-    const coin = document.getElementById('coin');
-    const coinChoice = document.getElementById('coin-choice');
-    const coinResult = document.getElementById('coin-result');
-    const coinBtns = document.querySelectorAll('.coin-btn');
-    
-    // Disable buttons
-    coinBtns.forEach(btn => btn.disabled = true);
-    coinChoice.style.display = 'none';
-    
     // Random result
     const result = Math.random() < 0.5 ? 'heads' : 'tails';
     const playerWins = playerChoice === result;
-    
-    // Set animation based on result
-    coin.className = 'coin flipping';
-    
-    // After animation, show result
-    setTimeout(() => {
-        coin.className = `coin result-${result}`;
-        coinResult.style.display = 'block';
-        
+
+    GameView.coinTossBegin();
+
+    // Once the coin has landed, reveal the result
+    runBeat('coin-flip', { result, playerWins }, () => {
+        GameView.coinTossReveal(result, playerWins);
+
         if (playerWins) {
-            coinResult.className = 'coin-result win';
-            coinResult.innerHTML = `<div>🎉 It's ${result.toUpperCase()}!</div><div>You won! You choose trump first.</div>`;
             gameState.coinTossWinner = 'player';
             addToLog(`Coin toss: ${result.toUpperCase()}! You won and will choose trump first.`);
         } else {
-            coinResult.className = 'coin-result lose';
-            coinResult.innerHTML = `<div>It's ${result.toUpperCase()}!</div><div>Computer won! Computer chooses trump first.</div>`;
             gameState.coinTossWinner = 'computer';
             addToLog(`Coin toss: ${result.toUpperCase()}! Computer won and will choose trump first.`);
         }
-        
-        // Close modal and continue game after delay
-        setTimeout(() => {
-            document.getElementById('coin-toss-modal').style.display = 'none';
+
+        // Close modal and continue game once the result has been shown
+        runBeat('coin-result', { result, playerWins }, () => {
+            GameView.hideCoinToss();
             continueAfterCoinToss();
-        }, 2500);
-    }, 3000);
+        });
+    });
 }
 
 // Trump selection
 function showTrumpSelection() {
-    const modal = document.getElementById('trump-selection-modal');
-    modal.style.display = 'flex';
-    
-    // Hide select trump button when modal opens
-    const selectTrumpBtn = document.getElementById('select-trump-btn');
-    if (selectTrumpBtn) {
-        selectTrumpBtn.style.display = 'none';
-    }
-    
-    const trumpButtons = document.querySelectorAll('.trump-btn');
-    trumpButtons.forEach(btn => {
-        btn.onclick = () => {
-            const suit = btn.dataset.suit;
-            setTrump(suit);
-            modal.style.display = 'none';
-        };
-    });
+    GameView.showTrumpSelection(suit => setTrump(suit));
 }
 
 // Function to update select trump button visibility
 function updateSelectTrumpButtonVisibility() {
-    const selectTrumpBtn = document.getElementById('select-trump-btn');
-    if (!selectTrumpBtn) return;
-    
     // Show button only if:
     // 1. Trump is not selected (null)
     // 2. It's player's turn to select trump
     // 3. Game is in trump-selection phase
-    // 4. Trump modal is not visible
-    const trumpModal = document.getElementById('trump-selection-modal');
-    const isModalHidden = !trumpModal || trumpModal.style.display === 'none' || trumpModal.style.display === '';
-    
-    if (gameState.trumpSuit === null && 
-        gameState.lastTrumpSelector === 'player' && 
-        gameState.gamePhase === 'trump-selection' &&
-        isModalHidden) {
-        selectTrumpBtn.style.display = 'block';
-    } else {
-        selectTrumpBtn.style.display = 'none';
-    }
+    // 4. Trump modal is not visible (checked by the view)
+    GameView.setSelectTrumpButton(
+        gameState.trumpSuit === null &&
+        gameState.lastTrumpSelector === 'player' &&
+        gameState.gamePhase === 'trump-selection'
+    );
 }
 
 function setTrump(suit) {
@@ -1109,10 +1056,7 @@ function setTrump(suit) {
     gameState.gamePhase = 'dealing-remaining';
     
     // Hide select trump button since trump is now selected
-    const selectTrumpBtn = document.getElementById('select-trump-btn');
-    if (selectTrumpBtn) {
-        selectTrumpBtn.style.display = 'none';
-    }
+    GameView.hideSelectTrumpButton();
     
     const suitSymbol = getSuitSymbol(suit);
     
@@ -1125,516 +1069,112 @@ function setTrump(suit) {
     }
     
     // Deal the remaining face-down and face-up cards
-    setTimeout(() => {
+    runBeat('deal-remaining', {}, () => {
         dealRemainingCards();
         gameState.gamePhase = 'playing';
         updateDisplay();
         
         if (gameState.lastTrumpSelector === 'computer') {
-            setTimeout(computerPlay, 1000);
+            runBeat('computer-lead', {}, computerPlay);
         } else {
             showStatus("Your turn to play");
         }
-    }, 2000);
-}
-
-// Display functions
-function createCardElement(card, isBack = false) {
-    const cardElement = document.createElement('div');
-    cardElement.className = 'card card-deal-animation';
-    
-    if (isBack) {
-        cardElement.classList.add('card-back');
-        return cardElement;
-    }
-    
-    const suit = getCardSuit(card);
-    const rank = getCardRank(card);
-    
-    cardElement.classList.add(suit);
-    cardElement.innerHTML = `
-        <div class="card-rank">${rank}</div>
-        <div class="card-suit">${getSuitSymbol(suit)}</div>
-        <div class="card-rank bottom-rank">${rank}</div>
-    `;
-    
-    return cardElement;
-}
-
-function updateDisplay() {
-    // Update player hand
-    const playerHandContainer = document.querySelector('#player-hand .cards-container');
-    if (playerHandContainer) {
-        playerHandContainer.innerHTML = '';
-        gameState.player.hand.forEach((card, index) => {
-            if (card) {
-                const cardElement = createCardElement(card);
-                
-                // Only make clickable during playing phase
-                if (gameState.gamePhase === 'playing') {
-                    cardElement.onclick = () => playCard(index, 'hand');
-                    
-                    // Add visual feedback for valid plays
-                    if (gameState.currentPlayer === 'player' && !gameState.resolvingTrick) {
-                        if (isValidPlay(card, gameState.trick.leadSuit)) {
-                            cardElement.classList.add('playable');
-                        } else {
-                            cardElement.classList.add('invalid');
-                        }
-                    }
-                }
-                
-                playerHandContainer.appendChild(cardElement);
-            }
-        });
-    }
-    
-    // Update player face-up cards (only show if dealt)
-    const playerFaceUpContainer = document.querySelector('#player-faceup .cards-container');
-    if (playerFaceUpContainer) {
-        playerFaceUpContainer.innerHTML = '';
-        gameState.player.faceUp.forEach((card, index) => {
-            if (card) {
-                const cardElement = createCardElement(card);
-                
-                // Only make clickable during playing phase
-                if (gameState.gamePhase === 'playing') {
-                    cardElement.onclick = () => playCard(index, 'faceUp');
-                    
-                    if (gameState.player.faceDown[index]) {
-                        cardElement.classList.add('has-hidden-card');
-                    }
-                    
-                    // Add visual feedback for valid plays
-                    if (gameState.currentPlayer === 'player' && !gameState.resolvingTrick) {
-                        if (isValidPlay(card, gameState.trick.leadSuit)) {
-                            cardElement.classList.add('playable');
-                        } else {
-                            cardElement.classList.add('invalid');
-                        }
-                    }
-                }
-                
-                playerFaceUpContainer.appendChild(cardElement);
-            }
-        });
-    }
-    
-    // Update computer hand (show card backs)
-    const computerHandContainer = document.querySelector('#computer-hand .cards-container');
-    if (computerHandContainer) {
-        computerHandContainer.innerHTML = '';
-        gameState.computer.hand.forEach(card => {
-            if (card) {
-                computerHandContainer.appendChild(createCardElement(card, true));
-            }
-        });
-    }
-    
-    // Update computer face-up cards (only show if dealt)
-    const computerFaceUpContainer = document.querySelector('#computer-faceup .cards-container');
-    if (computerFaceUpContainer) {
-        computerFaceUpContainer.innerHTML = '';
-        gameState.computer.faceUp.forEach((card, index) => {
-            if (card) {
-                const cardElement = createCardElement(card);
-                if (gameState.computer.faceDown[index]) {
-                    cardElement.classList.add('has-hidden-card');
-                }
-                computerFaceUpContainer.appendChild(cardElement);
-            }
-        });
-    }
-    
-    // Update current trick
-    const trickContainer = document.querySelector('.trick-cards');
-    if (trickContainer) {
-        trickContainer.innerHTML = '';
-        gameState.trick.cards.forEach(play => {
-            const cardElement = createCardElement(play.card);
-            cardElement.classList.add('played');
-            trickContainer.appendChild(cardElement);
-        });
-    }
-    
-    // Update trump display
-    if (gameState.trumpSuit) {
-        const trumpDisplay = document.getElementById('trump-display');
-        if (trumpDisplay) {
-            trumpDisplay.innerHTML = `Trump: ${getSuitSymbol(gameState.trumpSuit)} ${gameState.trumpSuit}`;
-            trumpDisplay.className = `trump-indicator trump-${gameState.trumpSuit}`;
-        }
-    }
-    
-    // Update scores
-    const scoreDisplay = document.getElementById('score-display');
-    if (scoreDisplay) {
-        scoreDisplay.textContent = `Player: ${gameState.player.score} | Computer: ${gameState.computer.score}`;
-    }
-    
-    // Update round info
-    const roundInfo = document.getElementById('round-info');
-    if (roundInfo) {
-        roundInfo.textContent = `Round: ${gameState.roundNumber}`;
-    }
-    
-    // Update trick counts
-    const playerTrickCount = document.querySelector('#player-tricks .trick-count');
-    const computerTrickCount = document.querySelector('#computer-tricks .trick-count');
-    if (playerTrickCount) playerTrickCount.textContent = gameState.player.tricksWon;
-    if (computerTrickCount) computerTrickCount.textContent = gameState.computer.tricksWon;
-    
-    // Update trick piles display
-    updateTrickPiles();
-}
-
-function updateTrickPiles() {
-    // Player tricks
-    const playerTricksContainer = document.querySelector('#player-tricks .tricks-container');
-    if (playerTricksContainer) {
-        playerTricksContainer.innerHTML = '';
-        for (let i = 0; i < gameState.player.tricksWon; i++) {
-            const trickPile = document.createElement('div');
-            trickPile.className = 'trick-pile';
-            playerTricksContainer.appendChild(trickPile);
-        }
-    }
-    
-    // Computer tricks
-    const computerTricksContainer = document.querySelector('#computer-tricks .tricks-container');
-    if (computerTricksContainer) {
-        computerTricksContainer.innerHTML = '';
-        for (let i = 0; i < gameState.computer.tricksWon; i++) {
-            const trickPile = document.createElement('div');
-            trickPile.className = 'trick-pile';
-            computerTricksContainer.appendChild(trickPile);
-        }
-    }
-}
-
-// UI Helper functions
-function showStatus(message) {
-    const statusElement = document.getElementById('game-status');
-    if (statusElement) {
-        statusElement.innerHTML = `<span>${message}</span>`;
-    }
-}
-
-function showThinking(show) {
-    const indicator = document.getElementById('thinking-indicator');
-    if (indicator) {
-        indicator.style.display = show ? 'block' : 'none';
-    }
-}
-
-function highlightTrickWinner(winner) {
-    const winnerArea = winner === 'player' ? '.player-area' : '.computer-area';
-    const area = document.querySelector(winnerArea);
-    if (area) {
-        area.classList.add('highlight-winner');
-        setTimeout(() => {
-            area.classList.remove('highlight-winner');
-        }, 2000);
-    }
-}
-
-function showGameOver(winner) {
-    const modal = document.getElementById('game-over-modal');
-    const winnerText = document.getElementById('winner-announcement');
-    const finalScores = document.getElementById('final-scores');
-    
-    if (modal && winnerText && finalScores) {
-        if (winner === 'Player') {
-            winnerText.textContent = `🎉 Congratulations! You Win! 🎉`;
-            // Trigger confetti
-            createConfetti();
-        } else {
-            winnerText.textContent = `Better Luck Next Time!`;
-        }
-        finalScores.innerHTML = `
-            <p>Final Score</p>
-            <p>Player: ${gameState.player.score} | Computer: ${gameState.computer.score}</p>
-        `;
-        modal.style.display = 'flex';
-    }
-}
-
-// Confetti animation function
-function createConfetti() {
-    const colors = ['#ffdd44', '#ff4444', '#4CAF50', '#2196F3', '#ff6b6b', '#ffd700'];
-    const confettiCount = 100;
-    
-    for (let i = 0; i < confettiCount; i++) {
-        setTimeout(() => {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            confetti.style.left = Math.random() * 100 + '%';
-            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.animationDelay = Math.random() * 3 + 's';
-            confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
-            document.body.appendChild(confetti);
-            
-            // Remove confetti after animation
-            setTimeout(() => {
-                confetti.remove();
-            }, 5000);
-        }, i * 30);
-    }
-}
-
-// Game initialization and event listeners
-function initializeGame() {
-    // Add initial log message
-    addToLog("Game ready - Click 'Start Game' to begin");
-    
-    // Settings Modal
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsBtnMobile = document.getElementById('settings-btn-mobile');
-    const closeSettingsBtn = document.getElementById('close-settings');
-    const settingsModal = document.getElementById('settings-modal');
-    
-    const openSettings = () => {
-        if (settingsModal) settingsModal.style.display = 'flex';
-    };
-    
-    if (settingsBtn) settingsBtn.onclick = openSettings;
-    if (settingsBtnMobile) settingsBtnMobile.onclick = openSettings;
-    
-    if (closeSettingsBtn && settingsModal) {
-        closeSettingsBtn.onclick = () => {
-            settingsModal.style.display = 'none';
-        };
-    }
-    
-    // Difficulty buttons
-    const difficultyBtns = document.querySelectorAll('.difficulty-btn');
-    const difficultyDesc = document.getElementById('difficulty-desc');
-    const difficultyDisplay = document.getElementById('difficulty-display');
-    
-    const difficultyDescriptions = {
-        easy: "Relaxed AI that makes random choices. Great for learning!",
-        medium: "Balanced AI that analyzes visible cards.",
-        hard: "Expert AI that tracks all played cards and plays optimally!"
-    };
-    
-    difficultyBtns.forEach(btn => {
-        btn.onclick = () => {
-            const difficulty = btn.dataset.difficulty;
-            gameState.difficulty = difficulty;
-            
-            // Update active state
-            difficultyBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            // Update description
-            if (difficultyDesc) {
-                difficultyDesc.textContent = difficultyDescriptions[difficulty];
-            }
-            
-            // Update display in header
-            if (difficultyDisplay) {
-                difficultyDisplay.innerHTML = `<span>${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</span>`;
-            }
-            
-            addToLog(`Difficulty changed to ${difficulty.toUpperCase()}. Will apply on new game/round.`);
-        };
     });
-    
-    // Settings action buttons
-    const settingsGameLog = document.getElementById('settings-game-log');
-    const settingsRules = document.getElementById('settings-rules');
-    const logModal = document.getElementById('game-log-modal');
-    const rulesModal = document.getElementById('rules-modal');
-    
-    if (settingsGameLog && logModal && settingsModal) {
-        settingsGameLog.onclick = () => {
-            settingsModal.style.display = 'none';  // Hide settings first
-            logModal.style.display = 'flex';
-        };
-    }
-    
-    if (settingsRules && rulesModal && settingsModal) {
-        settingsRules.onclick = () => {
-            settingsModal.style.display = 'none';  // Hide settings first
-            rulesModal.style.display = 'flex';
-        };
-    }
-    
-    // Game Log Modal close button - reopen settings when closing
-    const closeLogBtn = document.getElementById('close-log-modal');
-    const clearLogBtn = document.getElementById('clear-log');
-    
-    if (closeLogBtn && logModal) {
-        closeLogBtn.onclick = () => {
-            logModal.style.display = 'none';
-            // Reopen settings modal
-            if (settingsModal) settingsModal.style.display = 'flex';
-        };
-    }
-    
-    if (clearLogBtn) {
-        clearLogBtn.onclick = clearLog;
-    }
-    
-    // Start game button
-    const startGameBtn = document.getElementById('start-game');
-    if (startGameBtn) {
-        startGameBtn.onclick = () => {
-            gameState.gameStarted = true;
-            gameState.gamePhase = 'setup';
-            startNewRound();
-            startGameBtn.style.display = 'none';
-            showStatus("Game started!");
-        };
-    }
-    
-    // New round button
-    const newRoundBtn = document.getElementById('new-round');
-    if (newRoundBtn) {
-        newRoundBtn.onclick = startNewRound;
-    }
-    
-    // Restart game button
-    const restartBtn = document.getElementById('restart-game');
-    if (restartBtn) {
-        restartBtn.onclick = () => {
-            // Reset all game state (but keep difficulty)
-            gameState.player.score = 0;
-            gameState.computer.score = 0;
-            gameState.roundNumber = 1;
-            gameState.gameOver = false;
-            gameState.gameStarted = false;
-            gameState.lastTrumpSelector = null;
-            gameState.gamePhase = 'setup';
-            gameState.trumpSuit = null;
-            gameState.playedCards = [];
-            gameState.isFirstRound = true;  // Reset for coin toss
-            gameState.coinTossWinner = null;
-            
-            // Hide modals
-            const gameOverModal = document.getElementById('game-over-modal');
-            const trumpModal = document.getElementById('trump-selection-modal');
-            if (gameOverModal) gameOverModal.style.display = 'none';
-            if (trumpModal) trumpModal.style.display = 'none';
-            
-            // Hide select trump button
-            const selectTrumpBtn = document.getElementById('select-trump-btn');
-            if (selectTrumpBtn) selectTrumpBtn.style.display = 'none';
-            
-            // Show start button
-            if (startGameBtn) startGameBtn.style.display = 'block';
-            if (newRoundBtn) newRoundBtn.style.display = 'none';
-            
-            // Clear display
-            const containers = [
-                '#player-hand .cards-container',
-                '#player-faceup .cards-container',
-                '#computer-hand .cards-container',
-                '#computer-faceup .cards-container',
-                '.trick-cards'
-            ];
-            
-            containers.forEach(selector => {
-                const container = document.querySelector(selector);
-                if (container) container.innerHTML = '';
-            });
-            
-            // Reset displays
-            const trumpDisplay = document.getElementById('trump-display');
-            const scoreDisplay = document.getElementById('score-display');
-            const roundInfo = document.getElementById('round-info');
-            
-            if (trumpDisplay) trumpDisplay.innerHTML = 'Trump: None';
-            if (scoreDisplay) scoreDisplay.textContent = 'Player: 0 | Computer: 0';
-            if (roundInfo) roundInfo.textContent = 'Round: 1';
-            
-            // Clear and reset log
-            clearLog();
-            addToLog("Game reset - Click 'Start Game' to begin");
-            
-            showStatus("Click 'Start Game' to begin");
-        };
-    }
-    
-    // Game over modal buttons
-    const playAgainBtn = document.getElementById('play-again');
-    const exitGameBtn = document.getElementById('exit-game');
-    
-    if (playAgainBtn && restartBtn) {
-        playAgainBtn.onclick = () => restartBtn.click();
-    }
-    
-    if (exitGameBtn) {
-        exitGameBtn.onclick = () => {
-            if (confirm("Are you sure you want to exit the game?")) {
-                window.close();
-            }
-        };
-    }
-    
-    // Help/Rules modal (using rulesModal2 to avoid conflict)
-    const showRulesBtn = document.getElementById('show-rules');
-    const showRulesMobileBtn = document.getElementById('show-rules-mobile');
-    const closeRulesBtn = document.getElementById('close-rules');
-    const rulesModal2 = document.getElementById('rules-modal');
-    
-    if (showRulesBtn && rulesModal2) {
-        showRulesBtn.onclick = () => {
-            rulesModal2.style.display = 'flex';
-        };
-    }
-    
-    // Mobile rules button
-    if (showRulesMobileBtn && rulesModal2) {
-        showRulesMobileBtn.onclick = () => {
-            rulesModal2.style.display = 'flex';
-        };
-    }
-    
-    if (closeRulesBtn && rulesModal2) {
-        closeRulesBtn.onclick = () => {
-            rulesModal2.style.display = 'none';
-            // Reopen settings modal
-            const settingsModalRef = document.getElementById('settings-modal');
-            if (settingsModalRef) settingsModalRef.style.display = 'flex';
-        };
-    }
-    
-    // Select Trump button (for when modal is accidentally closed)
-    const selectTrumpBtn = document.getElementById('select-trump-btn');
-    if (selectTrumpBtn) {
-        selectTrumpBtn.onclick = () => {
-            if (gameState.trumpSuit === null && 
-                gameState.lastTrumpSelector === 'player' && 
-                gameState.gamePhase === 'trump-selection') {
-                showTrumpSelection();
-            }
-        };
-    }
-    
-    // Close modals when clicking outside (with special handling for trump modal and coin toss)
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal')) {
-            // Don't close coin toss modal by clicking outside - it can't be reopened
-            if (e.target.id === 'coin-toss-modal') {
-                return;
-            }
-            // Close these modals when clicking outside
-            if (e.target.id === 'game-log-modal' || e.target.id === 'rules-modal' || e.target.id === 'settings-modal') {
-                e.target.style.display = 'none';
-                return;
-            }
-            e.target.style.display = 'none';
-            // If trump modal was closed and trump not selected, show select trump button
-            if (e.target.id === 'trump-selection-modal' && gameState.trumpSuit === null) {
-                updateSelectTrumpButtonVisibility();
-            }
-        }
-    });
-    
-    // Initial status
+}
+
+// Game actions (called from ui.js)
+function startGame() {
+    gameState.gameStarted = true;
+    gameState.gamePhase = 'setup';
+    startNewRound();
+    GameView.setStartButton(false);
+    showStatus("Game started!");
+}
+
+function restartGame() {
+    // Cancel everything the previous game still has pending, and clear the flags
+    // that those cancelled continuations would have cleared themselves.
+    flowSession++;
+    gameState.computerThinking = false;
+    gameState.resolvingTrick = false;
+
+    // Reset all game state (but keep difficulty)
+    gameState.player.score = 0;
+    gameState.computer.score = 0;
+    gameState.roundNumber = 1;
+    gameState.gameOver = false;
+    gameState.gameStarted = false;
+    gameState.lastTrumpSelector = null;
+    gameState.gamePhase = 'setup';
+    gameState.trumpSuit = null;
+    gameState.playedCards = [];
+    gameState.isFirstRound = true;  // Reset for coin toss
+    gameState.coinTossWinner = null;
+
+    GameView.resetForRestart();
+
+    // Clear and reset log
+    clearLog();
+    addToLog("Game reset - Click 'Start Game' to begin");
+
     showStatus("Click 'Start Game' to begin");
 }
 
-// Start the game when page loads
-document.addEventListener('DOMContentLoaded', initializeGame);
+// Select Trump button (for when modal is accidentally closed)
+function reopenTrumpSelection() {
+    if (gameState.trumpSuit === null &&
+        gameState.lastTrumpSelector === 'player' &&
+        gameState.gamePhase === 'trump-selection') {
+        showTrumpSelection();
+    }
+}
+
+function setDifficulty(difficulty) {
+    gameState.difficulty = difficulty;
+    addToLog(`Difficulty changed to ${difficulty.toUpperCase()}. Will apply on new game/round.`);
+}
+
+function ready() {
+    addToLog("Game ready - Click 'Start Game' to begin");
+    showStatus("Click 'Start Game' to begin");
+}
+
+// Read-only helpers for the view. Neither changes any rule or state.
+// Would this card be legal for `side` right now? Reuses isValidPlay (which judges the current player).
+function isValidPlayFor(side, card) {
+    const saved = gameState.currentPlayer;
+    gameState.currentPlayer = side;
+    try {
+        return isValidPlay(card, gameState.trick.leadSuit);
+    } finally {
+        gameState.currentPlayer = saved;
+    }
+}
+
+// Trick target for the HUD (trump selector 8, opponent 7); null until trump is chosen.
+function getTrickTarget(side) {
+    if (!gameState.trumpSuit || !gameState.lastTrumpSelector) return null;
+    return gameState.lastTrumpSelector === side ? 8 : 7;
+}
+
+// Public engine API: the only thing presentation.js and ui.js may use.
+const GameEngine = {
+    state: gameState,
+    // queries
+    isValidPlay,
+    isValidPlayFor,
+    getTrickTarget,
+    getCardSuit,
+    getCardRank,
+    getCardValue,
+    getSuitSymbol,
+    // commands
+    startGame,
+    startNewRound,
+    restartGame,
+    playCard,
+    setDifficulty,
+    reopenTrumpSelection,
+    updateSelectTrumpButtonVisibility,
+    ready
+};

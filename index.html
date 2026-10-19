@@ -3,147 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>7-8 A Strategic Card Game</title>
+    <title>7-8 Strategic Card Game</title>
+    <meta name="theme-color" content="#150d08">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
     <link rel="manifest" href="assets/site.webmanifest">
     <link rel="shortcut icon" href="assets/favicon.ico">
     <link rel="stylesheet" href="style.css">
-</head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-DXG7JB8093"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DXG7JB8093"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-  gtag('config', 'G-DXG7JB8093');
-</script>
+      gtag('config', 'G-DXG7JB8093');
+    </script>
+</head>
 <body>
     <div class="game-container">
-        <!-- Game Header -->
-        <header class="game-header">
-            <div class="header-top">
-                <h1>7-8 A Strategic Card Game</h1>
-                <button id="settings-btn" class="settings-btn">⚙️</button>
+        <!-- HUD -->
+        <header class="game-header hud">
+            <div class="hud-brand">
+                <span class="brand-mark" aria-hidden="true">7<i>·</i>8</span>
+                <h1 class="brand-name">Strategic Card Game</h1>
             </div>
-            <div class="game-info">
-                <div id="trump-display" class="trump-indicator">
-                    <span>Trump: None</span>
+
+            <div id="score-display" class="score-board" role="status" aria-label="Score">
+                <div class="score-side">
+                    <span class="score-name">You</span>
+                    <span class="score-num" id="score-player">0</span>
                 </div>
-                <div id="score-display" class="score-board">
-                    <span>Player: 0 | Computer: 0</span>
+                <div id="round-info" class="round-info"><span>Round 1</span></div>
+                <div class="score-side score-side-cpu">
+                    <span class="score-num" id="score-computer">0</span>
+                    <span class="score-name">Computer</span>
                 </div>
-                <div class="round-info-wrapper">
-                    <div id="difficulty-display" class="difficulty-indicator">
-                        <span>Medium</span>
-                    </div>
-                    <div id="round-info" class="round-info">
-                        <span>Round: 1</span>
-                    </div>
-                    <div class="settings-btn-mobile-wrapper">
-                        <button id="settings-btn-mobile" class="settings-btn-mobile">⚙️</button>
-                    </div>
-                </div>
+            </div>
+
+            <div class="hud-right">
+                <div id="trump-display" class="trump-indicator" aria-live="polite"><span class="trump-label">Trump</span><span class="trump-suit">&ndash;</span></div>
+                <div id="difficulty-display" class="difficulty-indicator" title="AI difficulty"><span>Medium</span></div>
+                <button id="restart-game" class="hud-btn" type="button">New game</button>
+                <button id="settings-btn" class="hud-btn hud-icon" type="button" aria-label="Settings">&#9881;&#xFE0E;</button>
             </div>
         </header>
 
-        <!-- Main Game Area -->
-        <div class="game-board">
-            <!-- Computer Area -->
-            <div class="computer-area">
-                <div class="player-label">Computer</div>
-                <div class="computer-cards">
-                    <!-- Computer Hand (hidden) -->
-                    <div id="computer-hand" class="card-area computer-hand">
-                        <div class="hand-label">Hand (Hidden)</div>
-                        <div class="cards-container"></div>
-                    </div>
-                    
-                    <!-- Computer Face-Up Cards -->
-                    <div id="computer-faceup" class="card-area face-up-cards">
-                        <div class="cards-label">Face-Up Cards</div>
-                        <div class="cards-container"></div>
-                    </div>
-                    
-                    <!-- Computer Won Tricks -->
+        <!-- Table -->
+        <main class="game-board">
+            <!-- Computer seat -->
+            <section class="computer-area seat seat-top" aria-label="Computer">
+                <div class="seat-bar">
+                    <div class="player-label">Computer</div>
+                    <div id="thinking-indicator" class="thinking-indicator" style="display: none;" role="status" aria-label="Computer is thinking"><span></span><span></span><span></span></div>
                     <div id="computer-tricks" class="won-tricks">
-                        <div class="tricks-label">Tricks Won: <span class="trick-count">0</span></div>
-                        <div class="tricks-container"></div>
+                        <div class="tricks-label"><span class="trick-count">0</span><span class="trick-target"></span> tricks</div>
+                        <div class="tricks-container meter"></div>
                     </div>
                 </div>
-            </div>
+                <div class="seat-cards">
+                    <div id="computer-hand" class="card-area computer-hand" aria-hidden="true">
+                        <div class="cards-container"></div>
+                    </div>
+                    <div id="computer-faceup" class="card-area face-up-cards">
+                        <div class="cards-container"></div>
+                    </div>
+                </div>
+            </section>
 
-            <!-- Center Play Area -->
-            <div class="center-area">
-                <!-- Current Trick Display -->
+            <!-- Centre: deck, current trick, status -->
+            <section class="center-area">
+                <div id="deck" class="deck" aria-hidden="true"><i></i><i></i><i></i></div>
+
                 <div id="current-trick" class="current-trick">
-                    <div class="trick-label">Current Trick</div>
-                    <div class="trick-cards"></div>
-                </div>
-
-                <!-- Game Controls -->
-                <div class="game-controls">
-                    <button id="start-game" class="control-btn">Start Game</button>
-                    <button id="new-round" class="control-btn" style="display: none;">New Round</button>
-                    <button id="restart-game" class="control-btn">Restart Game</button>
-                    <button id="select-trump-btn" class="control-btn select-trump-btn" style="display: none;">Select Trump</button>
-                </div>
-                
-                <!-- Game Status Messages -->
-                <div id="game-status" class="game-status">
-                    <span>Click "Start Game" to begin</span>
-                </div>
-            </div>
-
-            <!-- Player Area -->
-            <div class="player-area">
-                <div class="player-label">Player</div>
-                <div class="player-cards">
-                    <!-- Player Won Tricks -->
-                    <div id="player-tricks" class="won-tricks">
-                        <div class="tricks-label">Tricks Won: <span class="trick-count">0</span></div>
-                        <div class="tricks-container"></div>
+                    <div class="trick-cards">
+                        <div class="trick-slot slot-computer"></div>
+                        <div class="trick-slot slot-player"></div>
                     </div>
-                    
-                    <!-- Player Face-Up Cards -->
+                </div>
+
+                <div class="center-info">
+                    <div id="game-status" class="game-status" role="status" aria-live="polite"><span>Click "Start Game" to begin</span></div>
+                    <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+                    <div class="game-controls">
+                        <button id="start-game" class="control-btn primary" type="button">Start Game</button>
+                        <button id="new-round" class="control-btn primary" type="button" style="display: none;">New Round</button>
+                        <button id="select-trump-btn" class="control-btn select-trump-btn" type="button" style="display: none;">Select Trump</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Player seat -->
+            <section class="player-area seat seat-bottom" aria-label="Your cards">
+                <div class="seat-cards">
                     <div id="player-faceup" class="card-area face-up-cards">
-                        <div class="cards-label">Face-Up Cards</div>
+                        <div class="cards-label">Face-up</div>
                         <div class="cards-container"></div>
                     </div>
-                    
-                    <!-- Player Hand -->
                     <div id="player-hand" class="card-area player-hand">
-                        <div class="hand-label">Your Hand</div>
+                        <div class="hand-label">Your hand</div>
                         <div class="cards-container"></div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Trump Selection Modal -->
-        <div id="trump-selection-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Select Trump Suit</h3>
+                <div class="seat-bar">
+                    <div class="player-label">You</div>
+                    <div id="player-tricks" class="won-tricks">
+                        <div class="tricks-label"><span class="trick-count">0</span><span class="trick-target"></span> tricks</div>
+                        <div class="tricks-container meter"></div>
+                    </div>
                 </div>
+            </section>
+        </main>
+
+        <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
+
+        <!-- Trump Selection (non-blocking sheet: your hand stays visible while you choose) -->
+        <div id="trump-selection-modal" class="modal trump-modal" style="display: none;">
+            <div class="modal-content" role="dialog" aria-labelledby="trump-title">
+                <div class="modal-header">
+                    <h3 id="trump-title">Choose trump</h3>
+                </div>
+                <p class="trump-hint">Pick from your 5 cards. Choosing trump sets <strong>your target to 8 tricks</strong>; the opponent needs 7.</p>
                 <div class="trump-options">
-                    <button class="trump-btn hearts" data-suit="hearts">
-                        <span class="suit-symbol">♥</span>
+                    <button class="trump-btn hearts" data-suit="hearts" type="button">
+                        <span class="suit-symbol">&hearts;&#xFE0E;</span>
                         <span class="suit-name">Hearts</span>
                     </button>
-                    <button class="trump-btn diamonds" data-suit="diamonds">
-                        <span class="suit-symbol">♦</span>
+                    <button class="trump-btn spades" data-suit="spades" type="button">
+                        <span class="suit-symbol">&spades;&#xFE0E;</span>
+                        <span class="suit-name">Spades</span>
+                    </button>
+                    <button class="trump-btn diamonds" data-suit="diamonds" type="button">
+                        <span class="suit-symbol">&diams;&#xFE0E;</span>
                         <span class="suit-name">Diamonds</span>
                     </button>
-                    <button class="trump-btn clubs" data-suit="clubs">
-                        <span class="suit-symbol">♣</span>
+                    <button class="trump-btn clubs" data-suit="clubs" type="button">
+                        <span class="suit-symbol">&clubs;&#xFE0E;</span>
                         <span class="suit-name">Clubs</span>
-                    </button>
-                    <button class="trump-btn spades" data-suit="spades">
-                        <span class="suit-symbol">♠</span>
-                        <span class="suit-name">Spades</span>
                     </button>
                 </div>
             </div>
@@ -151,37 +148,29 @@
 
         <!-- Game Over Modal -->
         <div id="game-over-modal" class="modal" style="display: none;">
-            <div class="modal-content">
+            <div class="modal-content gameover-modal" role="dialog" aria-labelledby="gameover-title">
                 <div class="modal-header">
-                    <h3>Game Over!</h3>
+                    <h3 id="gameover-title">Game Over</h3>
                 </div>
                 <div class="game-over-content">
                     <div id="winner-announcement" class="winner-text"></div>
                     <div id="final-scores" class="final-scores"></div>
                     <div class="game-over-actions">
-                        <button id="play-again" class="control-btn">Play Again</button>
-                        <button id="exit-game" class="control-btn">Exit</button>
+                        <button id="play-again" class="control-btn primary" type="button">Play Again</button>
+                        <button id="exit-game" class="control-btn" type="button">Exit</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Loading/Thinking Indicator -->
-        <div id="thinking-indicator" class="thinking-indicator" style="display: none;">
-            <div class="thinking-content">
-                <div class="spinner"></div>
-                <span>Computer is thinking...</span>
-            </div>
-        </div>
-
         <!-- Coin Toss Modal -->
         <div id="coin-toss-modal" class="modal" style="display: none;">
-            <div class="modal-content coin-toss-modal">
+            <div class="modal-content coin-toss-modal" role="dialog" aria-labelledby="coin-title">
                 <div class="modal-header">
-                    <h3><span class="coin-icon">$</span> Coin Toss</h3>
+                    <h3 id="coin-title">Coin toss</h3>
                 </div>
                 <div class="coin-toss-content">
-                    <p class="coin-toss-info">Winner chooses trump first!</p>
+                    <p class="coin-toss-info">The winner chooses trump first.</p>
                     <div class="coin-container">
                         <div id="coin" class="coin">
                             <div class="coin-face heads">H</div>
@@ -190,10 +179,10 @@
                     </div>
                     <div id="coin-result" class="coin-result" style="display: none;"></div>
                     <div id="coin-choice" class="coin-choice">
-                        <p>Choose your side:</p>
+                        <p>Call it:</p>
                         <div class="coin-buttons">
-                            <button class="coin-btn" data-choice="heads">Heads</button>
-                            <button class="coin-btn" data-choice="tails">Tails</button>
+                            <button class="coin-btn" data-choice="heads" type="button">Heads</button>
+                            <button class="coin-btn" data-choice="tails" type="button">Tails</button>
                         </div>
                     </div>
                 </div>
@@ -363,6 +352,11 @@
         </div>
     </div>
 
+    <!-- Vendored libraries -->
+    <script src="assets/vendor/gsap.min.js"></script>
+    <!-- Presentation layer (DOM, timing, animation) -> engine (state, rules, AI) -> UI wiring -->
+    <script src="presentation.js"></script>
     <script src="script.js"></script>
+    <script src="ui.js"></script>
 </body>
 </html>
