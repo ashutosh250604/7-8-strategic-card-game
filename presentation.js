@@ -442,6 +442,8 @@ const GameView = (() => {
         prev.slots.computer = gs.computer.faceUp.slice();
 
         renderHud(playerTurn, computerTurn, animate);
+        // UI-only listeners (the first-round coach) read settled state after every render.
+        document.dispatchEvent(new Event('gameview:render'));
     }
 
     function renderHud(playerTurn, computerTurn, animate) {
@@ -451,6 +453,9 @@ const GameView = (() => {
         // Trump
         const td = $('trump-display');
         if (td) {
+            // Before a trump exists the pill is just a dash; hide it so the setup
+            // HUD stays quiet (and narrow layouts keep their one useful row).
+            td.hidden = !gs.trumpSuit;
             if (gs.trumpSuit) {
                 td.innerHTML = `<span class="trump-label">Trump</span><span class="trump-suit ${gs.trumpSuit}">${GLYPH[gs.trumpSuit]}</span>`;
                 td.className = `trump-indicator trump-${gs.trumpSuit}`;
@@ -657,6 +662,7 @@ const GameView = (() => {
         });
         const first = modal.querySelector('.trump-btn');
         if (first) setTimeout(() => first.focus({ preventScroll: true }), 50);
+        document.dispatchEvent(new Event('gameview:trump'));
     }
 
     // ------------------------------------------------------------------
@@ -838,7 +844,7 @@ const GameView = (() => {
             if (C.board) delete C.board.dataset.trump;
         }
         const td = $('trump-display');
-        if (td) { td.innerHTML = '<span class="trump-label">Trump</span><span class="trump-suit">&ndash;</span>'; td.className = 'trump-indicator'; }
+        if (td) { td.innerHTML = '<span class="trump-label">Trump</span><span class="trump-suit">&ndash;</span>'; td.className = 'trump-indicator'; td.hidden = true; }
         const sp = $('score-player'), sc = $('score-computer'), ri = $('round-info');
         if (sp) sp.textContent = '0';
         if (sc) sc.textContent = '0';
@@ -861,6 +867,7 @@ const GameView = (() => {
         if (statusEl) statusEl.classList.remove('is-your-turn');
         if (C && C.board) { C.board.dataset.phase = 'setup'; delete C.board.dataset.trump; }
         ['.player-area', '.computer-area'].forEach((s) => { const a = document.querySelector(s); if (a) a.classList.remove('is-turn', 'highlight-winner'); });
+        document.dispatchEvent(new Event('gameview:reset'));
     }
 
     function init() { initHero(); containers(); bindInput(); }
@@ -870,6 +877,8 @@ const GameView = (() => {
         beat,
         log, clearLog, status, thinking, toast,
         render, highlightTrickWinner,
+        // Pure face markup, shared with the tutorial so sample cards match the real table.
+        cardFaceHTML: faceHTML,
         setStartButton, setNewRoundButton, hideSelectTrumpButton, setSelectTrumpButton, hideRoundSummary,
         showTrumpSelection,
         showCoinToss, coinTossBegin, coinTossReveal, hideCoinToss,

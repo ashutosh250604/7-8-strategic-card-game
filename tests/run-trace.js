@@ -2,6 +2,7 @@
 /*
  * Usage (from the tests/ folder):
  *   node run-trace.js --write baseline [--root <dir>] [--group main|restart|all]
+ *   (--root defaults to games/7-8, the game page; the launcher at the project root has no game scripts)
  *   node run-trace.js --compare baseline [--root <dir>] [--group ...]
  *   node run-trace.js --determinism            (runs the whole matrix twice, must match)
  *
@@ -15,7 +16,7 @@ const { runScenario } = require('./harness');
 
 const args = process.argv.slice(2);
 const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
-const root = path.resolve(opt('--root', path.join(__dirname, '..')));
+const root = path.resolve(opt('--root', path.join(__dirname, '..', 'games', '7-8')));
 const group = opt('--group', 'all');
 const sha = s => crypto.createHash('sha256').update(s).digest('hex').slice(0, 12);
 

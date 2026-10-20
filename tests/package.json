@@ -5,7 +5,8 @@
   "scripts": {
     "trace": "node run-trace.js",
     "trace:baseline": "node run-trace.js --write baseline",
-    "trace:compare": "node run-trace.js --compare baseline"
+    "trace:compare": "node run-trace.js --compare baseline",
+    "test:e2e": "node tutorial-e2e.js"
   },
   "devDependencies": {
     "jsdom": "22.1.0",

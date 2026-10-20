@@ -1,8 +1,8 @@
 'use strict';
 /*
- * Real-browser smoke test (dev-only). Opens index.html from disk in headless Edge/Chrome,
- * plays the first part of a game in real time and reports console output, page errors and
- * failed requests.   node browser-smoke.js [--shots]
+ * Real-browser smoke test (dev-only). Opens games/7-8/index.html from disk in headless
+ * Edge/Chrome, plays the first part of a game in real time and reports console output,
+ * page errors and failed requests.   node browser-smoke.js [--shots]
  */
 const path = require('path');
 const fs = require('fs');
@@ -10,13 +10,14 @@ const puppeteer = require('puppeteer-core');
 
 const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 const root = path.resolve(__dirname, '..');
-const fileUrl = 'file:///' + path.join(root, 'index.html').replace(/\\/g, '/');
+const gamePath = path.join('games', '7-8', 'index.html');
+const fileUrl = 'file:///' + path.join(root, gamePath).replace(/\\/g, '/');
 // Default: serve over HTTP (a webmanifest cannot be fetched from file:// in any browser). --file opens from disk.
 const useFile = process.argv.includes('--file');
 const http = require('http');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' };
 const server = http.createServer((req, res) => {
-    const rel = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html';
+    const rel = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || gamePath.replace(/\\/g, '/');
     const f = path.join(root, rel);
     if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' });
@@ -61,7 +62,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     });
     page.on('response', r => { if (r.status() >= 400) problems.push(`http ${r.status()}: ${r.url()}`); });
 
-    if (!useFile) { await new Promise(r => server.listen(8099, '127.0.0.1', r)); url = 'http://127.0.0.1:8099/index.html'; }
+    if (!useFile) { await new Promise(r => server.listen(8099, '127.0.0.1', r)); url = 'http://127.0.0.1:8099/' + gamePath.replace(/\\/g, '/'); }
     console.log('url:', url);
     await page.goto(url, { waitUntil: 'load' });
     const boot = await page.evaluate(() => ({

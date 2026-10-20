@@ -3,423 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>7-8 Strategic Card Game</title>
+    <title>The Indian Card Table — Classic card games</title>
+    <meta name="description" content="A small collection of classic Indian card games. Start with 7–8, the two-player race to eight tricks.">
     <meta name="theme-color" content="#150d08">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
-    <link rel="manifest" href="assets/site.webmanifest">
+    <link rel="manifest" href="assets/home.webmanifest">
     <link rel="shortcut icon" href="assets/favicon.ico">
-    <link rel="stylesheet" href="style.css">
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DXG7JB8093"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-DXG7JB8093');
-    </script>
+    <link rel="stylesheet" href="home.css">
 </head>
 <body>
-    <div class="game-container">
-        <!-- HUD -->
-        <header class="game-header hud">
-            <div class="hud-brand">
-                <span class="brand-mark" aria-hidden="true">7<i>·</i>8</span>
-                <div class="brand-text">
-                    <h1 class="brand-name">Seven <i>·</i> Eight</h1>
-                    <span class="brand-sub">Strategic Card Game</span>
-                </div>
-            </div>
+    <a class="skip-link" href="#collection">Skip to the games</a>
 
-            <div id="score-display" class="score-board" role="status" aria-label="Score">
-                <div class="score-side">
-                    <span class="score-name">You</span>
-                    <span class="score-num" id="score-player">0</span>
-                </div>
-                <div id="round-info" class="round-info"><small>Round</small><b>1</b></div>
-                <div class="score-side score-side-cpu">
-                    <span class="score-num" id="score-computer">0</span>
-                    <span class="score-name">Computer</span>
-                </div>
-            </div>
-
-            <div class="hud-right">
-                <div id="trump-display" class="trump-indicator" aria-live="polite"><span class="trump-label">Trump</span><span class="trump-suit">&ndash;</span></div>
-                <div id="difficulty-display" class="difficulty-indicator" title="AI difficulty"><span>Medium</span></div>
-                <span class="hud-divider" aria-hidden="true"></span>
-                <button id="restart-game" class="hud-btn" type="button">New game</button>
-                <button id="settings-btn" class="hud-btn hud-icon" type="button" aria-label="Settings">&#9881;&#xFE0E;</button>
-            </div>
+    <div class="shell">
+        <header class="site-header">
+            <a class="wordmark" href="./" aria-label="The Indian Card Table home">
+                <span class="wordmark-mark" aria-hidden="true">♠</span>
+                <span class="wordmark-text">
+                    <b>The Indian Card Table</b>
+                    <small>Classic games, beautifully dealt</small>
+                </span>
+            </a>
+            <nav class="site-nav" aria-label="Main">
+                <a href="#collection">The games</a>
+                <a href="#about">About</a>
+                <a class="nav-play" href="games/7-8/index.html">Play 7–8</a>
+            </nav>
         </header>
 
-        <!-- Table -->
-        <main class="game-board is-setup">
-            <!-- Computer seat -->
-            <section class="computer-area seat seat-top" aria-label="Computer">
-                <div class="seat-bar">
-                    <div class="seat-who">
-                        <span class="seat-avatar" aria-hidden="true">C</span>
-                        <span class="player-label">Computer</span>
-                        <div id="thinking-indicator" class="thinking-indicator" style="display: none;" role="status" aria-label="Computer is thinking"><span></span><span></span><span></span></div>
+        <main>
+            <section class="hero" aria-labelledby="hero-title">
+                <div class="hero-copy">
+                    <p class="eyebrow">An Indian card table</p>
+                    <h1 id="hero-title">Pull up a chair.<br> <em>The cards are dealt.</em></h1>
+                    <p class="lede">A growing collection of the games played across Indian tables — starting with 7–8, the two-player race to eight tricks. No account, no downloads, no noise. Just cards, a clear target and a worthy opponent.</p>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="games/7-8/index.html">Play 7–8</a>
+                        <a class="btn btn-ghost" href="#collection">See what’s coming</a>
                     </div>
-                    <div id="computer-tricks" class="won-tricks">
-                        <div class="tricks-label"><span class="trick-count">0</span><span class="trick-target"></span> <span class="tricks-word">tricks</span></div>
-                        <div class="tricks-container meter"></div>
-                    </div>
+                    <p class="hero-note">
+                        <span><i aria-hidden="true"></i>1 game ready</span>
+                        <span><i aria-hidden="true"></i>4 in the works</span>
+                        <span><i aria-hidden="true"></i>Free to play</span>
+                    </p>
                 </div>
-                <div class="seat-cards">
-                    <div class="card-area computer-hand-area">
-                        <div class="cards-label">Hand <b id="computer-hand-count">0</b></div>
-                        <div id="computer-hand" class="card-area computer-hand" aria-hidden="true">
-                            <div class="cards-container"></div>
+
+                <div class="hero-art" aria-hidden="true">
+                    <div class="fan">
+                        <div class="fan-card back c1"></div>
+                        <div class="fan-card red c2">
+                            <span class="fan-corner tl"><b>7</b><i>♥</i></span>
+                            <span class="fan-pip">♥</span>
+                            <span class="fan-corner br"><b>7</b><i>♥</i></span>
+                        </div>
+                        <div class="fan-card c3">
+                            <span class="fan-corner tl"><b>8</b><i>♠</i></span>
+                            <span class="fan-pip">♠</span>
+                            <span class="fan-corner br"><b>8</b><i>♠</i></span>
                         </div>
                     </div>
-                    <div class="card-area">
-                        <div class="cards-label">Face-up <b id="computer-faceup-count">0</b></div>
-                        <div id="computer-faceup" class="card-area face-up-cards">
-                            <div class="cards-container"></div>
-                        </div>
-                    </div>
+                    <span class="fan-badge"><b>8</b><span>tricks</span></span>
+                    <span class="hero-caption">The two-player classic</span>
                 </div>
             </section>
 
-            <!-- Centre: start panel, deck, current trick, status -->
-            <section class="center-area">
-                <div id="deck" class="deck" aria-hidden="true"><i></i><i></i><i></i></div>
-
-                <div class="start-panel">
-                    <div id="hero-fan" class="hero-fan" aria-hidden="true"></div>
-                    <p class="start-eyebrow">A classic Indian trick game</p>
-                    <h2 class="start-title">Seven <span>·</span> Eight</h2>
-                    <p class="start-tagline">Choose the trump, then win eight tricks before your opponent wins seven.</p>
-                    <ul class="start-chips" aria-label="Game facts">
-                        <li>30 cards</li>
-                        <li>2 players</li>
-                        <li>15 tricks</li>
-                    </ul>
-                    <div class="start-actions">
-                        <button id="start-game" class="control-btn primary" type="button">Start game</button>
-                        <button id="start-rules" class="text-btn" type="button">How to play</button>
+            <section id="collection" class="collection" aria-labelledby="collection-title">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">The collection</p>
+                        <h2 id="collection-title">Pick your table</h2>
                     </div>
+                    <p>One game is ready to play. The rest are being dealt in the open — no dates promised until they are good enough to sit down to.</p>
                 </div>
 
-                <div class="trick-stage">
-                    <div class="trick-meta">
-                        <span id="trick-caption" class="trick-caption">Trick 1 of 15</span>
-                        <span id="lead-chip" class="lead-chip" hidden></span>
-                    </div>
-                    <div id="current-trick" class="current-trick">
-                        <div class="trick-cards">
-                            <div class="trick-slot slot-computer"></div>
-                            <div class="trick-slot slot-player"></div>
+                <div class="game-grid">
+                    <a class="game-tile is-live" href="games/7-8/index.html" aria-label="Play 7–8, a two-player game. Ready to play.">
+                        <div class="tile-visual">
+                            <span class="tile-badge live">Ready to play</span>
+                            <div class="tile-fan" aria-hidden="true">
+                                <span class="tile-card red a"><span class="tc-rank">7</span><span class="tc-suit">♥</span><span class="tc-pip">♥</span></span>
+                                <span class="tile-card back b"></span>
+                                <span class="tile-card c"><span class="tc-rank">8</span><span class="tc-suit">♠</span><span class="tc-pip">♠</span></span>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                        <div class="tile-content">
+                            <div class="tile-title-row">
+                                <h3>7–8</h3>
+                                <span class="tile-players">2 players</span>
+                            </div>
+                            <p>The namesake race. Call trump, then win eight tricks before your opponent wins seven. A 30-card deck, fifteen tricks and one hard decision.</p>
+                            <span class="tile-footer"><span>30 cards · 15 tricks</span><span class="tile-go">Deal the cards <i aria-hidden="true">→</i></span></span>
+                        </div>
+                    </a>
 
-                <div class="center-info">
-                    <div id="round-summary" class="round-summary" role="status" aria-live="polite" hidden></div>
-                    <div id="game-status" class="game-status" role="status" aria-live="polite"><span>Click "Start Game" to begin</span></div>
-                    <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
-                    <div class="game-controls">
-                        <button id="new-round" class="control-btn primary" type="button" style="display: none;">New Round</button>
-                        <button id="select-trump-btn" class="control-btn select-trump-btn" type="button" style="display: none;">Select Trump</button>
-                    </div>
+                    <article class="game-tile is-soon" aria-labelledby="game-325" aria-describedby="game-325-note">
+                        <div class="tile-visual">
+                            <span class="tile-badge soon">In development</span>
+                            <div class="tile-fan" aria-hidden="true">
+                                <span class="tile-card red a"><span class="tc-rank">3</span><span class="tc-suit">♦</span><span class="tc-pip">♦</span></span>
+                                <span class="tile-card b"><span class="tc-rank">2</span><span class="tc-suit">♣</span><span class="tc-pip">♣</span></span>
+                                <span class="tile-card red c"><span class="tc-rank">5</span><span class="tc-suit">♥</span><span class="tc-pip">♥</span></span>
+                            </div>
+                        </div>
+                        <div class="tile-content">
+                            <div class="tile-title-row">
+                                <h3 id="game-325">3–2–5</h3>
+                                <span class="tile-players">3 players</span>
+                            </div>
+                            <p id="game-325-note">The same 30-card deck, opened up for three. Three targets on the table and one player left holding the difference.</p>
+                            <span class="tile-footer"><span>30 cards · 3 players</span><span class="tile-go">Coming soon</span></span>
+                        </div>
+                    </article>
+
+                    <article class="game-tile is-soon" aria-labelledby="game-coat" aria-describedby="game-coat-note">
+                        <div class="tile-visual">
+                            <span class="tile-badge soon">In development</span>
+                            <div class="tile-fan" aria-hidden="true">
+                                <span class="tile-card back a"></span>
+                                <span class="tile-card red b"><span class="tc-rank">A</span><span class="tc-suit">♥</span><span class="tc-pip">♥</span></span>
+                                <span class="tile-card ghost c"><span class="tc-pip">♠</span></span>
+                            </div>
+                        </div>
+                        <div class="tile-content">
+                            <div class="tile-title-row">
+                                <h3 id="game-coat">Coat &amp; Shuffle</h3>
+                                <span class="tile-players">4 players · teams</span>
+                            </div>
+                            <p id="game-coat-note">A full 52-card table for four, with partners sitting opposite. Win the coat, then make the shuffle count.</p>
+                            <span class="tile-footer"><span>52 cards · 2 teams</span><span class="tile-go">Coming soon</span></span>
+                        </div>
+                    </article>
+
+                    <article class="game-tile is-soon" aria-labelledby="game-kachuful" aria-describedby="game-kachuful-note">
+                        <div class="tile-visual">
+                            <span class="tile-badge soon">Planned</span>
+                            <div class="tile-fan" aria-hidden="true">
+                                <span class="tile-card ghost a"><span class="tc-pip">♣</span></span>
+                                <span class="tile-card red b"><span class="tc-rank">K</span><span class="tc-suit">♦</span><span class="tc-pip">♦</span></span>
+                                <span class="tile-card ghost c"><span class="tc-pip">♠</span></span>
+                            </div>
+                        </div>
+                        <div class="tile-content">
+                            <div class="tile-title-row">
+                                <h3 id="game-kachuful">Kachuful</h3>
+                                <span class="tile-players">4 players</span>
+                            </div>
+                            <p id="game-kachuful-note">The call-and-tricks classic. Estimate before you play, then live with the estimate. A different kind of nerve.</p>
+                            <span class="tile-footer"><span>52 cards · 4 players</span><span class="tile-go">Planned</span></span>
+                        </div>
+                    </article>
+
+                    <article class="game-tile is-soon" aria-labelledby="game-seep" aria-describedby="game-seep-note">
+                        <div class="tile-visual">
+                            <span class="tile-badge soon">Planned</span>
+                            <div class="tile-fan" aria-hidden="true">
+                                <span class="tile-card red a"><span class="tc-rank">10</span><span class="tc-suit">♥</span><span class="tc-pip">♥</span></span>
+                                <span class="tile-card ghost b"><span class="tc-pip">♦</span></span>
+                                <span class="tile-card red c"><span class="tc-rank">J</span><span class="tc-suit">♦</span><span class="tc-pip">♦</span></span>
+                            </div>
+                        </div>
+                        <div class="tile-content">
+                            <div class="tile-title-row">
+                                <h3 id="game-seep">Seep</h3>
+                                <span class="tile-players">2–4 players</span>
+                            </div>
+                            <p id="game-seep-note">A capture game of pairs and sweeps. Save the table, steal the pile, and keep an eye on the last card.</p>
+                            <span class="tile-footer"><span>52 cards · teams or singles</span><span class="tile-go">Planned</span></span>
+                        </div>
+                    </article>
+
+                    <article class="game-tile is-more" aria-labelledby="game-more">
+                        <div class="tile-visual">
+                            <div class="tile-more-mark" aria-hidden="true">+</div>
+                        </div>
+                        <div class="tile-content">
+                            <div class="tile-title-row">
+                                <h3 id="game-more">More tables</h3>
+                            </div>
+                            <p>The collection is meant to grow slowly. Each game gets the same table, the same clear rules and the same care before it opens.</p>
+                            <span class="tile-footer"><span>Being planned</span><span class="tile-go">One at a time</span></span>
+                        </div>
+                    </article>
                 </div>
             </section>
 
-            <!-- Player seat -->
-            <section class="player-area seat seat-bottom" aria-label="Your cards">
-                <div class="seat-cards">
-                    <div class="card-area">
-                        <div class="cards-label">Face-up <b id="player-faceup-count">0</b></div>
-                        <div id="player-faceup" class="card-area face-up-cards">
-                            <div class="cards-container"></div>
-                        </div>
-                    </div>
-                    <span class="seat-divider" aria-hidden="true"></span>
-                    <div class="card-area hand-area">
-                        <div class="cards-label">Your hand <b id="player-hand-count">0</b></div>
-                        <div id="player-hand" class="card-area player-hand">
-                            <div class="cards-container"></div>
-                        </div>
-                    </div>
+            <section id="about" class="about" aria-labelledby="about-title">
+                <div>
+                    <p class="eyebrow">About the table</p>
+                    <h2 id="about-title">Built for the table, not the feed.</h2>
                 </div>
-                <div class="seat-bar">
-                    <div class="seat-who">
-                        <span class="seat-avatar" aria-hidden="true">Y</span>
-                        <span class="player-label">You</span>
-                    </div>
-                    <div id="player-tricks" class="won-tricks">
-                        <div class="tricks-label"><span class="trick-count">0</span><span class="trick-target"></span> <span class="tricks-word">tricks</span></div>
-                        <div class="tricks-container meter"></div>
+                <div>
+                    <p class="about-copy">These are games with memory: the cards you have seen, the suit you are void in and the trick you cannot afford to lose. The interface should stay out of the way of that thinking.</p>
+                    <p class="about-copy">Every table here is designed to be read at a glance — clear targets, honest feedback and cards that look like cards. Start with 7–8; the rest will arrive when they are ready to be played properly.</p>
+                    <div class="about-list">
+                        <div><b>Rules first</b><span>No rule changes for spectacle. The game is the point.</span></div>
+                        <div><b>One screen</b><span>No account, no lobby, no loading between ideas.</span></div>
+                        <div><b>Made to be read</b><span>Large targets, labelled groups and keyboard play.</span></div>
+                        <div><b>Quiet by default</b><span>Motion that explains the table, not motion for its own sake.</span></div>
                     </div>
                 </div>
             </section>
         </main>
 
-        <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
-
-        <!-- Trump Selection (non-blocking sheet: your hand stays visible while you choose) -->
-        <div id="trump-selection-modal" class="modal trump-modal" style="display: none;">
-            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="trump-title">
-                <div class="modal-header">
-                    <div>
-                        <p class="modal-kicker">First decision</p>
-                        <h3 id="trump-title">Choose trump</h3>
-                    </div>
-                </div>
-                <p class="trump-hint">Pick from your five cards. Choosing trump sets <strong>your target to 8 tricks</strong>; the opponent needs 7.</p>
-                <div class="trump-options">
-                    <button class="trump-btn hearts" data-suit="hearts" type="button">
-                        <span class="suit-symbol">&hearts;&#xFE0E;</span>
-                        <span class="suit-name">Hearts</span>
-                    </button>
-                    <button class="trump-btn spades" data-suit="spades" type="button">
-                        <span class="suit-symbol">&spades;&#xFE0E;</span>
-                        <span class="suit-name">Spades</span>
-                    </button>
-                    <button class="trump-btn diamonds" data-suit="diamonds" type="button">
-                        <span class="suit-symbol">&diams;&#xFE0E;</span>
-                        <span class="suit-name">Diamonds</span>
-                    </button>
-                    <button class="trump-btn clubs" data-suit="clubs" type="button">
-                        <span class="suit-symbol">&clubs;&#xFE0E;</span>
-                        <span class="suit-name">Clubs</span>
-                    </button>
-                </div>
-                <p class="trump-footnote">The suit you choose becomes the most powerful card in every trick.</p>
+        <footer class="site-footer">
+            <span>The Indian Card Table · A growing collection</span>
+            <div class="footer-links">
+                <a href="games/7-8/index.html">Play 7–8</a>
+                <a href="https://github.com/ashutosh250604" target="_blank" rel="noopener">Credits</a>
             </div>
-        </div>
-
-        <!-- Game Over Modal -->
-        <div id="game-over-modal" class="modal" style="display: none;">
-            <div class="modal-content gameover-modal" role="dialog" aria-modal="true" aria-labelledby="gameover-title">
-                <div class="modal-header">
-                    <div>
-                        <p class="modal-kicker">Match complete</p>
-                        <h3 id="gameover-title">Game over</h3>
-                    </div>
-                </div>
-                <div class="game-over-content">
-                    <div id="winner-announcement" class="winner-text"></div>
-                    <div id="final-scores" class="final-scores"></div>
-                    <div class="game-over-actions">
-                        <button id="play-again" class="control-btn primary" type="button">Play again</button>
-                        <button id="exit-game" class="control-btn" type="button">Exit</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Coin Toss Modal -->
-        <div id="coin-toss-modal" class="modal" style="display: none;">
-            <div class="modal-content coin-toss-modal" role="dialog" aria-modal="true" aria-labelledby="coin-title">
-                <div class="modal-header">
-                    <div>
-                        <p class="modal-kicker">Round one</p>
-                        <h3 id="coin-title">Coin toss</h3>
-                    </div>
-                </div>
-                <div class="coin-toss-content">
-                    <p class="coin-toss-info">Call it. The winner chooses trump first.</p>
-                    <div class="coin-container">
-                        <span class="coin-halo" aria-hidden="true"></span>
-                        <div id="coin" class="coin">
-                            <div class="coin-face heads">H</div>
-                            <div class="coin-face tails">T</div>
-                        </div>
-                    </div>
-                    <div id="coin-result" class="coin-result" style="display: none;"></div>
-                    <div id="coin-choice" class="coin-choice">
-                        <p>Your call</p>
-                        <div class="coin-buttons">
-                            <button class="coin-btn" data-choice="heads" type="button">Heads</button>
-                            <button class="coin-btn" data-choice="tails" type="button">Tails</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Help/Rules Modal -->
-        <div id="rules-modal" class="modal" style="display: none;">
-            <div class="modal-content large-modal" role="dialog" aria-modal="true" aria-labelledby="rules-title">
-                <div class="modal-header">
-                    <div>
-                        <p class="modal-kicker">How to play</p>
-                        <h3 id="rules-title">Game rules</h3>
-                    </div>
-                    <button class="close-modal" id="close-rules" type="button" aria-label="Close rules">&times;</button>
-                </div>
-                <div class="rules-content">
-                    <h4>Objective</h4>
-                    <p>Win tricks strategically to score points. First player to reach <strong>5 points wins</strong> the game!</p>
-
-                    <h4>The special deck (30 cards)</h4>
-                    <ul>
-                        <li><strong>Regular cards:</strong> 8, 9, 10, Jack, Queen, King, Ace in all four suits (28 cards)</li>
-                        <li><strong>Special cards:</strong> 7 of Hearts (♥) and 7 of Spades (♠) only (2 cards)</li>
-                        <li><strong>Card power:</strong> 7 is the weakest, followed by 8, 9, 10, J, Q, K, and Ace is the strongest</li>
-                    </ul>
-
-                    <h4>Coin toss — first round only</h4>
-                    <ul>
-                        <li>At the start of a <strong>new game</strong>, a coin toss determines who selects trump first</li>
-                        <li>Choose <strong>Heads</strong> or <strong>Tails</strong> — the coin will flip!</li>
-                        <li>The <strong>winner</strong> of the coin toss gets to choose the trump suit in Round 1</li>
-                        <li>After the first round, trump selection <strong>alternates</strong> between players</li>
-                        <li><strong>Note:</strong> The coin toss only happens once per game, not every round</li>
-                    </ul>
-
-                    <h4>Setup phase</h4>
-                    <p>Each player receives <strong>15 cards</strong> divided into three groups:</p>
-                    <ul>
-                        <li><strong>5 hand cards:</strong> Cards you can see and play from (dealt first)</li>
-                        <li><strong>5 face-up cards:</strong> Visible cards on the table (dealt after trump selection)</li>
-                        <li><strong>5 face-down cards:</strong> Hidden cards beneath face-up cards (dealt after trump selection)</li>
-                    </ul>
-
-                    <h4>Trump selection — the key decision</h4>
-                    <ul>
-                        <li>Players <strong>take turns</strong> selecting the trump suit each round</li>
-                        <li>Look at your <strong>5 hand cards</strong> and choose wisely!</li>
-                        <li>The trump selector faces a <strong>tougher challenge</strong>:
-                            <ul>
-                                <li>Trump selector's target: <strong>8 tricks</strong></li>
-                                <li>Opponent's target: <strong>7 tricks</strong></li>
-                            </ul>
-                        </li>
-                        <li><strong>Strategy tip:</strong> Choose a suit where you have high cards (Kings, Aces) or many cards</li>
-                    </ul>
-
-                    <h4>How to play</h4>
-                    <ul>
-                        <li><strong>Leading:</strong> The starting player can play any card from their hand or face-up cards</li>
-                        <li><strong>Following:</strong> Must play the same suit if you have it (in hand or face-up cards)</li>
-                        <li><strong>Going void:</strong> If you don't have the lead suit, you can play any card</li>
-                        <li><strong>Trump power:</strong> Trump cards beat any non-trump card, regardless of rank!</li>
-                        <li><strong>Trick winner:</strong>
-                            <ul>
-                                <li>Highest trump wins if any trump is played</li>
-                                <li>Otherwise, highest card of the lead suit wins</li>
-                            </ul>
-                        </li>
-                        <li><strong>Revealing secrets:</strong> When you play a face-up card, the face-down card beneath it is revealed!</li>
-                    </ul>
-
-                    <h4>Scoring system</h4>
-                    <ul>
-                        <li>At the end of each round, count your tricks won</li>
-                        <li><strong>Points = how much you exceed your target</strong></li>
-                        <li>Examples:
-                            <ul>
-                                <li>Trump selector wins 10 tricks → 10 - 8 = <strong>2 points</strong></li>
-                                <li>Trump selector wins 6 tricks → 6 - 8 = negative, so <strong>0 points</strong></li>
-                                <li>Opponent wins 9 tricks → 9 - 7 = <strong>2 points</strong></li>
-                                <li>Opponent wins 5 tricks → 5 - 7 = negative, so <strong>0 points</strong></li>
-                            </ul>
-                        </li>
-                        <li><strong>Higher score is better!</strong> Try to exceed your target to score points</li>
-                    </ul>
-
-                    <h4>Winning the game</h4>
-                    <ul>
-                        <li>The game continues through multiple rounds</li>
-                        <li><strong>First player to reach 5 points wins!</strong></li>
-                        <li>Play aggressively — try to win more tricks than your target to score points!</li>
-                    </ul>
-
-                    <h4>Pro tips</h4>
-                    <ul>
-                        <li>Pay attention to which cards have been played</li>
-                        <li>Remember what face-up cards your opponent has</li>
-                        <li>Winning the coin toss lets you set the pace — choose a strong trump!</li>
-                        <li>Use trump cards wisely — they're powerful but limited</li>
-                        <li>Watch when face-down cards get revealed</li>
-                    </ul>
-
-                    <div class="creator-attribution">
-                        <p>Made by <a href="https://github.com/ashutosh250604" target="_blank" rel="noopener" class="creator-link">Ashutosh Rajput</a></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Help Button -->
-        <button id="show-rules" class="help-btn" type="button" style="display: none;">?</button>
-
-        <!-- Settings Modal -->
-        <div id="settings-modal" class="modal" style="display: none;">
-            <div class="modal-content settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-                <div class="modal-header">
-                    <div>
-                        <p class="modal-kicker">Preferences</p>
-                        <h3 id="settings-title">Settings</h3>
-                    </div>
-                    <button class="close-modal" id="close-settings" type="button" aria-label="Close settings">&times;</button>
-                </div>
-                <div class="settings-content">
-                    <div class="settings-section">
-                        <h4>Difficulty</h4>
-                        <p class="settings-note">Changes apply on the next game or round.</p>
-                        <div class="difficulty-options">
-                            <button class="difficulty-btn" data-difficulty="easy" type="button" aria-pressed="false">Easy</button>
-                            <button class="difficulty-btn active" data-difficulty="medium" type="button" aria-pressed="true">Medium</button>
-                            <button class="difficulty-btn" data-difficulty="hard" type="button" aria-pressed="false">Hard</button>
-                        </div>
-                        <div class="difficulty-description">
-                            <p id="difficulty-desc">Balanced AI that analyzes visible cards.</p>
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h4>More</h4>
-                        <div class="settings-actions">
-                            <button id="settings-game-log" class="settings-action-btn" type="button">
-                                <span>Game log</span>
-                                <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
-                            </button>
-                            <button id="settings-rules" class="settings-action-btn" type="button">
-                                <span>Game rules</span>
-                                <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
-                            </button>
-                            <a href="https://github.com/ashutosh250604" target="_blank" rel="noopener" class="settings-action-btn">
-                                <span>Credits</span>
-                                <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Game Log Modal -->
-        <div id="game-log-modal" class="modal" style="display: none;">
-            <div class="modal-content log-modal" role="dialog" aria-modal="true" aria-labelledby="log-title">
-                <div class="modal-header">
-                    <div>
-                        <p class="modal-kicker">This match</p>
-                        <h3 id="log-title">Game log</h3>
-                    </div>
-                    <button class="close-modal" id="close-log-modal" type="button" aria-label="Close game log">&times;</button>
-                </div>
-                <div id="game-log" class="log-content">
-                    <div class="log-message">Game ready to start...</div>
-                </div>
-                <div class="log-footer">
-                    <button id="clear-log" class="control-btn clear-log-btn" type="button">Clear log</button>
-                </div>
-            </div>
-        </div>
+        </footer>
     </div>
-
-    <!-- Vendored libraries -->
-    <script src="assets/vendor/gsap.min.js"></script>
-    <!-- Presentation layer (DOM, timing, animation) -> engine (state, rules, AI) -> UI wiring -->
-    <script src="presentation.js"></script>
-    <script src="script.js"></script>
-    <script src="ui.js"></script>
 </body>
 </html>

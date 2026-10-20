@@ -75,7 +75,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
     padding: 4px 2px;
 }
 
-.hud-brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.hud-brand { display: flex; align-items: center; gap: 11px; min-width: 0; color: inherit; text-decoration: none; }
+.hud-brand:hover .brand-mark { box-shadow: inset 0 0 0 1px var(--gold-bright), 0 0 14px rgba(241,217,154,.22), 0 2px 10px rgba(0,0,0,.55); }
 .brand-mark {
     display: flex; align-items: center; justify-content: center; white-space: nowrap; flex: none;
     width: 42px; height: 42px; border-radius: 50%;
@@ -422,6 +423,37 @@ button { font: inherit; color: inherit; cursor: pointer; }
     background: rgba(0,0,0,.18); box-shadow: inset 0 0 0 1px rgba(208,170,94,.16);
 }
 .start-actions { display: flex; align-items: center; gap: 16px; margin-top: clamp(4px, 1vh, 10px); }
+.start-note { max-width: 42ch; margin-top: -2px; font-size: 10px; line-height: 1.5; color: var(--text-mute); }
+
+/* First-run invitation: an offer, not a gate. Start game stays available. */
+.tutorial-invite {
+    display: flex; align-items: center; gap: 10px;
+    max-width: 480px; margin-top: 2px; padding: 9px 12px 9px 10px;
+    border-radius: 13px; text-align: left;
+    background: rgba(0,0,0,.2);
+    box-shadow: inset 0 0 0 1px rgba(208,170,94,.25);
+}
+.tutorial-invite-mark {
+    display: grid; place-items: center; flex: none;
+    width: 26px; height: 26px; border-radius: 50%;
+    font: 700 14px/1 var(--serif); color: var(--gold-bright);
+    background: radial-gradient(circle at 36% 30%, #3a2914, #160d06 74%);
+    box-shadow: inset 0 0 0 1px rgba(208,170,94,.42);
+}
+.tutorial-invite p { flex: 1; min-width: 0; font-size: 11px; line-height: 1.45; color: var(--text-dim); }
+.tutorial-invite p strong { color: var(--text); font-weight: 600; }
+.tutorial-invite-actions { display: flex; align-items: center; gap: 7px; flex: none; }
+.mini-btn {
+    border: 0; padding: 7px 10px; border-radius: 999px;
+    font: 600 9px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase;
+    color: var(--text-dim); background: rgba(0,0,0,.24);
+    box-shadow: inset 0 0 0 1px rgba(208,170,94,.24);
+    transition: background .2s, color .2s, box-shadow .2s;
+    white-space: nowrap;
+}
+.mini-btn:hover { color: var(--gold-bright); background: rgba(208,170,94,.14); box-shadow: inset 0 0 0 1px var(--gold); }
+.mini-btn.primary { color: #1f1407; background: linear-gradient(180deg, #f4dfa4, var(--gold) 58%, #b38d3f); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 2px 0 #6f551f; }
+.mini-btn.primary:hover { color: #1f1407; filter: brightness(1.05); }
 #start-game { padding: 14px 32px; font-size: 12px; letter-spacing: .16em; }
 .text-btn {
     border: 0; background: none; padding: 6px 2px;
@@ -495,6 +527,35 @@ button { font: inherit; color: inherit; cursor: pointer; }
     color: var(--gold-bright); text-shadow: 0 1px 2px rgba(0,0,0,.65);
 }
 .game-status.is-muted { display: none; }
+
+/* First-round coach: a quiet note in the status slot, with a dismiss action. */
+.live-coach {
+    display: flex; align-items: flex-start; gap: 8px;
+    width: min(92vw, 560px); padding: 8px 9px;
+    border-radius: 12px; text-align: left;
+    background: linear-gradient(180deg, rgba(57, 39, 19, .96), rgba(26, 16, 8, .96));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 236, 193, .09),
+        inset 0 0 0 1px rgba(208, 170, 94, .42),
+        0 8px 20px rgba(0, 0, 0, .4);
+    animation: coach-in .24s var(--ease);
+}
+.live-coach-mark {
+    flex: none; margin-top: 1px; padding: 3px 6px; border-radius: 999px;
+    font: 600 7px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--gold-bright); background: rgba(208, 170, 94, .12);
+    box-shadow: inset 0 0 0 1px rgba(208, 170, 94, .3);
+}
+.live-coach-copy { flex: 1; min-width: 0; font-size: 11.5px; line-height: 1.4; color: var(--text-dim); }
+.live-coach-copy strong { color: var(--gold-bright); font-weight: 600; }
+.live-coach-close {
+    flex: none; border: 0; background: none; padding: 2px 3px;
+    font: 600 8px/1.2 var(--sans); letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-mute);
+}
+.live-coach-close:hover { color: var(--gold-bright); }
+.center-info.is-coached .game-status { display: none; }
+@keyframes coach-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 /* Between rounds the felt becomes the result screen; the empty trick tray has
    done its job, so the summary and the next-round action take the centre. */
 .game-board.is-round-end .trick-stage { opacity: 0; visibility: hidden; }
@@ -708,6 +769,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .card.mine:focus-visible { outline: 3px solid var(--gold-bright); }
 .card.in-trick .card-lift { transform: rotate(var(--rot, 0deg)); transition: none; }
 .card.winning .card-front { box-shadow: 0 0 0 2px var(--gold-bright), 0 0 24px rgba(241,217,154,.7), 0 6px 14px rgba(0,0,0,.5); }
+/* The coach names a card in the note; the same card gets a quiet gold edge. */
+.card.coach-pick .card-front {
+    box-shadow:
+        inset 0 0 0 1px rgba(90,60,25,.3),
+        inset 0 0 0 calc(var(--cw) * .032) var(--ivory),
+        0 0 0 2px var(--gold-bright),
+        0 0 22px rgba(241,217,154,.42),
+        0 calc(var(--cw) * .06) calc(var(--cw) * .12) rgba(0,0,0,.4);
+}
+.card.coach-pick .card-lift { transform: translateY(calc(var(--cw) * -.1)); }
 .highlight-winner .seat-avatar { color: var(--gold-bright); box-shadow: inset 0 0 0 1px var(--gold-bright), 0 0 14px rgba(241,217,154,.35); }
 .highlight-winner .player-label { color: var(--gold-bright); }
 
@@ -789,6 +860,175 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .suit-name { font: 600 10px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
 .suit-count { font-size: 9px; color: #6d604a; }
 .trump-footnote { margin-top: 14px; font-size: 10px; letter-spacing: .04em; color: var(--text-mute); }
+
+/* Live coach inside the real trump sheet */
+.trump-coach {
+    margin: 0 0 12px; padding: 8px 10px; border-radius: 11px; text-align: left;
+    background: rgba(0, 0, 0, .22);
+    box-shadow: inset 0 0 0 1px rgba(208, 170, 94, .3);
+    animation: coach-in .2s var(--ease);
+}
+.trump-coach-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+.trump-coach-head > span {
+    font: 600 7px/1 var(--sans); letter-spacing: .18em; text-transform: uppercase;
+    color: var(--gold);
+}
+.trump-coach-off {
+    border: 0; background: none; padding: 2px;
+    font: 600 8px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase;
+    color: var(--text-mute);
+}
+.trump-coach-off:hover { color: var(--gold-bright); }
+.trump-coach p { font-size: 11.5px; line-height: 1.45; color: var(--text-dim); }
+.trump-coach strong { color: var(--gold-bright); font-weight: 600; }
+.trump-btn { position: relative; }
+.trump-btn.is-coach-pick { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+.suit-coach {
+    margin-top: 1px; font: 700 7px/1 var(--sans); letter-spacing: .1em;
+    text-transform: uppercase; color: #7a5f21;
+}
+
+/* ---------------------------------------------------------------- tutorial */
+.tutorial-modal { z-index: 110; }
+.tutorial-content { width: min(94vw, 560px); padding: 16px 22px 22px; }
+.tutorial-topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.tutorial-progress { display: flex; align-items: center; gap: 5px; }
+.tutorial-progress i {
+    width: 18px; height: 3px; border-radius: 999px;
+    background: rgba(208,170,94,.2);
+    transition: background .25s, width .25s;
+}
+.tutorial-progress i.is-done { background: var(--gold-dim); }
+.tutorial-progress i.is-active { width: 28px; background: var(--gold-bright); }
+.tutorial-step-label {
+    font-size: 8px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--text-mute);
+}
+.tutorial-topbar .close-modal { margin-left: auto; width: 30px; height: 30px; font-size: 18px; }
+.tutorial-body { --tcw: clamp(46px, 11vw, 74px); text-align: left; }
+.tut-kicker {
+    font-size: 8px; line-height: 1; letter-spacing: .26em; text-transform: uppercase;
+    color: var(--gold-dim); margin: 10px 0 5px;
+}
+.tut-title {
+    font: 600 clamp(21px, 4.4vw, 27px)/1.1 var(--serif);
+    letter-spacing: .02em; color: var(--ivory); margin-bottom: 7px;
+}
+.tut-copy { font-size: 13px; line-height: 1.55; color: var(--text-dim); max-width: 52ch; }
+.tut-copy strong { color: var(--gold-bright); font-weight: 600; }
+
+.tut-hand { display: flex; justify-content: center; gap: clamp(4px, 1.4vw, 8px); margin: 16px 0 14px; }
+.tut-card {
+    --cw: var(--tcw);
+    position: relative; flex: none;
+    width: var(--tcw); height: calc(var(--tcw) * 1.4);
+    border-radius: calc(var(--tcw) * .075);
+    font-size: calc(var(--tcw) * .2);
+    font-family: var(--serif);
+    filter: drop-shadow(0 calc(var(--tcw) * .09) calc(var(--tcw) * .12) rgba(0,0,0,.34));
+}
+.tut-fallback {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font: 700 calc(var(--tcw) * .34)/1 var(--serif); color: var(--ink);
+}
+.tut-card-btn { padding: 0; border: 0; background: none; cursor: pointer; transition: transform .15s var(--ease), filter .15s; }
+.tut-card-btn:hover, .tut-card-btn:focus-visible { transform: translateY(-6px); filter: drop-shadow(0 calc(var(--tcw) * .18) calc(var(--tcw) * .18) rgba(0,0,0,.4)); }
+.tut-card-btn:focus-visible { outline: 3px solid var(--gold-bright); outline-offset: 3px; }
+.tut-card-btn:disabled { opacity: .42; cursor: default; transform: none; }
+.tut-card.is-played { animation: tut-drop .32s var(--ease); }
+@keyframes tut-drop { from { opacity: 0; transform: translateY(-18px) scale(.94); } to { opacity: 1; transform: none; } }
+
+.tut-suits { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tut-suit {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 10px 4px 8px; border: 0; border-radius: 12px;
+    background: linear-gradient(165deg, var(--ivory), var(--ivory-2));
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px rgba(90,60,25,.3), 0 3px 0 #a89572, 0 8px 14px rgba(0,0,0,.3);
+    transition: transform .15s var(--ease), box-shadow .15s;
+}
+.tut-suit:hover, .tut-suit:focus-visible { transform: translateY(-3px); box-shadow: inset 0 0 0 2px var(--gold), 0 5px 0 #a89572, 0 12px 18px rgba(0,0,0,.35); }
+.tut-suit.is-best { box-shadow: inset 0 0 0 2px var(--gold-bright), 0 3px 0 #a89572, 0 10px 20px rgba(241,217,154,.18); }
+.tut-suit-symbol { font-size: clamp(22px, 5vw, 28px); line-height: 1; font-family: var(--sans); }
+.tut-suit-symbol.red { color: var(--ruby); }
+.tut-suit-name { font: 600 9px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); }
+.tut-suit-count { font-size: 8px; line-height: 1; color: #6d604a; }
+
+.tut-feedback {
+    margin-top: 12px; padding: 9px 11px; border-radius: 10px;
+    font-size: 12px; line-height: 1.5; color: var(--text-dim);
+    background: rgba(0,0,0,.2); box-shadow: inset 0 0 0 1px rgba(208,170,94,.14);
+    animation: tut-note .2s var(--ease);
+}
+.tut-feedback strong { color: var(--gold-bright); font-weight: 600; }
+.tut-feedback.is-right { color: #dcebdc; background: rgba(30,82,60,.34); box-shadow: inset 0 0 0 1px rgba(120,190,150,.4); }
+.tut-feedback.is-right strong { color: #d8f2df; }
+.tut-feedback.is-wrong { color: #ffe1db; background: rgba(80,24,18,.4); box-shadow: inset 0 0 0 1px rgba(224,104,95,.5); }
+.tut-feedback.is-wrong strong { color: #ffd2ca; }
+@keyframes tut-note { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.tut-actions { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+.tut-actions .control-btn { padding: 11px 20px; font-size: 10px; }
+.tut-skip { color: var(--text-mute); }
+.tut-footnote { margin-top: 10px; font-size: 10px; line-height: 1.45; color: var(--text-mute); }
+
+.tut-targets { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin: 16px 0 14px; }
+.tut-target {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 12px 8px 10px; border-radius: 14px; text-align: center;
+    background: rgba(0,0,0,.2); box-shadow: inset 0 0 0 1px rgba(208,170,94,.16);
+}
+.tut-target span { font-size: 8px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-mute); }
+.tut-target b { font: 700 clamp(30px, 7vw, 38px)/1 var(--serif); color: var(--ivory); font-variant-numeric: tabular-nums; }
+.tut-target em { font-style: normal; font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-mute); }
+.tut-target.is-you { background: linear-gradient(180deg, rgba(63,45,22,.65), rgba(30,19,10,.6)); box-shadow: inset 0 0 0 1px rgba(208,170,94,.42); }
+.tut-target.is-you b { color: var(--gold-bright); }
+.tut-vs { font: italic 12px/1 var(--serif); color: var(--text-mute); }
+.tut-quiz { display: flex; justify-content: center; gap: 8px; }
+.tut-quiz-btn {
+    min-width: 110px; padding: 10px 14px; border: 0; border-radius: 10px;
+    font: 600 10px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase;
+    color: var(--text); background: rgba(0,0,0,.24);
+    box-shadow: inset 0 0 0 1px rgba(208,170,94,.28);
+    transition: background .2s, box-shadow .2s, color .2s;
+}
+.tut-quiz-btn:hover { background: rgba(208,170,94,.14); color: var(--gold-bright); }
+.tut-quiz-btn.is-right { color: #1f1407; background: linear-gradient(180deg, #f4dfa4, var(--gold) 58%, #b38d3f); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 2px 0 #6f551f; }
+.tut-quiz-btn.is-wrong { color: #ffd2ca; box-shadow: inset 0 0 0 1px var(--ruby-soft); background: rgba(80,24,18,.35); }
+.tut-quiz-btn.is-dim { opacity: .55; }
+
+.tut-trick {
+    display: flex; align-items: center; justify-content: center; gap: clamp(10px, 3vw, 22px);
+    margin: 14px 0 10px; padding: 14px 10px; border-radius: 16px;
+    background: radial-gradient(closest-side, rgba(0,0,0,.26), rgba(0,0,0,.06));
+    box-shadow: inset 0 0 0 1px rgba(208,170,94,.17);
+}
+.tut-trick-slot {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    min-width: calc(var(--tcw, 62px) * 1.15);
+}
+.tut-slot-who { font-size: 7.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-mute); }
+.tut-empty {
+    display: grid; place-items: center;
+    width: var(--tcw, 62px); height: calc(var(--tcw, 62px) * 1.4);
+    border-radius: calc(var(--tcw, 62px) * .075);
+    border: 1px dashed rgba(208,170,94,.3);
+    font-size: 8px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-mute);
+    background: rgba(0,0,0,.12);
+}
+.tut-trick-slot.has-card .tut-empty { display: none; }
+.tut-trick-arrow { font-size: 15px; color: var(--gold-dim); }
+.tut-hand-play { margin-top: 6px; }
+
+.tut-recap { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 15px 0 4px; }
+.tut-recap li { display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; border-radius: 11px; background: rgba(0,0,0,.18); }
+.tut-recap li > span {
+    display: grid; place-items: center; flex: none; width: 21px; height: 21px; border-radius: 50%;
+    font: 700 10px/1 var(--serif); color: var(--gold-bright);
+    box-shadow: inset 0 0 0 1px rgba(208,170,94,.45);
+}
+.tut-recap p { font-size: 12px; line-height: 1.5; color: var(--text-dim); }
+.tut-recap strong { color: var(--text); font-weight: 600; }
 
 /* coin */
 .coin-toss-modal { text-align: center; width: min(94vw, 400px); }
@@ -951,8 +1191,21 @@ button { font: inherit; color: inherit; cursor: pointer; }
     .game-status span { font-size: 13px; }
     .start-title { font-size: clamp(34px, 11vw, 44px); }
     .start-tagline { font-size: 13px; }
-    .start-actions { flex-direction: column; gap: 6px; }
+    .start-actions { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 7px 14px; }
+    #start-game { flex-basis: 100%; }
+    .start-note { font-size: 9.5px; }
+    .live-coach { width: min(94vw, 440px); padding: 7px 8px; gap: 7px; }
+    .live-coach-copy { font-size: 11px; line-height: 1.35; }
+    .live-coach-mark { font-size: 6.5px; padding: 3px 5px; }
+    .trump-coach { padding: 7px 9px; margin-bottom: 9px; }
+    .trump-coach p { font-size: 10.5px; line-height: 1.4; }
     .start-panel { gap: 10px; padding: 8px 10px; }
+    .tutorial-invite { flex-wrap: wrap; gap: 7px 9px; padding: 8px 10px; }
+    .tutorial-invite p { flex-basis: calc(100% - 40px); }
+    .tutorial-invite-actions { width: 100%; justify-content: flex-end; }
+    .tutorial-content { padding: 13px 14px 16px; }
+    .tut-suits { grid-template-columns: repeat(2, 1fr); }
+    .tut-actions { flex-wrap: wrap; gap: 9px; }
     .hero-fan { --hw: clamp(64px, 15vh, 104px); }
     .round-summary { width: min(90vw, 340px); padding: 12px 14px 8px; }
     .round-pill b { font-size: 9px; }
@@ -978,6 +1231,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     .hud-right { justify-content: space-between; }
     .hud-divider { display: none; }
     .hud-btn { height: 30px; padding: 0 11px; font-size: 9px; }
+    .hud-rules { display: none; }
     .score-side { min-width: 50px; gap: 5px; }
     .score-name { font-size: 7.5px; }
     .trump-label { display: none; }
@@ -1033,11 +1287,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
     .center-info { gap: 2px; }
     .game-status { min-height: 14px; }
     .game-status span { font-size: 12px; }
+    .live-coach { padding: 5px 8px; gap: 6px; }
+    .live-coach-copy { font-size: 10.5px; line-height: 1.3; }
+    .live-coach-mark { display: none; }
+    .trump-coach { margin-bottom: 7px; padding: 6px 8px; }
+    .trump-coach p { font-size: 10px; line-height: 1.35; }
     .control-btn { padding: 7px 16px; font-size: 10px; }
     #start-game { padding: 9px 22px; font-size: 11px; }
     .start-title { font-size: clamp(28px, 6vw, 42px); }
     .start-tagline { display: none; }
     .start-chips { display: none; }
+    .start-note { display: none; }
     .start-panel { gap: 7px; }
     .start-actions { margin-top: 0; }
     .modal-content { max-height: 94dvh; padding: 16px 20px; }
@@ -1049,6 +1309,25 @@ button { font: inherit; color: inherit; cursor: pointer; }
     .modal-kicker { display: none; }
     .trump-hint { margin-bottom: 10px; }
     .trump-footnote { display: none; }
+    .tutorial-invite { display: none !important; }
+    .tutorial-content { max-height: 96dvh; padding: 10px 14px 13px; }
+    .tutorial-topbar { margin-bottom: 0; }
+    .tut-kicker { margin-top: 6px; }
+    .tut-title { font-size: 19px; margin-bottom: 4px; }
+    .tut-copy { font-size: 11.5px; line-height: 1.45; }
+    .tut-hand { margin: 8px 0; }
+    .tutorial-body { --tcw: clamp(36px, 8vh, 48px); }
+    .tut-suits { gap: 5px; }
+    .tut-suit { padding: 7px 3px 6px; }
+    .tut-suit-symbol { font-size: 20px; }
+    .tut-feedback { margin-top: 7px; padding: 6px 8px; font-size: 10.5px; line-height: 1.4; }
+    .tut-actions { margin-top: 8px; }
+    .tut-targets { margin: 8px 0; }
+    .tut-target { padding: 7px 6px 6px; }
+    .tut-trick { margin: 7px 0 4px; padding: 7px 8px; }
+    .tut-recap { margin: 8px 0 2px; gap: 5px; }
+    .tut-recap li { padding: 6px 8px; }
+    .tut-footnote { display: none; }
 }
 
 /* Short screens cannot fit the trick caption, tray and status stacked; drop the
@@ -1065,8 +1344,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
     .trick-cards { min-height: calc(var(--cw-seat) * 1.4 + 12px); padding: 6px 14px; }
 }
 
-/* Keep the round result compact enough to fit a 320×568 viewport. */
+/* Keep the setup panel and round result compact enough for 320×568. */
 @media (max-width: 380px) and (max-height: 700px) {
+    .start-note { display: none; }
     .round-summary { padding: 8px 12px 5px; }
     .round-summary-title { padding-bottom: 6px; font-size: 8px; letter-spacing: .16em; }
     .round-pill { padding: 5px 2px 4px; gap: 8px; }

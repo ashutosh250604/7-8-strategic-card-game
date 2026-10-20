@@ -2,7 +2,7 @@
 /*
  * Dev-only gameplay trace harness.
  *
- * Loads the REAL index.html + its local <script src> files into jsdom, replaces
+ * Loads the real game page (games/7-8/index.html) + its local <script src> files into jsdom, replaces
  * timers with a deterministic virtual clock, seeds Math.random, and drives the
  * game like a human would (clicking real DOM buttons / cards). After every
  * timer firing or driver action it records a trace of:
@@ -114,7 +114,7 @@ async function runScenario(cfg, rootDir) {
     out.push(`# scripts: ${scripts.join(', ')}`);
     // Vendored libraries are skipped: GSAP's ticker polls on the virtual clock and would flood the trace.
     // (Page load with the vendored files is checked in a real browser instead.)
-    for (const rel of scripts.filter(s => !/^assets\/vendor\//.test(s))) {
+    for (const rel of scripts.filter(s => !/(^|\/)assets\/vendor\//.test(s))) {
         const code = fs.readFileSync(path.join(rootDir, rel), 'utf8');
         new vm.Script(code, { filename: rel }).runInContext(ctx);
     }

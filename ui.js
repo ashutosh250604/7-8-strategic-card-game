@@ -156,12 +156,14 @@ function initializeUI() {
         };
     }
 
-    // Rules can be opened from settings or from the start hero.
+    // Rules can be opened from the HUD, settings, or the start hero.
     const startRulesBtn = $('start-rules');
+    const hudRulesBtn = $('hud-rules');
     const showRulesBtn = $('show-rules');
     const closeRulesBtn = $('close-rules');
 
     if (startRulesBtn) startRulesBtn.onclick = () => openRules(startRulesBtn);
+    if (hudRulesBtn) hudRulesBtn.onclick = () => openRules(hudRulesBtn);
     if (showRulesBtn) showRulesBtn.onclick = () => openRules(showRulesBtn);
     if (closeRulesBtn) closeRulesBtn.onclick = closeRules;
 

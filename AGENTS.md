@@ -22,7 +22,8 @@ Build a premium, professional, highly replayable browser game based on the India
 - Never change fundamental rules, scoring, or core game behavior without first explaining the proposed change and obtaining approval.
 - AI improvements are encouraged when they respect the approved rules.
 - Preserve existing behavior unless a change is intentional, justified, and tested.
-- Keep the game playable by opening `index.html` directly unless a migration is explicitly approved.
+- Keep the game playable by opening `games/7-8/index.html` directly (no build step). The root `index.html` is the collection launcher.
+- The collection homepage must never present a planned game as playable; mark status honestly.
 
 ## Architecture
 
@@ -30,11 +31,16 @@ The current architecture separates:
 - `script.js`: GameEngine, state, rules, AI, and gameplay flow.
 - `presentation.js`: GameView, DOM rendering, animation beats, and visual effects.
 - `ui.js`: UI wiring, buttons, settings, and modals.
+- `tutorial.js`: the opt-in, sample-card tutorial. UI-only; it never changes `gameState` or the rules. Finishing the tour arms the live coach for the next real game.
+- `coach.js`: the first-round live coach. UI-only and read-only: it reads the real hand/trick to recommend a trump and explain the first follow-suit turn, then retires. It never chooses a card or changes the deal, scoring, or rules.
+- `games/7-8/index.html`: the game page. Shared game scripts/styles live at the project root; the root `index.html` is the launcher.
+- `home.css` / `index.html`: the collection homepage.
 
 Treat this as the established architecture. Inspect the current implementation before relying on these descriptions; update this file if the architecture changes.
 
 - Keep gameplay rules independent of visual animation details.
-- Use the existing presentation beat/Promise mechanism for animation sequencing.
+- Use the existing presentation beat/Promise mechanism for animation sequencing. `GameView.render()` emits `gameview:render`; UI-only listeners may read settled state after that event.
+- Keep coaching read-only. It may label a card or suit, but it must never play, choose, or alter game state.
 - Cancel stale asynchronous work when a game restarts.
 - Preserve card identity and state consistency across renders.
 - Avoid introducing frameworks, build systems, or large dependencies without a compelling reason.
@@ -64,6 +70,7 @@ Treat this as the established architecture. Inspect the current implementation b
 - Preserve the established gameplay trace baseline and use it to detect unintended behavior changes.
 - Keep intentional changes distinguishable from regressions.
 - Test browser behavior, restart, complete rounds, invalid plays, responsive layouts, and console errors as relevant.
+- Keep the launcher/tutorial/live-coach browser coverage in `tests/tutorial-e2e.js` (`npm run test:e2e`); it fails on console errors and checks first-run state, keyboard flow and the first live round.
 - Do not spend time repeatedly running expensive or redundant tests when a focused test is sufficient; run comprehensive verification at major milestones.
 
 ## Completion Protocol

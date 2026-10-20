@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7-8 Strategic Card Game</title>
+    <meta name="theme-color" content="#150d08">
+    <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../../assets/favicon-16x16.png">
+    <link rel="manifest" href="../../assets/site.webmanifest">
+    <link rel="shortcut icon" href="../../assets/favicon.ico">
+    <link rel="stylesheet" href="../../style.css">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DXG7JB8093"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-DXG7JB8093');
+    </script>
+</head>
+<body>
+    <div class="game-container">
+        <!-- HUD -->
+        <header class="game-header hud">
+            <a class="hud-brand" href="../../index.html" aria-label="Back to all games">
+                <span class="brand-mark" aria-hidden="true">7<i>·</i>8</span>
+                <div class="brand-text">
+                    <h1 class="brand-name">Seven <i>·</i> Eight</h1>
+                    <span class="brand-sub">Strategic Card Game</span>
+                </div>
+            </a>
+
+            <div id="score-display" class="score-board" role="status" aria-label="Score">
+                <div class="score-side">
+                    <span class="score-name">You</span>
+                    <span class="score-num" id="score-player">0</span>
+                </div>
+                <div id="round-info" class="round-info"><small>Round</small><b>1</b></div>
+                <div class="score-side score-side-cpu">
+                    <span class="score-num" id="score-computer">0</span>
+                    <span class="score-name">Computer</span>
+                </div>
+            </div>
+
+            <div class="hud-right">
+                <div id="trump-display" class="trump-indicator" aria-live="polite" hidden><span class="trump-label">Trump</span><span class="trump-suit">&ndash;</span></div>
+                <div id="difficulty-display" class="difficulty-indicator" title="AI difficulty"><span>Medium</span></div>
+                <span class="hud-divider" aria-hidden="true"></span>
+                <button id="hud-rules" class="hud-btn hud-rules" type="button">Rules</button>
+                <button id="restart-game" class="hud-btn" type="button">New game</button>
+                <button id="settings-btn" class="hud-btn hud-icon" type="button" aria-label="Settings">&#9881;&#xFE0E;</button>
+            </div>
+        </header>
+
+        <!-- Table -->
+        <main class="game-board is-setup">
+            <!-- Computer seat -->
+            <section class="computer-area seat seat-top" aria-label="Computer">
+                <div class="seat-bar">
+                    <div class="seat-who">
+                        <span class="seat-avatar" aria-hidden="true">C</span>
+                        <span class="player-label">Computer</span>
+                        <div id="thinking-indicator" class="thinking-indicator" style="display: none;" role="status" aria-label="Computer is thinking"><span></span><span></span><span></span></div>
+                    </div>
+                    <div id="computer-tricks" class="won-tricks">
+                        <div class="tricks-label"><span class="trick-count">0</span><span class="trick-target"></span> <span class="tricks-word">tricks</span></div>
+                        <div class="tricks-container meter"></div>
+                    </div>
+                </div>
+                <div class="seat-cards">
+                    <div class="card-area computer-hand-area">
+                        <div class="cards-label">Hand <b id="computer-hand-count">0</b></div>
+                        <div id="computer-hand" class="card-area computer-hand" aria-hidden="true">
+                            <div class="cards-container"></div>
+                        </div>
+                    </div>
+                    <div class="card-area">
+                        <div class="cards-label">Face-up <b id="computer-faceup-count">0</b></div>
+                        <div id="computer-faceup" class="card-area face-up-cards">
+                            <div class="cards-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Centre: start panel, deck, current trick, status -->
+            <section class="center-area">
+                <div id="deck" class="deck" aria-hidden="true"><i></i><i></i><i></i></div>
+
+                <div class="start-panel">
+                    <div id="hero-fan" class="hero-fan" aria-hidden="true"></div>
+                    <p class="start-eyebrow">A classic Indian trick game</p>
+                    <h2 class="start-title">Seven <span>·</span> Eight</h2>
+                    <p class="start-tagline">Choose the trump, then win eight tricks before your opponent wins seven.</p>
+                    <ul class="start-chips" aria-label="Game facts">
+                        <li>30 cards</li>
+                        <li>2 players</li>
+                        <li>15 tricks</li>
+                    </ul>
+                    <aside id="tutorial-invite" class="tutorial-invite" aria-label="Tutorial offer" hidden>
+                        <span class="tutorial-invite-mark" aria-hidden="true">?</span>
+                        <p><strong>First time at the table?</strong> Learn trump, targets and follow-suit in about a minute.</p>
+                        <div class="tutorial-invite-actions">
+                            <button id="tutorial-start" class="mini-btn primary" type="button">Take the tour</button>
+                            <button id="tutorial-dismiss" class="mini-btn" type="button">Not now</button>
+                        </div>
+                    </aside>
+                    <div class="start-actions">
+                        <button id="start-game" class="control-btn primary" type="button">Deal the cards</button>
+                        <button id="start-rules" class="text-btn" type="button">How to play</button>
+                        <button id="start-tutorial" class="text-btn" type="button">Tutorial</button>
+                    </div>
+                    <p class="start-note">The toss winner calls trump and needs 8 tricks; the other needs 7.</p>
+                </div>
+
+                <div class="trick-stage">
+                    <div class="trick-meta">
+                        <span id="trick-caption" class="trick-caption">Trick 1 of 15</span>
+                        <span id="lead-chip" class="lead-chip" hidden></span>
+                    </div>
+                    <div id="current-trick" class="current-trick">
+                        <div class="trick-cards">
+                            <div class="trick-slot slot-computer"></div>
+                            <div class="trick-slot slot-player"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="center-info">
+                    <div id="round-summary" class="round-summary" role="status" aria-live="polite" hidden></div>
+                    <aside id="live-coach" class="live-coach" aria-label="Tutorial coach" aria-live="polite" hidden></aside>
+                    <div id="game-status" class="game-status" role="status" aria-live="polite"><span>Click "Deal the cards" to begin</span></div>
+                    <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+                    <div class="game-controls">
+                        <button id="new-round" class="control-btn primary" type="button" style="display: none;">New Round</button>
+                        <button id="select-trump-btn" class="control-btn select-trump-btn" type="button" style="display: none;">Select Trump</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Player seat -->
+            <section class="player-area seat seat-bottom" aria-label="Your cards">
+                <div class="seat-cards">
+                    <div class="card-area">
+                        <div class="cards-label">Face-up <b id="player-faceup-count">0</b></div>
+                        <div id="player-faceup" class="card-area face-up-cards">
+                            <div class="cards-container"></div>
+                        </div>
+                    </div>
+                    <span class="seat-divider" aria-hidden="true"></span>
+                    <div class="card-area hand-area">
+                        <div class="cards-label">Your hand <b id="player-hand-count">0</b></div>
+                        <div id="player-hand" class="card-area player-hand">
+                            <div class="cards-container"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="seat-bar">
+                    <div class="seat-who">
+                        <span class="seat-avatar" aria-hidden="true">Y</span>
+                        <span class="player-label">You</span>
+                    </div>
+                    <div id="player-tricks" class="won-tricks">
+                        <div class="tricks-label"><span class="trick-count">0</span><span class="trick-target"></span> <span class="tricks-word">tricks</span></div>
+                        <div class="tricks-container meter"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
+
+        <!-- Trump Selection (non-blocking sheet: your hand stays visible while you choose) -->
+        <div id="trump-selection-modal" class="modal trump-modal" style="display: none;">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="trump-title">
+                <div class="modal-header">
+                    <div>
+                        <p class="modal-kicker">First decision</p>
+                        <h3 id="trump-title">Choose trump</h3>
+                    </div>
+                </div>
+                <p class="trump-hint">Pick from your five cards. Choosing trump sets <strong>your target to 8 tricks</strong>; the opponent needs 7.</p>
+                <div id="live-coach-trump" class="trump-coach" role="note" aria-live="polite" aria-atomic="true" hidden></div>
+                <div class="trump-options">
+                    <button class="trump-btn hearts" data-suit="hearts" type="button">
+                        <span class="suit-symbol">&hearts;&#xFE0E;</span>
+                        <span class="suit-name">Hearts</span>
+                    </button>
+                    <button class="trump-btn spades" data-suit="spades" type="button">
+                        <span class="suit-symbol">&spades;&#xFE0E;</span>
+                        <span class="suit-name">Spades</span>
+                    </button>
+                    <button class="trump-btn diamonds" data-suit="diamonds" type="button">
+                        <span class="suit-symbol">&diams;&#xFE0E;</span>
+                        <span class="suit-name">Diamonds</span>
+                    </button>
+                    <button class="trump-btn clubs" data-suit="clubs" type="button">
+                        <span class="suit-symbol">&clubs;&#xFE0E;</span>
+                        <span class="suit-name">Clubs</span>
+                    </button>
+                </div>
+                <p class="trump-footnote">The suit you choose becomes the most powerful card in every trick.</p>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="modal" style="display: none;">
+            <div class="modal-content gameover-modal" role="dialog" aria-modal="true" aria-labelledby="gameover-title">
+                <div class="modal-header">
+                    <div>
+                        <p class="modal-kicker">Match complete</p>
+                        <h3 id="gameover-title">Game over</h3>
+                    </div>
+                </div>
+                <div class="game-over-content">
+                    <div id="winner-announcement" class="winner-text"></div>
+                    <div id="final-scores" class="final-scores"></div>
+                    <div class="game-over-actions">
+                        <button id="play-again" class="control-btn primary" type="button">Play again</button>
+                        <button id="exit-game" class="control-btn" type="button">Exit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coin Toss Modal -->
+        <div id="coin-toss-modal" class="modal" style="display: none;">
+            <div class="modal-content coin-toss-modal" role="dialog" aria-modal="true" aria-labelledby="coin-title">
+                <div class="modal-header">
+                    <div>
+                        <p class="modal-kicker">Round one</p>
+                        <h3 id="coin-title">Coin toss</h3>
+                    </div>
+                </div>
+                <div class="coin-toss-content">
+                    <p class="coin-toss-info">Call it. The winner chooses trump first.</p>
+                    <div class="coin-container">
+                        <span class="coin-halo" aria-hidden="true"></span>
+                        <div id="coin" class="coin">
+                            <div class="coin-face heads">H</div>
+                            <div class="coin-face tails">T</div>
+                        </div>
+                    </div>
+                    <div id="coin-result" class="coin-result" style="display: none;"></div>
+                    <div id="coin-choice" class="coin-choice">
+                        <p>Your call</p>
+                        <div class="coin-buttons">
+                            <button class="coin-btn" data-choice="heads" type="button">Heads</button>
+                            <button class="coin-btn" data-choice="tails" type="button">Tails</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive first-round tutorial (opt-in, runs on sample cards and never touches game state) -->
+        <div id="tutorial-modal" class="modal tutorial-modal" style="display: none;">
+            <div class="modal-content tutorial-content" role="dialog" aria-modal="true" aria-labelledby="tutorial-title" aria-describedby="tutorial-desc">
+                <div class="tutorial-topbar">
+                    <div class="tutorial-progress" aria-hidden="true">
+                        <i data-step="1"></i><i data-step="2"></i><i data-step="3"></i>
+                    </div>
+                    <span id="tutorial-step-label" class="tutorial-step-label">Step 1 of 3</span>
+                    <button id="tutorial-close" class="close-modal" type="button" aria-label="Close tutorial">&times;</button>
+                </div>
+                <div id="tutorial-body" class="tutorial-body"></div>
+            </div>
+        </div>
+
+        <!-- Help/Rules Modal -->
+        <div id="rules-modal" class="modal" style="display: none;">
+            <div class="modal-content large-modal" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+                <div class="modal-header">
+                    <div>
+                        <p class="modal-kicker">How to play</p>
+                        <h3 id="rules-title">Game rules</h3>
+                    </div>
+                    <button class="close-modal" id="close-rules" type="button" aria-label="Close rules">&times;</button>
+                </div>
+                <div class="rules-content">
+                    <h4>Objective</h4>
+                    <p>Win tricks strategically to score points. First player to reach <strong>5 points wins</strong> the game!</p>
+
+                    <h4>The special deck (30 cards)</h4>
+                    <ul>
+                        <li><strong>Regular cards:</strong> 8, 9, 10, Jack, Queen, King, Ace in all four suits (28 cards)</li>
+                        <li><strong>Special cards:</strong> 7 of Hearts (♥) and 7 of Spades (♠) only (2 cards)</li>
+                        <li><strong>Card power:</strong> 7 is the weakest, followed by 8, 9, 10, J, Q, K, and Ace is the strongest</li>
+                    </ul>
+
+                    <h4>Coin toss — first round only</h4>
+                    <ul>
+                        <li>At the start of a <strong>new game</strong>, a coin toss determines who selects trump first</li>
+                        <li>Choose <strong>Heads</strong> or <strong>Tails</strong> — the coin will flip!</li>
+                        <li>The <strong>winner</strong> of the coin toss gets to choose the trump suit in Round 1</li>
+                        <li>After the first round, trump selection <strong>alternates</strong> between players</li>
+                        <li><strong>Note:</strong> The coin toss only happens once per game, not every round</li>
+                    </ul>
+
+                    <h4>Setup phase</h4>
+                    <p>Each player receives <strong>15 cards</strong> divided into three groups:</p>
+                    <ul>
+                        <li><strong>5 hand cards:</strong> Cards you can see and play from (dealt first)</li>
+                        <li><strong>5 face-up cards:</strong> Visible cards on the table (dealt after trump selection)</li>
+                        <li><strong>5 face-down cards:</strong> Hidden cards beneath face-up cards (dealt after trump selection)</li>
+                    </ul>
+
+                    <h4>Trump selection — the key decision</h4>
+                    <ul>
+                        <li>Players <strong>take turns</strong> selecting the trump suit each round</li>
+                        <li>Look at your <strong>5 hand cards</strong> and choose wisely!</li>
+                        <li>The trump selector faces a <strong>tougher challenge</strong>:
+                            <ul>
+                                <li>Trump selector's target: <strong>8 tricks</strong></li>
+                                <li>Opponent's target: <strong>7 tricks</strong></li>
+                            </ul>
+                        </li>
+                        <li><strong>Strategy tip:</strong> Choose a suit where you have high cards (Kings, Aces) or many cards</li>
+                    </ul>
+
+                    <h4>How to play</h4>
+                    <ul>
+                        <li><strong>Leading:</strong> The starting player can play any card from their hand or face-up cards</li>
+                        <li><strong>Following:</strong> Must play the same suit if you have it (in hand or face-up cards)</li>
+                        <li><strong>Going void:</strong> If you don't have the lead suit, you can play any card</li>
+                        <li><strong>Trump power:</strong> Trump cards beat any non-trump card, regardless of rank!</li>
+                        <li><strong>Trick winner:</strong>
+                            <ul>
+                                <li>Highest trump wins if any trump is played</li>
+                                <li>Otherwise, highest card of the lead suit wins</li>
+                            </ul>
+                        </li>
+                        <li><strong>Revealing secrets:</strong> When you play a face-up card, the face-down card beneath it is revealed!</li>
+                    </ul>
+
+                    <h4>Scoring system</h4>
+                    <ul>
+                        <li>At the end of each round, count your tricks won</li>
+                        <li><strong>Points = how much you exceed your target</strong></li>
+                        <li>Examples:
+                            <ul>
+                                <li>Trump selector wins 10 tricks → 10 - 8 = <strong>2 points</strong></li>
+                                <li>Trump selector wins 6 tricks → 6 - 8 = negative, so <strong>0 points</strong></li>
+                                <li>Opponent wins 9 tricks → 9 - 7 = <strong>2 points</strong></li>
+                                <li>Opponent wins 5 tricks → 5 - 7 = negative, so <strong>0 points</strong></li>
+                            </ul>
+                        </li>
+                        <li><strong>Higher score is better!</strong> Try to exceed your target to score points</li>
+                    </ul>
+
+                    <h4>Winning the game</h4>
+                    <ul>
+                        <li>The game continues through multiple rounds</li>
+                        <li><strong>First player to reach 5 points wins!</strong></li>
+                        <li>Play aggressively — try to win more tricks than your target to score points!</li>
+                    </ul>
+
+                    <h4>Pro tips</h4>
+                    <ul>
+                        <li>Pay attention to which cards have been played</li>
+                        <li>Remember what face-up cards your opponent has</li>
+                        <li>Winning the coin toss lets you set the pace — choose a strong trump!</li>
+                        <li>Use trump cards wisely — they're powerful but limited</li>
+                        <li>Watch when face-down cards get revealed</li>
+                    </ul>
+
+                    <div class="creator-attribution">
+                        <p>Made by <a href="https://github.com/ashutosh250604" target="_blank" rel="noopener" class="creator-link">Ashutosh Rajput</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Button -->
+        <button id="show-rules" class="help-btn" type="button" style="display: none;">?</button>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal" style="display: none;">
+            <div class="modal-content settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+                <div class="modal-header">
+                    <div>
+                        <p class="modal-kicker">Preferences</p>
+                        <h3 id="settings-title">Settings</h3>
+                    </div>
+                    <button class="close-modal" id="close-settings" type="button" aria-label="Close settings">&times;</button>
+                </div>
+                <div class="settings-content">
+                    <div class="settings-section">
+                        <h4>Difficulty</h4>
+                        <p class="settings-note">Changes apply on the next game or round.</p>
+                        <div class="difficulty-options">
+                            <button class="difficulty-btn" data-difficulty="easy" type="button" aria-pressed="false">Easy</button>
+                            <button class="difficulty-btn active" data-difficulty="medium" type="button" aria-pressed="true">Medium</button>
+                            <button class="difficulty-btn" data-difficulty="hard" type="button" aria-pressed="false">Hard</button>
+                        </div>
+                        <div class="difficulty-description">
+                            <p id="difficulty-desc">Balanced AI that analyzes visible cards.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>More</h4>
+                        <div class="settings-actions">
+                            <button id="settings-game-log" class="settings-action-btn" type="button">
+                                <span>Game log</span>
+                                <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
+                            </button>
+                            <button id="settings-rules" class="settings-action-btn" type="button">
+                                <span>Game rules</span>
+                                <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
+                            </button>
+                            <a href="https://github.com/ashutosh250604" target="_blank" rel="noopener" class="settings-action-btn">
+                                <span>Credits</span>
+                                <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Log Modal -->
+        <div id="game-log-modal" class="modal" style="display: none;">
+            <div class="modal-content log-modal" role="dialog" aria-modal="true" aria-labelledby="log-title">
+                <div class="modal-header">
+                    <div>
+                        <p class="modal-kicker">This match</p>
+                        <h3 id="log-title">Game log</h3>
+                    </div>
+                    <button class="close-modal" id="close-log-modal" type="button" aria-label="Close game log">&times;</button>
+                </div>
+                <div id="game-log" class="log-content">
+                    <div class="log-message">Game ready to start...</div>
+                </div>
+                <div class="log-footer">
+                    <button id="clear-log" class="control-btn clear-log-btn" type="button">Clear log</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendored libraries -->
+    <script src="../../assets/vendor/gsap.min.js"></script>
+    <!-- Presentation layer (DOM, timing, animation) -> engine (state, rules, AI) -> UI wiring -->
+    <script src="../../presentation.js"></script>
+    <script src="../../script.js"></script>
+    <script src="../../ui.js"></script>
+    <script src="../../tutorial.js"></script>
+    <script src="../../coach.js"></script>
+</body>
+</html>
