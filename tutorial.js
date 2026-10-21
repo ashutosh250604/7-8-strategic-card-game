@@ -72,8 +72,8 @@
         }).join('');
 
         let note = 'Pick the suit that gives your five cards the most strength.';
-        if (wrongTrump) note = 'Any suit is legal — but look at the hand: <strong>four hearts, including the ace and king.</strong> Hearts is clearly the strongest trump here.';
-        if (trumpAnswer) note = '<strong>Hearts.</strong> Four cards, including the ace and king — a strong suit to call trump.';
+        if (wrongTrump) note = 'Any suit is legal, but look at the hand: <strong>four hearts, including the ace and king.</strong> Hearts is clearly the strongest trump here.';
+        if (trumpAnswer) note = '<strong>Hearts.</strong> Four cards, including the ace and king. A strong suit to call trump.';
 
         return `
             <p class="tut-kicker">The decision</p>
@@ -90,8 +90,8 @@
 
     function stepTarget() {
         let note = 'Choose the number of tricks <strong>you</strong> must win to reach your target.';
-        if (wrongTarget) note = 'Seven is the <strong>computer\'s</strong> target. Because you chose trump, your own target is <strong>8</strong> — one trick harder.';
-        if (targetAnswer) note = '<strong>Correct.</strong> You need 8; the computer needs 7. Points come only from tricks above your target — 10 tricks scores 2 points.';
+        if (wrongTarget) note = 'Seven is <strong>Anne\'s</strong> target. Because you chose trump, your own target is <strong>8</strong>, one trick harder.';
+        if (targetAnswer) note = '<strong>Correct.</strong> You need 8; Anne needs 7. Points come only from tricks above your target: 10 tricks scores 2 points.';
 
         const target = (value, label, sub, cls) => `
             <div class="tut-target ${cls}">
@@ -104,10 +104,10 @@
             <p class="tut-kicker">The trade-off</p>
             <h3 id="tutorial-title" class="tut-title">Two targets: 8 and 7</h3>
             <p id="tutorial-desc" class="tut-copy">Choosing trump gives you power, but also the harder job. Only tricks won above your target become points.</p>
-            <div class="tut-targets" aria-label="Targets: you need 8 tricks, the computer needs 7">
+            <div class="tut-targets" aria-label="Targets: you need 8 tricks, Anne needs 7">
                 ${target(8, 'You', 'chose trump', 'is-you')}
                 <span class="tut-vs" aria-hidden="true">vs</span>
-                ${target(7, 'Computer', 'did not choose', 'is-cpu')}
+                ${target(7, 'Anne', 'did not choose', 'is-cpu')}
             </div>
             <div class="tut-quiz" role="group" aria-label="How many tricks must you win?">
                 <button class="tut-quiz-btn${wrongTarget === '7' ? ' is-wrong' : ''}${targetAnswer === '8' ? ' is-dim' : ''}" type="button" data-target="7" aria-pressed="${wrongTarget === '7'}">7 tricks</button>
@@ -119,9 +119,9 @@
     }
 
     function stepFollow() {
-        let note = 'The computer led the <strong>9\u2666</strong>. You hold two diamonds and the ace of spades. Which card is legal?';
+        let note = 'Anne led the <strong>9\u2666</strong>. You hold two diamonds and the ace of spades. Which card is legal?';
         if (wrongFollow) note = 'Not legal. You still hold diamonds, so you must follow the led suit. The ace of spades has to wait.';
-        if (followAnswer === 'K_diamonds') note = '<strong>Legal — and it wins the trick.</strong> You followed diamonds; the ace of spades could not be played while you still held one.';
+        if (followAnswer === 'K_diamonds') note = '<strong>Legal, and it wins the trick.</strong> You followed diamonds; the ace of spades could not be played while you still held one.';
         if (followAnswer === '8_diamonds') note = '<strong>Legal, though it loses to the 9.</strong> Following suit is about the suit, not about winning the trick.';
 
         const played = followAnswer ? card(followAnswer, 'is-played') : '<span class="tut-empty">Your card</span>';
@@ -129,10 +129,10 @@
         return `
             <p class="tut-kicker">The rule that catches everyone</p>
             <h3 id="tutorial-title" class="tut-title">Follow suit if you can</h3>
-            <p id="tutorial-desc" class="tut-copy">The computer led a diamond. You must play a diamond if you have one — even if it loses.</p>
-            <div class="tut-trick" aria-label="The computer played the nine of diamonds">
+            <p id="tutorial-desc" class="tut-copy">Anne led a diamond. You must play a diamond if you have one, even if it loses.</p>
+            <div class="tut-trick" aria-label="Anne played the nine of diamonds">
                 <div class="tut-trick-slot">
-                    <span class="tut-slot-who">Computer</span>
+                    <span class="tut-slot-who">Anne</span>
                     ${card('9_diamonds')}
                 </div>
                 <span class="tut-trick-arrow" aria-hidden="true">\u2192</span>
@@ -149,7 +149,7 @@
             </div>
             ${feedback(wrongFollow ? 'is-wrong' : followAnswer ? 'is-right' : '', note)}
             ${followAnswer ? actions('<button class="control-btn primary tut-next" type="button" data-tut-next>Finish</button>') : ''}
-            <p class="tut-footnote">If you had no diamonds, you could play anything — including a trump.</p>
+            <p class="tut-footnote">If you had no diamonds, you could play anything, including a trump.</p>
         `;
     }
 
@@ -161,7 +161,7 @@
             <p id="tutorial-desc" class="tut-copy">That is the whole first round. The table will guide you from here.</p>
             <ul class="tut-recap">
                 <li><span>1</span><p><strong>Call trump where your hand is strong.</strong> You are betting you can win 8 tricks with it.</p></li>
-                <li><span>2</span><p><strong>You need 8 tricks; the computer needs 7.</strong> Only tricks above your target score points.</p></li>
+                <li><span>2</span><p><strong>You need 8 tricks; Anne needs 7.</strong> Only tricks above your target score points.</p></li>
                 <li><span>3</span><p><strong>Follow the led suit whenever you can.</strong> If you are void, you may play anything.</p></li>
             </ul>
             <div class="tut-actions">
@@ -180,6 +180,16 @@
 
         const views = [stepTrump, stepTarget, stepFollow, stepRecap];
         body.innerHTML = views[step]();
+        const guide = $('tutorial-guide-line');
+        if (guide) {
+            const lines = [
+                'Start with the five cards you can see. Trump is a promise about where your strength lives.',
+                'The trade-off is simple: choose trump and you take on eight tricks, not seven.',
+                'Now the rule that decides most arguments at a table: follow the led suit.',
+                'That is enough to sit down. I will stay for the first real round.'
+            ];
+            guide.textContent = lines[step];
+        }
 
         const progress = modal.querySelectorAll('.tutorial-progress i');
         progress.forEach((pip, i) => {
@@ -337,6 +347,8 @@
             else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
         });
     }
+
+    window.Tutorial = { open, close };
 
     document.addEventListener('DOMContentLoaded', init);
 })();

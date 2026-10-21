@@ -33,6 +33,8 @@ const gameState = {
     computerThinking: false,
     roundNumber: 1,
     difficulty: 'medium', // 'easy', 'medium', 'hard'
+    matchTarget: 5, // Match points needed to win; settings change this for the next match
+    pendingMatchTarget: 5, // Applied by startGame/restartGame, never mid-match
     playedCards: [], // Track all played cards for Hard mode
     coinTossWinner: null, // Who won the coin toss
     isFirstRound: true // Track if this is the first round (for coin toss)
@@ -65,7 +67,11 @@ function showThinking(show) { GameView.thinking(show); }
 function updateDisplay() { GameView.render(); }
 function highlightTrickWinner(winner) { GameView.highlightTrickWinner(winner); }
 function showGameOver(winner) {
-    GameView.showGameOver(winner, { player: gameState.player.score, computer: gameState.computer.score });
+    GameView.showGameOver(winner, {
+        player: gameState.player.score,
+        computer: gameState.computer.score,
+        target: gameState.matchTarget
+    });
 }
 
 // Card creation and deck setup
@@ -119,23 +125,30 @@ function dealInitialCards() {
     gameState.remainingCards = gameState.deck.slice(cardIndex);
 }
 
-function dealRemainingCards() {
+// The remaining deal is deliberately two steps so the table can show the
+// face-down row landing before the face-up row is turned over. Both steps run
+// before gamePhase becomes 'playing', so no card can be played mid-deal.
+function dealRemainingFaceDown() {
     let cardIndex = 0;
-    
-    // Deal face-down cards
     for (let i = 0; i < 5; i++) {
         gameState.player.faceDown.push(gameState.remainingCards[cardIndex++]);
         gameState.computer.faceDown.push(gameState.remainingCards[cardIndex++]);
     }
-    
-    // Deal face-up cards
+    gameState.remainingCards = gameState.remainingCards.slice(cardIndex);
+}
+
+function dealRemainingFaceUp() {
+    let cardIndex = 0;
     for (let i = 0; i < 5; i++) {
         gameState.player.faceUp.push(gameState.remainingCards[cardIndex++]);
         gameState.computer.faceUp.push(gameState.remainingCards[cardIndex++]);
     }
-    
-    // Clear remaining cards
     gameState.remainingCards = [];
+}
+
+function dealRemainingCards() {
+    dealRemainingFaceDown();
+    dealRemainingFaceUp();
 }
 
 // Card utility functions
@@ -287,7 +300,7 @@ function playCard(cardIndex, source) {
     } else {
         // Switch to computer
         gameState.currentPlayer = 'computer';
-        showStatus("Computer is playing...");
+        showStatus("Anne is playing...");
         runBeat('computer-response', {}, computerPlay);
     }
     
@@ -297,6 +310,10 @@ function playCard(cardIndex, source) {
 
 // Computer AI
 function selectComputerTrump() {
+    if (gameState.difficulty === 'hard') {
+        const sampled = chooseHardTrump();
+        if (sampled) { setTrump(sampled); return; }
+    }
     const suitCounts = { hearts: 0, diamonds: 0, clubs: 0, spades: 0 };
     const highCards = { hearts: 0, diamonds: 0, clubs: 0, spades: 0 };
     
@@ -408,100 +425,342 @@ function getEasyAIPlay(validCards) {
     }
 }
 
-// MEDIUM AI - Current behavior (analyzes face-up cards)
+// MEDIUM AI - a competent heuristic. It uses only public information: its own
+// cards, the player's face-up row, the current trick and the played pile. It
+// keeps trump for tricks that matter instead of ruffing every void.
+function mediumLowest(cards) {
+    return cards.reduce((low, entry) =>
+        getCardValue(entry.card) < getCardValue(low.card) ? entry : low
+    );
+}
+
+function mediumHighest(cards) {
+    return cards.reduce((high, entry) =>
+        getCardValue(entry.card) > getCardValue(high.card) ? entry : high
+    );
+}
+
+// A card is a safe master when every higher card in its suit has already been
+// played or is in Anne's own hand. A higher card in the player's visible row or
+// hidden hand is still a threat, so the card is not a master.
+function mediumIsMaster(card) {
+    const suit = getCardSuit(card);
+    const value = getCardValue(card);
+    const mine = new Set([...gameState.computer.hand, ...gameState.computer.faceUp].filter(Boolean));
+    return getRemainingCardsInSuit(suit).every((other) =>
+        other === card || mine.has(other) || getCardValue(other) <= value
+    );
+}
+
 function getMediumAIPlay(validCards) {
-    const playerFaceUp = gameState.player.faceUp.filter(c => c);
+    const trump = gameState.trumpSuit;
+    const playerFaceUp = gameState.player.faceUp.filter(Boolean);
+    const nonTrump = validCards.filter((entry) => getCardSuit(entry.card) !== trump);
+    const low = mediumLowest(validCards);
 
-    // Computer is leading the trick
+    // Leading: cash a master, otherwise lead low from a side suit. Leading a low
+    // trump with no information is how the old medium lost winnable tricks.
     if (!gameState.trick.leadSuit) {
-        // First, try to lead with an Ace that is likely to win (player doesn't show Ace in that suit)
-        let highWinCard = validCards.find(cardObj => {
-            const suit = getCardSuit(cardObj.card);
-            const value = getCardValue(cardObj.card);
-            // Player's face-up cards of this suit
-            const playerFaceValues = playerFaceUp.filter(c => getCardSuit(c) === suit)
-                                                 .map(c => getCardValue(c));
-            // It's an Ace and player has no Ace in this suit visible
-            return value === 14 && !playerFaceValues.includes(14);
-        });
-        if (highWinCard) return highWinCard;
-
-        // Otherwise try safe low cards in suits where player shows strong cards
-        let safeSuitCards = validCards.filter(cardObj => {
-            const suit = getCardSuit(cardObj.card);
-            const playerMax = Math.max(...playerFaceUp.filter(c => getCardSuit(c) === suit)
-                                                 .map(c => getCardValue(c)), 0);
-            return getCardValue(cardObj.card) < playerMax || playerMax === 0;
-        });
-        if (safeSuitCards.length) {
-            return safeSuitCards.reduce((lowest, card) =>
-                getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-            );
+        const masters = validCards.filter((entry) => mediumIsMaster(entry.card));
+        if (masters.length) {
+            const safe = masters.filter((entry) => {
+                const suit = getCardSuit(entry.card);
+                if (suit === trump) return true;
+                // Do not cash into a possible ruff when the player shows void.
+                return playerFaceUp.some((c) => getCardSuit(c) === suit);
+            });
+            return mediumHighest(safe.length ? safe : masters);
         }
-        // Otherwise play lowest card available
-        return validCards.reduce((lowest, card) =>
-            getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-        );
+        return mediumLowest(nonTrump.length ? nonTrump : validCards);
     }
 
-    // Computer is following the trick
     const leadSuit = gameState.trick.leadSuit;
-    const humanCard = gameState.trick.cards[0].card;
-    const humanCardValue = getCardValue(humanCard);
+    const playerCard = gameState.trick.cards[0].card;
+    const playerValue = getCardValue(playerCard);
+    const follow = validCards.filter((entry) => getCardSuit(entry.card) === leadSuit);
+    const trumps = validCards.filter((entry) => getCardSuit(entry.card) === trump && trump !== leadSuit);
 
-    const leadSuitCards = validCards.filter(card => getCardSuit(card.card) === leadSuit);
-    const trumpCards = validCards.filter(card => getCardSuit(card.card) === gameState.trumpSuit);
+    if (follow.length) {
+        const winners = follow.filter((entry) => getCardValue(entry.card) > playerValue);
+        if (winners.length) return mediumLowest(winners);
+        return mediumLowest(follow);
+    }
 
-    if (leadSuitCards.length > 0) {
-        // Can computer win the trick by playing a higher card?
-        const winningCards = leadSuitCards.filter(cardObj =>
-            getCardValue(cardObj.card) > humanCardValue
-        );
-        if (winningCards.length) {
-            // Filter winning cards that can't be beaten by visible player face-up cards
-            let filteredWinners = winningCards.filter(cardObj => {
-                const playerStronger = playerFaceUp.some(c =>
-                    getCardSuit(c) === leadSuit && getCardValue(c) > getCardValue(cardObj.card)
-                );
-                return !playerStronger;
-            });
-            if (filteredWinners.length)
-                return filteredWinners.reduce((lowest, card) =>
-                    getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-                );
-            // Otherwise minimize loss by playing lowest card of leadSuit
-            return leadSuitCards.reduce((lowest, card) =>
-                getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-            );
-        } else {
-            // Cannot beat, so lose with lowest card of leadSuit
-            return leadSuitCards.reduce((lowest, card) =>
-                getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-            );
-        }
-    } else if (trumpCards.length > 0 && getCardSuit(humanCard) !== gameState.trumpSuit) {
-        // Must trump, only trump if it might win against player's trump face-up
-        const lowestTrump = trumpCards.reduce((lowest, card) => 
-            getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-        );
-        const playerTrumpCard = playerFaceUp.find(c => getCardSuit(c) === gameState.trumpSuit);
-        if (!playerTrumpCard || getCardValue(lowestTrump.card) > getCardValue(playerTrumpCard)) {
+    // Void in the lead suit. Ruff when the trick is worth it; otherwise keep the
+    // trump and discard the cheapest card.
+    if (trumps.length && leadSuit !== trump) {
+        const lowestTrump = mediumLowest(trumps);
+        const cardsLeft = gameState.player.hand.filter(Boolean).length +
+            gameState.player.faceUp.filter(Boolean).length;
+        const worthRuffing = playerValue >= 12 || cardsLeft <= 4 || getCardValue(lowestTrump.card) <= 9;
+        const playerTrump = playerFaceUp
+            .filter((c) => getCardSuit(c) === trump)
+            .sort((a, b) => getCardValue(b) - getCardValue(a))[0];
+        if (worthRuffing && (!playerTrump || getCardValue(lowestTrump.card) > getCardValue(playerTrump))) {
             return lowestTrump;
         }
-        // Otherwise dump lowest card
-        return validCards.reduce((lowest, card) =>
-            getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-        );
+    }
+    return mediumLowest(nonTrump.length ? nonTrump : validCards);
+}
+
+// HARD AI - determinised Monte Carlo using only information a player can see.
+// The computer samples the unseen hands, plays each sampled deal out with a
+// simple legal policy, and picks the card with the best expected match score.
+// It never reads the player's hand or either face-down pile.
+const HARD_ALL_SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
+const HARD_OTHER = { player: 'computer', computer: 'player' };
+const HARD_META = Object.create(null);
+
+function hardSuit(card) {
+    let meta = HARD_META[card];
+    if (!meta) {
+        const parts = card.split('_');
+        meta = HARD_META[card] = {
+            suit: parts[1],
+            value: { '7': 7, '8': 8, '9': 9, '10': 10, J: 11, Q: 12, K: 13, A: 14 }[parts[0]] || 0
+        };
+    }
+    return meta.suit;
+}
+
+function hardValue(card) {
+    hardSuit(card);
+    return HARD_META[card].value;
+}
+
+function hardAllCards() {
+    const cards = [];
+    HARD_ALL_SUITS.forEach((suit) => {
+        ['8', '9', '10', 'J', 'Q', 'K', 'A'].forEach((rank) => cards.push(`${rank}_${suit}`));
+        if (suit === 'hearts' || suit === 'spades') cards.push(`7_${suit}`);
+    });
+    return cards;
+}
+
+function hardSeenCards() {
+    const seen = new Set(gameState.playedCards);
+    const add = (card) => { if (card) seen.add(card); };
+    gameState.computer.hand.forEach(add);
+    gameState.computer.faceUp.forEach(add);
+    gameState.player.faceUp.forEach(add);
+    gameState.trick.cards.forEach((play) => add(play.card));
+    return seen;
+}
+
+function hardUnknownCards() {
+    const seen = hardSeenCards();
+    return hardAllCards().filter((card) => !seen.has(card));
+}
+
+function hardShuffle(cards) {
+    const copy = cards.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+}
+
+function simLegalPlays(sim, side) {
+    const data = sim.sides[side];
+    const lead = sim.trick.leadSuit;
+    const hasLead = !!lead && [...data.hand, ...data.faceUp].some((card) => card && hardSuit(card) === lead);
+    const out = [];
+    data.hand.forEach((card, index) => {
+        if (card && (!hasLead || hardSuit(card) === lead)) out.push({ card, source: 'hand', index });
+    });
+    data.faceUp.forEach((card, index) => {
+        if (card && (!hasLead || hardSuit(card) === lead)) out.push({ card, source: 'faceUp', index });
+    });
+    return out;
+}
+
+function simApplyPlay(sim, side, play) {
+    const data = sim.sides[side];
+    if (play.source === 'hand') {
+        data.hand[play.index] = null;
     } else {
-        // Can't follow suit or trump, throw lowest card
-        return validCards.reduce((lowest, card) =>
-            getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-        );
+        data.faceUp[play.index] = null;
+        if (data.faceDown[play.index]) {
+            data.faceUp[play.index] = data.faceDown[play.index];
+            data.faceDown[play.index] = null;
+        }
+    }
+    sim.trick.cards.push({ card: play.card, player: side });
+    if (sim.trick.cards.length === 1) sim.trick.leadSuit = hardSuit(play.card);
+    sim.currentPlayer = HARD_OTHER[side];
+}
+
+function simBeats(card, best, trump, lead) {
+    if (!best) return true;
+    const a = hardSuit(card), b = hardSuit(best);
+    if (a === trump && b !== trump) return true;
+    if (b === trump && a !== trump) return false;
+    if (a === b) return hardValue(card) > hardValue(best);
+    return a === lead && b !== lead;
+}
+
+function simResolve(sim) {
+    const cards = sim.trick.cards;
+    if (cards.length !== 2) return;
+    let winner = cards[0];
+    if (simBeats(cards[1].card, cards[0].card, sim.trump, sim.trick.leadSuit)) winner = cards[1];
+    if (winner.player === 'computer') sim.computerTricks++;
+    else sim.playerTricks++;
+    sim.trickCount++;
+    sim.trick = { cards: [], leadSuit: null };
+    sim.currentPlayer = winner.player;
+}
+
+function simMasterCard(sim, side, card) {
+    const suit = hardSuit(card);
+    const opponent = sim.sides[HARD_OTHER[side]];
+    const visible = [...opponent.hand, ...opponent.faceUp].filter(Boolean);
+    const hasSuit = visible.some((c) => hardSuit(c) === suit);
+    if (visible.some((c) => hardSuit(c) === suit && hardValue(c) > hardValue(card))) return false;
+    // A non-trump master can still be ruffed by an opponent who is void.
+    if (suit !== sim.trump && !hasSuit && visible.some((c) => hardSuit(c) === sim.trump)) return false;
+    return true;
+}
+
+function simPolicy(sim, side, legal) {
+    if (!legal.length) return null;
+    const trump = sim.trump;
+    const lead = sim.trick.leadSuit;
+    const byValue = (a, b) => hardValue(a.card) - hardValue(b.card);
+
+    if (!lead) {
+        const masters = legal.filter((play) => simMasterCard(sim, side, play.card));
+        if (masters.length) return masters.reduce((low, play) => byValue(play, low) < 0 ? play : low);
+        const nonTrump = legal.filter((play) => hardSuit(play.card) !== trump);
+        return (nonTrump.length ? nonTrump : legal).reduce((low, play) => byValue(play, low) < 0 ? play : low);
+    }
+
+    const current = sim.trick.cards[0] && sim.trick.cards[0].card;
+    const winners = legal.filter((play) => simBeats(play.card, current, trump, lead));
+    if (winners.length) {
+        // Win as cheaply as possible, preferring a non-trump winner when ranks tie.
+        return winners.sort((a, b) => {
+            const at = hardSuit(a.card) === trump ? 1 : 0;
+            const bt = hardSuit(b.card) === trump ? 1 : 0;
+            return at - bt || byValue(a, b);
+        })[0];
+    }
+    return legal.reduce((low, play) => byValue(play, low) < 0 ? play : low);
+}
+
+function simPlayOut(sim) {
+    for (let guard = 0; guard < 40; guard++) {
+        if (sim.trick.cards.length === 2) { simResolve(sim); continue; }
+        const side = sim.currentPlayer;
+        const legal = simLegalPlays(sim, side);
+        if (!legal.length) {
+            if (sim.trick.cards.length) { simResolve(sim); continue; }
+            break;
+        }
+        const play = simPolicy(sim, side, legal);
+        if (!play) break;
+        simApplyPlay(sim, side, play);
     }
 }
 
-// HARD AI - Tracks all played cards, knows remaining cards, plays optimally
-function getHardAIPlay(validCards) {
+function simObjective(sim, ownTarget, opponentTarget) {
+    const own = Math.max(0, sim.computerTricks - ownTarget);
+    const opponent = Math.max(0, sim.playerTricks - opponentTarget);
+    // Match points matter most; tricks and denying the opponent are tie-breakers.
+    return own - opponent * 0.75 + sim.computerTricks * 0.02;
+}
+
+function hardPlaySample() {
+    const gs = gameState;
+    const unknown = hardShuffle(hardUnknownCards());
+    const playerHandCount = gs.player.hand.filter(Boolean).length;
+    const playerDownCount = gs.player.faceDown.filter(Boolean).length;
+    const computerDownCount = gs.computer.faceDown.filter(Boolean).length;
+    if (unknown.length !== playerHandCount + playerDownCount + computerDownCount) return null;
+
+    const playerHand = unknown.splice(0, playerHandCount);
+    const playerDown = [null, null, null, null, null];
+    gs.player.faceDown.forEach((card, index) => { if (card) playerDown[index] = unknown.pop(); });
+    const computerDown = [null, null, null, null, null];
+    gs.computer.faceDown.forEach((card, index) => { if (card) computerDown[index] = unknown.pop(); });
+    if (unknown.length) return null;
+
+    return {
+        trump: gs.trumpSuit,
+        currentPlayer: gs.currentPlayer,
+        trick: { cards: gs.trick.cards.map((play) => ({ card: play.card, player: play.player })), leadSuit: gs.trick.leadSuit },
+        trickCount: gs.trickCount,
+        playerTricks: gs.player.tricksWon,
+        computerTricks: gs.computer.tricksWon,
+        sides: {
+            player: { hand: playerHand, faceUp: gs.player.faceUp.slice(), faceDown: playerDown },
+            computer: { hand: gs.computer.hand.slice(), faceUp: gs.computer.faceUp.slice(), faceDown: computerDown }
+        }
+    };
+}
+
+function cloneSim(sim) {
+    return {
+        trump: sim.trump,
+        currentPlayer: sim.currentPlayer,
+        trick: { cards: sim.trick.cards.slice(), leadSuit: sim.trick.leadSuit },
+        trickCount: sim.trickCount,
+        playerTricks: sim.playerTricks,
+        computerTricks: sim.computerTricks,
+        sides: {
+            player: { hand: sim.sides.player.hand.slice(), faceUp: sim.sides.player.faceUp.slice(), faceDown: sim.sides.player.faceDown.slice() },
+            computer: { hand: sim.sides.computer.hand.slice(), faceUp: sim.sides.computer.faceUp.slice(), faceDown: sim.sides.computer.faceDown.slice() }
+        }
+    };
+}
+
+function hardSamples() {
+    return Math.max(6, Math.min(24, Number(gameState.aiSamples) || 9));
+}
+
+function chooseHardTrump() {
+    const gs = gameState;
+    if (gs.computer.hand.filter(Boolean).length !== 5) return null;
+    const unknownBase = hardShuffle(hardAllCards().filter((card) => !gs.computer.hand.includes(card)));
+    if (unknownBase.length !== 25) return null;
+
+    const samples = hardSamples();
+    const deals = [];
+    for (let i = 0; i < samples; i++) {
+        const cards = unknownBase.slice();
+        deals.push({
+            player: { hand: cards.splice(0, 5), faceUp: cards.splice(0, 5), faceDown: cards.splice(0, 5) },
+            computer: { hand: gs.computer.hand.slice(), faceUp: cards.splice(0, 5), faceDown: cards.splice(0, 5) }
+        });
+    }
+
+    let bestSuit = null;
+    let bestScore = -Infinity;
+    HARD_ALL_SUITS.forEach((suit) => {
+        let total = 0;
+        deals.forEach((deal) => {
+            const sim = {
+                trump: suit, currentPlayer: 'computer',
+                trick: { cards: [], leadSuit: null }, trickCount: 0,
+                playerTricks: 0, computerTricks: 0,
+                sides: {
+                    player: { hand: deal.player.hand.slice(), faceUp: deal.player.faceUp.slice(), faceDown: deal.player.faceDown.slice() },
+                    computer: { hand: deal.computer.hand.slice(), faceUp: deal.computer.faceUp.slice(), faceDown: deal.computer.faceDown.slice() }
+                }
+            };
+            simPlayOut(sim);
+            total += simObjective(sim, 8, 7);
+        });
+        const average = total / samples;
+        if (average > bestScore) { bestScore = average; bestSuit = suit; }
+    });
+    return bestSuit;
+}
+
+// The old heuristic remains as a fast fallback for unusual states (for example
+// a replay or a test that has deliberately removed cards).
+function getHardHeuristicPlay(validCards) {
     const playerFaceUp = gameState.player.faceUp.filter(c => c);
     const trumpSuit = gameState.trumpSuit;
     
@@ -657,6 +916,42 @@ function getHardAIPlay(validCards) {
     }
 }
 
+function getHardAIPlay(validCards) {
+    if (!validCards.length) return null;
+    // Forced cards need no simulation at all.
+    if (validCards.length === 1) return validCards[0];
+    if (!gameState.trumpSuit) return getHardHeuristicPlay(validCards);
+
+    const ownTarget = GameEngine.getTrickTarget('computer') || 7;
+    const opponentTarget = GameEngine.getTrickTarget('player') || 8;
+    const samples = hardSamples();
+    const deals = [];
+    for (let i = 0; i < samples; i++) {
+        const deal = hardPlaySample();
+        if (!deal) break;
+        deals.push(deal);
+    }
+    if (!deals.length) return getHardHeuristicPlay(validCards);
+
+    let best = null;
+    let bestScore = -Infinity;
+    validCards.forEach((candidate) => {
+        let total = 0;
+        deals.forEach((deal) => {
+            const sim = cloneSim(deal);
+            simApplyPlay(sim, 'computer', candidate);
+            simPlayOut(sim);
+            total += simObjective(sim, ownTarget, opponentTarget);
+        });
+        const average = total / deals.length;
+        const tie = best ? getCardValue(candidate.card) - getCardValue(best.card) : -1;
+        if (average > bestScore + 1e-9 || (Math.abs(average - bestScore) < 1e-9 && tie < 0)) {
+            bestScore = average;
+            best = candidate;
+        }
+    });
+    return best || getHardHeuristicPlay(validCards);
+}
 
 function selectLeadingCard(validCards) {
     // Prefer high trumps or aces
@@ -748,7 +1043,7 @@ function computerPlay() {
             
             // Log the computer play
             const cardDisplay = `${getCardRank(card)}${getSuitSymbol(getCardSuit(card))}`;
-            addToLog(`Computer played ${cardDisplay}`, 'computer-action');
+            addToLog(`Anne played ${cardDisplay}`, 'computer-action');
             
             if (play.source === 'hand') {
                 const index = currentPlayerData.hand.findIndex(c => c === card);
@@ -821,7 +1116,7 @@ function resolveTrick() {
     if (winner === 'player') {
         addToLog(`You won the trick with ${winningCard}!`, 'trick-won');
     } else {
-        addToLog(`Computer won the trick with ${winningCard}.`, 'trick-lost');
+        addToLog(`Anne won the trick with ${winningCard}.`, 'trick-lost');
     }
     
     // Update display with winner highlight
@@ -841,7 +1136,7 @@ function resolveTrick() {
             endRound();
         } else {
             if (gameState.currentPlayer === 'computer') {
-                showStatus("Computer leads next trick");
+                showStatus("Anne leads next trick");
                 runBeat('computer-lead', {}, computerPlay);
             } else {
                 showStatus("You lead the next trick");
@@ -886,7 +1181,7 @@ function isRoundComplete() {
 function endRound() {
     const scores = calculateRoundScore();
     
-    const message = `Round ${gameState.roundNumber} Complete! Player: +${scores.playerRoundScore} points, Computer: +${scores.computerRoundScore} points`;
+    const message = `Round ${gameState.roundNumber} complete. You: +${scores.playerRoundScore} points, Anne: +${scores.computerRoundScore} points`;
     showStatus(message);
     addToLog(message);
     updateDisplay(); // refresh the scoreboard with the round's points (view only, no state change)
@@ -935,10 +1230,12 @@ function calculateRoundScore() {
 }
 
 function checkGameEnd() {
-    if (gameState.player.score >= 1 || gameState.computer.score >= 1) {
-        const winner = gameState.player.score >= 1 ? 'Player' : 'Computer';
+    const target = gameState.matchTarget;
+    if (gameState.player.score >= target || gameState.computer.score >= target) {
+        const playerWon = gameState.player.score >= target;
+        const winner = playerWon ? 'Player' : 'Computer';
         gameState.gameOver = true;
-        addToLog(`Game Over! ${winner} wins with ${winner === 'Player' ? gameState.player.score : gameState.computer.score} points!`, 'trick-won');
+        addToLog(`Match complete. ${winner === 'Player' ? 'You win' : 'Anne wins'} ${playerWon ? gameState.player.score : gameState.computer.score} to ${playerWon ? gameState.computer.score : gameState.player.score} (first to ${target}).`, 'trick-won');
         showGameOver(winner);
         return true;
     }
@@ -956,12 +1253,14 @@ function startNewRound() {
     gameState.trumpSuit = null;
     gameState.playedCards = []; // Reset played cards tracking
     
-    // Deal initial hand cards only
+    // Deal initial hand cards only. Render them before the toss so the table is
+    // already alive behind the coin instead of showing an empty felt.
     dealInitialCards();
     
     // First round - do coin toss
     if (gameState.isFirstRound) {
         gameState.gamePhase = 'coin-toss';
+        updateDisplay();
         showCoinToss();
         return;
     }
@@ -1061,16 +1360,18 @@ function setTrump(suit) {
     const suitSymbol = getSuitSymbol(suit);
     
     if (gameState.lastTrumpSelector === 'computer') {
-        addToLog(`Computer selected ${suit} ${suitSymbol} as trump. Computer goes first!`, 'trump-selection');
-        showStatus("Computer selected trump. Dealing remaining cards...");
+        addToLog(`Anne selected ${suit} ${suitSymbol} as trump. Anne goes first.`, 'trump-selection');
+        showStatus("Anne selected trump. Dealing the remaining cards...");
     } else {
-        addToLog(`You selected ${suit} ${suitSymbol} as trump. You go first!`, 'trump-selection');
-        showStatus("You selected trump. Dealing remaining cards...");
+        addToLog(`You selected ${suit} ${suitSymbol} as trump. You go first.`, 'trump-selection');
+        showStatus("You selected trump. Dealing the remaining cards...");
     }
     
-    // Deal the remaining face-down and face-up cards
-    runBeat('deal-remaining', {}, () => {
-        dealRemainingCards();
+    // Face-down row first, then the face-up row, then play may begin.
+    dealRemainingFaceDown();
+    updateDisplay();
+    runBeat('deal-face-down', {}, () => {
+        dealRemainingFaceUp();
         gameState.gamePhase = 'playing';
         updateDisplay();
         
@@ -1084,11 +1385,20 @@ function setTrump(suit) {
 
 // Game actions (called from ui.js)
 function startGame() {
+    if (gameState.gameStarted && !gameState.gameOver) return;
     gameState.gameStarted = true;
+    gameState.gameOver = false;
+    gameState.matchTarget = gameState.pendingMatchTarget;
     gameState.gamePhase = 'setup';
-    startNewRound();
     GameView.setStartButton(false);
-    showStatus("Game started!");
+    showStatus('Shuffling the deck...');
+    // The shuffle is a presentation beat. The deal itself is still decided by
+    // startNewRound, so animation timing can never change the cards.
+    runBeat('shuffle', {}, () => {
+        if (!gameState.gameStarted || gameState.gamePhase !== 'setup') return;
+        startNewRound();
+        showStatus('Deal the first five cards');
+    });
 }
 
 function restartGame() {
@@ -1101,6 +1411,7 @@ function restartGame() {
     // Reset all game state (but keep difficulty)
     gameState.player.score = 0;
     gameState.computer.score = 0;
+    gameState.matchTarget = gameState.pendingMatchTarget;
     gameState.roundNumber = 1;
     gameState.gameOver = false;
     gameState.gameStarted = false;
@@ -1115,9 +1426,9 @@ function restartGame() {
 
     // Clear and reset log
     clearLog();
-    addToLog("Game reset - Click 'Start Game' to begin");
+    addToLog('Game reset. Deal the cards to begin.');
 
-    showStatus("Click 'Start Game' to begin");
+    showStatus('Click "Deal the cards" to begin');
 }
 
 // Select Trump button (for when modal is accidentally closed)
@@ -1130,13 +1441,28 @@ function reopenTrumpSelection() {
 }
 
 function setDifficulty(difficulty) {
+    if (!['easy', 'medium', 'hard'].includes(difficulty)) return;
     gameState.difficulty = difficulty;
-    addToLog(`Difficulty changed to ${difficulty.toUpperCase()}. Will apply on new game/round.`);
+    addToLog(`Anne's difficulty is now ${difficulty.toUpperCase()}. It applies immediately.`);
+}
+
+// Match target is deliberately deferred: changing it must never move the goal
+// line in the middle of a match.
+function setMatchTarget(target) {
+    const value = Number(target);
+    if (![3, 5, 7].includes(value)) return false;
+    gameState.pendingMatchTarget = value;
+    addToLog(`Match target set to ${value} points. It applies to the next match.`);
+    return true;
+}
+
+function getMatchTarget() {
+    return gameState.matchTarget;
 }
 
 function ready() {
-    addToLog("Game ready - Click 'Start Game' to begin");
-    showStatus("Click 'Start Game' to begin");
+    addToLog("Game ready - Deal the cards to begin");
+    showStatus('Click "Deal the cards" to begin');
 }
 
 // Read-only helpers for the view. Neither changes any rule or state.
@@ -1174,6 +1500,8 @@ const GameEngine = {
     restartGame,
     playCard,
     setDifficulty,
+    setMatchTarget,
+    getMatchTarget,
     reopenTrumpSelection,
     updateSelectTrumpButtonVisibility,
     ready

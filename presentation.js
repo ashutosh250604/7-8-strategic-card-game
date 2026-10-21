@@ -19,7 +19,9 @@ const GameView = (() => {
     const hasGsap = typeof gsap !== 'undefined';
     const mqReduce = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
     const mqCoarse = window.matchMedia ? window.matchMedia('(pointer: coarse)') : { matches: false };
-    const canAnimate = () => hasGsap && !mqReduce.matches;
+    const pref = () => (window.TableSettings ? window.TableSettings.get() : { motion: 'full' });
+    const canAnimate = () => hasGsap && !mqReduce.matches && pref().motion !== 'reduced';
+    const motionScale = () => pref().motion === 'fast' ? 0.55 : 1;
 
     const GLYPH = { hearts: '\u2665\uFE0E', diamonds: '\u2666\uFE0E', clubs: '\u2663\uFE0E', spades: '\u2660\uFE0E' };
     const SUIT_NAME = { hearts: 'hearts', diamonds: 'diamonds', clubs: 'clubs', spades: 'spades' };
@@ -39,22 +41,27 @@ const GameView = (() => {
     // ------------------------------------------------------------------
     const BEAT_MS = {
         'computer-response': 380, 'computer-think': 650, 'computer-lead': 420, 'trick-complete': 900,
-        'trick-cleared': 850, 'round-end': 2200, 'computer-trump': 1000, 'deal-remaining': 350,
-        'coin-flip': 1900, 'coin-result': 1100
+        'trick-cleared': 850, 'round-end': 2200, 'computer-trump': 1000, 'deal-face-down': 520,
+        'deal-remaining': 350, 'coin-flip': 1900, 'coin-result': 1100
     };
     const BEAT_MS_REDUCED = {
         'computer-response': 200, 'computer-think': 300, 'computer-lead': 200, 'trick-complete': 600,
-        'trick-cleared': 400, 'round-end': 1500, 'computer-trump': 600, 'deal-remaining': 200,
-        'coin-flip': 900, 'coin-result': 800
+        'trick-cleared': 400, 'round-end': 1500, 'computer-trump': 600, 'deal-face-down': 180,
+        'deal-remaining': 200, 'coin-flip': 900, 'coin-result': 800
     };
 
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     // ---- running-animation tracking -------------------------------------
     const pending = new Set(); // promises of running card animations
-    function track(promise) {
+    const pendingWhy = new Map(); // promise -> short label, diagnostics only
+    function track(promise, why) {
         pending.add(promise);
-        promise.then(() => pending.delete(promise), () => pending.delete(promise));
+        if (why) pendingWhy.set(promise, why);
+        promise.then(
+            () => { pending.delete(promise); pendingWhy.delete(promise); },
+            () => { pending.delete(promise); pendingWhy.delete(promise); }
+        );
         return promise;
     }
     async function whenIdle() {
@@ -64,14 +71,17 @@ const GameView = (() => {
     function beat(name, payload) {
         if (name === 'trick-cleared') return sweepTrick(payload);
         if (name === 'coin-flip') return coinFlip(payload);
+        if (name === 'shuffle') return shuffleSequence();
         const table = canAnimate() ? BEAT_MS : BEAT_MS_REDUCED;
-        return whenIdle().then(() => wait(table[name] || 0));
+        const duration = (table[name] || 0) * (canAnimate() ? motionScale() : 1);
+        return whenIdle().then(() => wait(duration));
     }
 
     // ------------------------------------------------------------------
-    // Sound hook (audio.js plugs in later; safe no-op until then)
+    // Local sound and haptics (both fail silently when unavailable)
     // ------------------------------------------------------------------
     const sfx = (name) => { if (window.GameAudio) window.GameAudio.play(name); };
+    const haptic = (name) => { if (window.GameHaptics) window.GameHaptics.vibrate(name); };
 
     // ------------------------------------------------------------------
     // Log / status / thinking / toast
@@ -139,6 +149,43 @@ const GameView = (() => {
             for (let i = 0; i < 15; i++) m.appendChild(document.createElement('i'));
         });
         return C;
+    }
+
+    // ------------------------------------------------------------------
+    // Opening shuffle. Cards only; startNewRound still owns the actual deal.
+    // ------------------------------------------------------------------
+    function shuffleSequence() {
+        const board = document.querySelector('.game-board');
+        const deck = $('deck');
+        const cards = deck ? [...deck.children] : [];
+        if (!board || !deck || !cards.length) return wait(180);
+        board.classList.add('is-shuffling');
+
+        const finish = () => {
+            board.classList.remove('is-shuffling');
+            if (hasGsap) gsap.set(cards, { clearProps: 'transform' });
+        };
+
+        if (!canAnimate()) return wait(220).then(finish);
+
+        sfx('shuffle');
+        return whenIdle().then(() => new Promise((resolve) => {
+            const left = cards.filter((_, i) => i % 2 === 0);
+            const right = cards.filter((_, i) => i % 2 === 1);
+            const scale = motionScale();
+            const step = 0.13 * scale;
+            gsap.set(cards, { transformOrigin: '50% 50%' });
+            const tl = gsap.timeline({ onComplete: () => { finish(); resolve(); } });
+            for (let round = 0; round < 3; round++) {
+                const at = round * step * 2;
+                tl.to(left, { x: -21, y: -3, rotation: -6, duration: step, ease: 'power2.inOut' }, at)
+                    .to(right, { x: 21, y: 3, rotation: 6, duration: step, ease: 'power2.inOut' }, at)
+                    .to(left, { x: 0, y: 0, rotation: 0, duration: step, ease: 'power2.out' }, at + step)
+                    .to(right, { x: 0, y: 0, rotation: 0, duration: step, ease: 'power2.out' }, at + step);
+            }
+            tl.to(cards, { y: -6, duration: 0.1 * scale, ease: 'power2.out' }, '>-0.1')
+                .to(cards, { y: 0, duration: 0.18 * scale, ease: 'bounce.out' });
+        }));
     }
 
     function faceHTML(id) {
@@ -225,35 +272,49 @@ const GameView = (() => {
         apply();
         el.classList.add('flying');
         const promise = new Promise((resolve) => {
-            e.resolve = resolve;
+            const prevResolve = e.resolve;
+            function finish() {
+                if (e.resolve === finish) e.resolve = null;
+                resolve();
+            }
+            e.resolve = finish;
+            const scale = motionScale();
             gsap.to(p, {
-                t: 1, duration: o.duration || 0.4, delay: o.delay || 0, ease: o.ease || 'power2.inOut', onUpdate: apply,
+                t: 1, duration: (o.duration || 0.4) * scale, delay: (o.delay || 0) * scale, ease: o.ease || 'power2.inOut', onUpdate: apply,
                 onComplete: () => {
                     gsap.set(el, { clearProps: 'transform,transformOrigin' });
                     gsap.set(e.lift, { clearProps: 'transform' });
                     el.classList.remove('flying');
-                    e.resolve = null;
-                    resolve();
+                    finish();
                 }
             });
+            if (prevResolve) prevResolve();
         });
-        track(promise);
+        track(promise, `fly ${e.key}`);
         return promise;
     }
 
     // Flip a card from back to front (or the reverse) in place.
+    // The promise must settle even when a newer render kills the tween, otherwise
+    // whenIdle() waits forever and every following game beat stalls.
     function flipTo(e, toFront, o) {
         const from = toFront ? 180 : 0, to = toFront ? 0 : 180;
         e.el.dataset.face = toFront ? 'front' : 'back';
         const promise = new Promise((resolve) => {
             const prevResolve = e.resolve;
+            function finish() {
+                if (e.resolve === finish) e.resolve = null;
+                resolve();
+            }
+            e.resolve = finish;
+            const scale = motionScale();
             gsap.fromTo(e.flip, { rotationY: from }, {
-                rotationY: to, duration: o.duration || 0.4, delay: o.delay || 0, ease: 'power2.out',
-                onComplete: () => { gsap.set(e.flip, { clearProps: 'transform' }); resolve(); }
+                rotationY: to, duration: (o.duration || 0.4) * scale, delay: (o.delay || 0) * scale, ease: 'power2.out',
+                onComplete: () => { gsap.set(e.flip, { clearProps: 'transform' }); finish(); }
             });
             if (prevResolve) prevResolve();
         });
-        track(promise);
+        track(promise, `flip ${e.key}`);
         return promise;
     }
 
@@ -413,8 +474,11 @@ const GameView = (() => {
                         sfx('flip');
                     } else if (deckRect) {
                         const delay = dealIdx++ * 0.05;
+                        // A face-up card lands as a back, then turns over. This keeps
+                        // the deal readable instead of showing every face mid-flight.
+                        if (w.up) e.el.dataset.face = 'back';
                         fly(e, deckRect, r2, { duration: 0.42, delay, lift: 18, ease: 'power2.out' });
-                        if (w.id) flipTo(e, true, { duration: 0.32, delay: delay + 0.12 });
+                        if (w.up) flipTo(e, true, { duration: 0.32, delay: delay + 0.34 });
                         sfx('deal');
                     }
                 } else if (w.fresh && w.trick) {
@@ -433,7 +497,9 @@ const GameView = (() => {
                 }
             });
         } else {
-            want.forEach((w) => { if (w.flipOpen) w.entry.el.dataset.face = 'front'; });
+            want.forEach((w) => {
+                if (w.flipOpen || (w.fresh && w.up)) w.entry.el.dataset.face = 'front';
+            });
         }
 
         // 8. Remember what this render looked like.
@@ -476,7 +542,7 @@ const GameView = (() => {
         const sp = $('score-player'), sc = $('score-computer'), ri = $('round-info');
         if (sp) sp.textContent = gs.player.score;
         if (sc) sc.textContent = gs.computer.score;
-        if (ri) ri.innerHTML = `<small>Round</small><b>${gs.roundNumber}</b>`;
+        if (ri) ri.innerHTML = `<small>Round</small><b>${gs.roundNumber}</b><em>to ${gs.matchTarget || 5}</em>`;
 
         // Card-group counts and trick context
         const count = (id, n) => { const el = $(id); if (el) el.textContent = n; };
@@ -548,8 +614,8 @@ const GameView = (() => {
         el.hidden = false;
         el.innerHTML = `<span class="round-summary-title">Round ${gs.roundNumber} complete</span>` +
             pill('You', gs.player.tricksWon, pTarget, pPts) +
-            pill('Computer', gs.computer.tricksWon, cTarget, cPts);
-        el.setAttribute('aria-label', `Round ${gs.roundNumber} complete. You won ${gs.player.tricksWon} of ${pTarget} tricks for ${pPts} points. Computer won ${gs.computer.tricksWon} of ${cTarget} tricks for ${cPts} points.`);
+            pill('Anne', gs.computer.tricksWon, cTarget, cPts);
+        el.setAttribute('aria-label', `Round ${gs.roundNumber} complete. You won ${gs.player.tricksWon} of ${pTarget} tricks for ${pPts} points. Anne won ${gs.computer.tricksWon} of ${cTarget} tricks for ${cPts} points.`);
         if (board) board.classList.add('is-round-end');
         // The engine's plain status line would repeat this result word for word.
         const statusEl = $('game-status');
@@ -599,6 +665,7 @@ const GameView = (() => {
         }
 
         sfx(winner === 'player' ? 'trickWin' : 'trickLose');
+        haptic(winner === 'player' ? 'trickWin' : 'trickLose');
         const target = document.querySelector(`#${winner}-tricks .meter`).getBoundingClientRect();
         const tx = target.left + target.width / 2, ty = target.top + target.height / 2;
         const promise = new Promise((resolve) => {
@@ -669,12 +736,15 @@ const GameView = (() => {
     // Coin toss (CSS 3D coin driven by GSAP)
     // ------------------------------------------------------------------
     function showCoinToss(onChoose) {
-        const coin = $('coin'), coinChoice = $('coin-choice'), coinResult = $('coin-result');
+        const coin = $('coin'), rig = $('coin-rig'), shadow = $('coin-shadow');
+        const coinChoice = $('coin-choice'), coinResult = $('coin-result');
         const btns = document.querySelectorAll('.coin-btn');
-        if (hasGsap) gsap.set(coin, { clearProps: 'transform' });
+        if (hasGsap) gsap.set([coin, rig, shadow], { clearProps: 'transform' });
         coin.className = 'coin';
+        coin.setAttribute('aria-label', 'A gold coin, ready to flip');
         coinChoice.style.display = 'block';
         coinResult.style.display = 'none';
+        coinResult.innerHTML = '';
         btns.forEach((btn) => { btn.disabled = false; });
         $('coin-toss-modal').style.display = 'flex';
         btns.forEach((btn) => { btn.onclick = () => onChoose(btn.dataset.choice); });
@@ -684,40 +754,57 @@ const GameView = (() => {
     function coinTossBegin() {
         document.querySelectorAll('.coin-btn').forEach((btn) => { btn.disabled = true; });
         $('coin-choice').style.display = 'none';
-        $('coin').className = 'coin flipping';
+        $('coin').setAttribute('aria-label', 'The coin is in the air');
         sfx('coin');
     }
 
     function coinFlip(payload) {
-        if (!canAnimate()) return wait(BEAT_MS_REDUCED['coin-flip']);
-        const coin = $('coin');
+        // The engine has already chosen the result. This animation only lands on it.
+        if (!canAnimate()) return wait(180);
+        const coin = $('coin'), rig = $('coin-rig'), shadow = $('coin-shadow');
         const turns = 360 * 5 + (payload && payload.result === 'tails' ? 180 : 0);
+        const scale = motionScale();
         const promise = new Promise((resolve) => {
             const tl = gsap.timeline({ onComplete: resolve });
-            tl.fromTo(coin, { rotationX: 0 }, { rotationX: turns, duration: 1.7, ease: 'power2.out' }, 0);
-            tl.to(coin, { y: -120, scale: 1.3, duration: 0.8, ease: 'power2.out' }, 0);
-            tl.to(coin, { y: 0, scale: 1, duration: 0.9, ease: 'bounce.out' }, 0.8);
-            tl.to({}, { duration: 0.15 });
+            gsap.set(rig, { y: 0, scale: 1 });
+            gsap.set(coin, { rotationX: 0, rotationZ: 0 });
+            gsap.set(shadow, { scale: 1, opacity: 1 });
+            tl.to(rig, { y: -128, scale: 1.08, duration: 0.34 * scale, ease: 'power2.out' }, 0)
+                .to(shadow, { scale: 0.62, opacity: 0.42, duration: 0.34 * scale, ease: 'power2.out' }, 0)
+                .to(coin, { rotationX: turns, rotationZ: 7, duration: 1.42 * scale, ease: 'power3.out' }, 0)
+                .to(coin, { rotationZ: 0, duration: 0.42 * scale, ease: 'power2.out' }, 1.0 * scale)
+                .to(rig, { y: 0, scale: 1, duration: 0.5 * scale, ease: 'bounce.out' }, 0.92 * scale)
+                .to(shadow, { scale: 1, opacity: 1, duration: 0.5 * scale, ease: 'bounce.out' }, 0.92 * scale)
+                .to({}, { duration: 0.12 * scale });
         });
-        return track(promise);
+        return track(promise, 'coin');
     }
 
     function coinTossReveal(result, playerWins) {
-        const coin = $('coin'), coinResult = $('coin-result');
-        if (hasGsap) gsap.set(coin, { clearProps: 'transform' });
+        const coin = $('coin'), rig = $('coin-rig'), shadow = $('coin-shadow'), coinResult = $('coin-result');
+        if (hasGsap) gsap.set([coin, rig, shadow], { clearProps: 'transform' });
         coin.className = `coin result-${result}`;
+        coin.setAttribute('aria-label', `The coin landed on ${result}`);
         coinResult.style.display = 'block';
+        const resultWord = result.toUpperCase();
         if (playerWins) {
             coinResult.className = 'coin-result win';
-            coinResult.innerHTML = `<div class="coin-line">It's ${result.toUpperCase()}.</div><div>You won. You choose trump first.</div>`;
+            coinResult.innerHTML = `<div class="coin-line">${resultWord}</div><div>Your call. You choose trump first.</div>`;
         } else {
             coinResult.className = 'coin-result lose';
-            coinResult.innerHTML = `<div class="coin-line">It's ${result.toUpperCase()}.</div><div>Computer won. It chooses trump first.</div>`;
+            coinResult.innerHTML = `<div class="coin-line">${resultWord}</div><div>Anne's call. She chooses trump first.</div>`;
         }
-        if (canAnimate()) gsap.fromTo(coinResult, { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4 });
+        sfx('coinLand');
+        haptic('coin');
+        if (canAnimate()) gsap.fromTo(coinResult, { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4 * motionScale() });
     }
 
-    function hideCoinToss() { setDisplay('coin-toss-modal', 'none'); }
+    function hideCoinToss() {
+        setDisplay('coin-toss-modal', 'none');
+        if (hasGsap) {
+            gsap.set([$('coin'), $('coin-rig'), $('coin-shadow')].filter(Boolean), { clearProps: 'transform' });
+        }
+    }
 
     // ------------------------------------------------------------------
     // Game over
@@ -725,17 +812,24 @@ const GameView = (() => {
     function showGameOver(winner, scores) {
         const modal = $('game-over-modal'), winnerText = $('winner-announcement'), finalScores = $('final-scores');
         if (!(modal && winnerText && finalScores)) return;
-        if (winner === 'Player') {
-            winnerText.textContent = 'You win';
-            winnerText.className = 'winner-text win';
+        if (modal.style.display === 'flex') return; // never stack two result layers
+        const won = winner === 'Player';
+        const title = $('gameover-title');
+        if (title) title.textContent = won ? 'A match well played' : 'The table is Anne\'s';
+        winnerText.textContent = won ? 'You win the match' : 'Anne wins the match';
+        winnerText.className = `winner-text ${won ? 'win' : 'lose'}`;
+        const context = $('match-context');
+        if (context) context.textContent = `First to ${scores.target} match points`;
+        finalScores.innerHTML = `<div class="final-line"><span>You</span><b>${scores.player}</b><i>&ndash;</i><b>${scores.computer}</b><span>Anne</span></div>`;
+        if (window.TableCharacters) window.TableCharacters.matchResult(winner);
+        if (won) {
             sparks();
             sfx('victory');
+            haptic('victory');
         } else {
-            winnerText.textContent = 'Computer wins';
-            winnerText.className = 'winner-text lose';
             sfx('defeat');
+            haptic('defeat');
         }
-        finalScores.innerHTML = `<div class="final-line"><span>You</span><b>${scores.player}</b><i>&ndash;</i><b>${scores.computer}</b><span>Computer</span></div>`;
         modal.style.display = 'flex';
         const btn = $('play-again');
         if (btn) setTimeout(() => btn.focus({ preventScroll: true }), 80);
@@ -769,7 +863,11 @@ const GameView = (() => {
     function select(e) {
         if (selectedEntry && selectedEntry !== e) selectedEntry.el.classList.remove('selected');
         selectedEntry = e;
-        if (e) e.el.classList.add('selected');
+        if (e) {
+            e.el.classList.add('selected');
+            sfx('select');
+            haptic('select');
+        }
     }
 
     function reject(el) {
@@ -782,6 +880,7 @@ const GameView = (() => {
         }
         toast(msg, 'warn');
         sfx('invalid');
+        haptic('invalid');
         if (canAnimate()) gsap.fromTo(el.querySelector('.card-lift'), { x: -6 }, { x: 0, duration: 0.5, ease: 'elastic.out(1, 0.25)' });
     }
 
@@ -789,10 +888,11 @@ const GameView = (() => {
         const e = entryOf(el);
         if (!e || el.dataset.source === undefined) return;
         // Touch: first tap raises the card, second tap plays it.
-        if (mqCoarse.matches && selectedEntry !== e && el.classList.contains('playable')) { select(e); sfx('select'); return; }
+        if (mqCoarse.matches && selectedEntry !== e && el.classList.contains('playable')) { select(e); return; }
         select(null);
         const ok = GameEngine.playCard(Number(el.dataset.index), el.dataset.source);
         if (!ok) reject(el);
+        else haptic('play');
     }
 
     function bindInput() {
@@ -820,6 +920,10 @@ const GameView = (() => {
     // everything visual that belongs to it, including running animations.
     function resetForRestart() {
         if (hasGsap) gsap.globalTimeline.clear();
+        const board = document.querySelector('.game-board');
+        if (board) board.classList.remove('is-shuffling');
+        const deck = $('deck');
+        if (deck && hasGsap) gsap.set([...deck.children], { clearProps: 'transform' });
         entries.forEach((e) => { if (e.resolve) e.resolve(); e.el.remove(); });
         entries.clear();
         limbo = new Map();
@@ -832,6 +936,8 @@ const GameView = (() => {
         const gameOverModal = $('game-over-modal'), trumpModal = $('trump-selection-modal');
         if (gameOverModal) gameOverModal.style.display = 'none';
         if (trumpModal) trumpModal.style.display = 'none';
+        const coin = $('coin');
+        if (coin) { coin.className = 'coin'; coin.setAttribute('aria-label', 'A gold coin, ready to flip'); }
         hideCoinToss();
         thinking(false);
         hideSelectTrumpButton();
@@ -848,7 +954,7 @@ const GameView = (() => {
         const sp = $('score-player'), sc = $('score-computer'), ri = $('round-info');
         if (sp) sp.textContent = '0';
         if (sc) sc.textContent = '0';
-        if (ri) ri.innerHTML = '<small>Round</small><b>1</b>';
+        if (ri) ri.innerHTML = `<small>Round</small><b>1</b><em>to ${GameEngine.state.matchTarget || 5}</em>`;
         ['player', 'computer'].forEach((side) => {
             const box = $(`${side}-tricks`);
             box.querySelector('.trick-count').textContent = '0';
@@ -883,6 +989,9 @@ const GameView = (() => {
         showTrumpSelection,
         showCoinToss, coinTossBegin, coinTossReveal, hideCoinToss,
         showGameOver,
-        resetForRestart
+        resetForRestart,
+        // Diagnostics only: lets tests tell a visual stall from a rule stall.
+        pendingCount: () => pending.size,
+        pendingLabels: () => [...pendingWhy.values()]
     };
 })();

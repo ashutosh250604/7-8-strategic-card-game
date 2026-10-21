@@ -27,6 +27,9 @@ node run-trace.js --determinism --group restart  # same code twice must match
   `node run-trace.js --compare baseline --group main --only slow --engine-only`
   (state, logs, status, AI plays, in order; DOM and timing ignored; patient profile, up to first game over).
 * `main` group (48 scenarios): byte-identical to the baseline for the Phase 1 refactor (full DOM compare).
+  After the match-target and AI work, engine-only comparisons can differ intentionally (target and
+  Medium/Hard choices). Use those diffs as an intentional-change check, not as a pass/fail gate;
+  `match-target.js` and `sim/ai-rules.js` are the current gates for those behaviors.
 * `restart` group (24): restart at awkward moments; it asserts a clean idle state afterwards.
   `traces/baseline/restart` was recorded from the pre-refactor code and contains the old
   stale-timer behaviour, so differences there are expected and intentional.
@@ -36,8 +39,10 @@ node run-trace.js --determinism --group restart  # same code twice must match
 ## Real-browser smoke test
 
 `node browser-smoke.js [--shots] [--file] [--full]` plays the start of `games/7-8/index.html` in headless Edge (`--full` auto-plays a
-whole game in real time with animations on) and fails on any console error, page error, failed request or HTTP error
-(analytics is blocked). The dev server serves the project root so the game can load shared assets from `../../`.
+whole first-to-five match in real time with animations on, checks the result screen, starts a rematch and restarts it). It
+fails on any console error, page error, failed request or HTTP error (analytics is blocked). The presentation hook also
+asserts that the shuffle ran, the face-down row was dealt before any face-up card appeared, and cards had settled before
+the next phase. The dev server serves the project root so the game can load shared assets from `../../`.
 
 ## Launcher + tutorial + live-coach E2E
 
@@ -53,7 +58,37 @@ live trump recommendation on the real hand, the first real follow-suit turn,
 and the computer-called-trump path. It also checks the coach and trump sheet at
 390×844, 320×568 and 844×390. Screenshots go to `tests/out/` (git-ignored).
 
-## AI / balance simulator
+## Settings and match-control E2E
 
-`node sim/engine-sim.js [roundsPerCell] [matches]` runs the real engine headlessly and prints difficulty ladder,
-role balance, trump-choice value, decision density and match length. Use it to measure any AI change.
+```
+node settings-e2e.js        # or: npm run test:settings
+```
+
+Checks malformed `localStorage` fallback, persisted sound/difficulty/target/motion preferences,
+the live-match target deferral, reduced-motion coin timing, and graceful behaviour when the
+Vibration API is missing. Also verifies that a live match keeps its target until the next match.
+
+## Responsive layout E2E
+
+```
+node layout-e2e.js        # or: npm run test:layout
+```
+
+Checks setup, a reduced-motion live table, the settings dialog and both result
+layouts at 1440x900, 390x844, 320x568 and 844x390. It fails on horizontal
+overflow, clipped player cards, an unloaded Anne portrait, or result actions that
+cannot be reached. Screenshots go to `tests/out/`.
+
+## Match target and AI checks
+
+```
+node match-target.js                     # 5-point default, alternate targets, live-match deferral
+node sim/ai-rules.js [rounds]            # every Easy/Medium/Hard choice is legal
+node sim/ai-match.js [matches]           # first-to-five matches vs a seeded sensible player
+node sim/engine-sim.js [rounds] [matches]
+```
+
+`ai-match.js` uses the real engine and the same seeded baseline for each difficulty, so the
+sample is repeatable. A 60-match sample is useful evidence, not a proof: expect a wide margin
+around small differences. `engine-sim.js` prints the older round-level ladder, role balance,
+trump-choice value, decision density and match length.

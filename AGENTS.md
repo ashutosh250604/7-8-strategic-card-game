@@ -1,8 +1,8 @@
-# Project Instructions — 7–8 Strategic Card Game
+# Project Instructions - 7–8 Strategic Card Game
 
 ## Mission
 
-Build a premium, professional, highly replayable browser game based on the Indian 7–8 trick-taking card game. Optimize for exceptional gameplay, intelligent AI, beautiful design, usability, reliability, and performance—not merely minimal code changes.
+Build a premium, professional, highly replayable browser game based on the Indian 7–8 trick-taking card game. Optimize for exceptional gameplay, intelligent AI, beautiful design, usability, reliability, and performance, not merely minimal code changes.
 
 ## Working Principles
 
@@ -18,7 +18,7 @@ Build a premium, professional, highly replayable browser game based on the India
 ## Game Integrity
 
 - Preserve the identity and fundamental rules of 7–8.
-- The existing `>= 1` scoring conditions are intentional testing settings. Never change them to `>= 5` without explicit permission.
+- The player-approved match target is now configurable (3, 5 or 7 points) and defaults to 5. The old `>= 1` test shortcut is removed from the production path; tests must set their own target explicitly.
 - Never change fundamental rules, scoring, or core game behavior without first explaining the proposed change and obtaining approval.
 - AI improvements are encouraged when they respect the approved rules.
 - Preserve existing behavior unless a change is intentional, justified, and tested.
@@ -31,6 +31,9 @@ The current architecture separates:
 - `script.js`: GameEngine, state, rules, AI, and gameplay flow.
 - `presentation.js`: GameView, DOM rendering, animation beats, and visual effects.
 - `ui.js`: UI wiring, buttons, settings, and modals.
+- `settings.js`: the defensive `TableSettings` preference store (difficulty, match target, sound, volume, motion, haptics) with local persistence.
+- `audio.js`: local Web Audio effects, master volume and Vibration API haptics. No network or audio file requests; failures stay silent.
+- `character.js`: Anne's local dialogue and avatar registry. Presentation-only, with two empty slots reserved for future tables.
 - `tutorial.js`: the opt-in, sample-card tutorial. UI-only; it never changes `gameState` or the rules. Finishing the tour arms the live coach for the next real game.
 - `coach.js`: the first-round live coach. UI-only and read-only: it reads the real hand/trick to recommend a trump and explain the first follow-suit turn, then retires. It never chooses a card or changes the deal, scoring, or rules.
 - `games/7-8/index.html`: the game page. Shared game scripts/styles live at the project root; the root `index.html` is the launcher.
@@ -71,6 +74,8 @@ Treat this as the established architecture. Inspect the current implementation b
 - Keep intentional changes distinguishable from regressions.
 - Test browser behavior, restart, complete rounds, invalid plays, responsive layouts, and console errors as relevant.
 - Keep the launcher/tutorial/live-coach browser coverage in `tests/tutorial-e2e.js` (`npm run test:e2e`); it fails on console errors and checks first-run state, keyboard flow and the first live round.
+- Keep `tests/browser-smoke.js --full` for the complete animated match and rematch, and `tests/settings-e2e.js` (`npm run test:settings`) for preference persistence, target deferral, reduced motion and haptic fallbacks.
+- Measure AI changes with `tests/sim/ai-match.js` and `tests/sim/ai-rules.js`; do not describe a difficulty change as stronger without a repeatable sample.
 - Do not spend time repeatedly running expensive or redundant tests when a focused test is sufficient; run comprehensive verification at major milestones.
 
 ## Completion Protocol
@@ -82,4 +87,4 @@ At the end of each milestone:
 4. Update `PROJECT_PLAN.md` with completed work and the next milestone.
 5. Stop and wait for the next instruction.
 
-The goal is a finished, reliable, premium game—not an endless refactor. Make thoughtful decisions autonomously within these boundaries.
+The goal is a finished, reliable, premium game, not an endless refactor. Make thoughtful decisions autonomously within these boundaries.

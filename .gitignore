@@ -7,5 +7,7 @@ _archive/
 # Dev tooling
 node_modules/
 tests/out/
+.freebuff/
+shot-*.png
 # Recorded regression traces (~8 MB, regenerable): see tests/README.md
 tests/traces/

@@ -38,10 +38,10 @@
                     <span class="score-name">You</span>
                     <span class="score-num" id="score-player">0</span>
                 </div>
-                <div id="round-info" class="round-info"><small>Round</small><b>1</b></div>
+                <div id="round-info" class="round-info"><small>Round</small><b>1</b><em id="match-goal">to 5</em></div>
                 <div class="score-side score-side-cpu">
                     <span class="score-num" id="score-computer">0</span>
-                    <span class="score-name">Computer</span>
+                    <span class="score-name">Anne</span>
                 </div>
             </div>
 
@@ -50,7 +50,8 @@
                 <div id="difficulty-display" class="difficulty-indicator" title="AI difficulty"><span>Medium</span></div>
                 <span class="hud-divider" aria-hidden="true"></span>
                 <button id="hud-rules" class="hud-btn hud-rules" type="button">Rules</button>
-                <button id="restart-game" class="hud-btn" type="button">New game</button>
+                <button id="restart-game" class="hud-btn" type="button">New match</button>
+                <button id="mute-btn" class="hud-btn hud-icon mute-btn" type="button" aria-label="Mute sound" aria-pressed="false" title="Mute sound">&#9834;</button>
                 <button id="settings-btn" class="hud-btn hud-icon" type="button" aria-label="Settings">&#9881;&#xFE0E;</button>
             </div>
         </header>
@@ -58,18 +59,23 @@
         <!-- Table -->
         <main class="game-board is-setup">
             <!-- Computer seat -->
-            <section class="computer-area seat seat-top" aria-label="Computer">
+            <section class="computer-area seat seat-top" aria-label="Anne, playing at Medium difficulty">
                 <div class="seat-bar">
                     <div class="seat-who">
-                        <span class="seat-avatar" aria-hidden="true">C</span>
-                        <span class="player-label">Computer</span>
-                        <div id="thinking-indicator" class="thinking-indicator" style="display: none;" role="status" aria-label="Computer is thinking"><span></span><span></span><span></span></div>
+                        <span class="seat-avatar anne-avatar"><img id="anne-portrait" src="../../assets/anne.svg" alt="" width="44" height="44"></span>
+                        <span class="anne-ident">
+                            <span class="player-label">Anne</span>
+                            <span id="anne-seat-role" class="anne-role">The card-table host</span>
+                        </span>
+                        <span id="anne-difficulty" class="anne-difficulty">Medium</span>
+                        <div id="thinking-indicator" class="thinking-indicator" style="display: none;" role="status" aria-label="Anne is thinking"><span></span><span></span><span></span></div>
                     </div>
                     <div id="computer-tricks" class="won-tricks">
                         <div class="tricks-label"><span class="trick-count">0</span><span class="trick-target"></span> <span class="tricks-word">tricks</span></div>
                         <div class="tricks-container meter"></div>
                     </div>
                 </div>
+                <div id="anne-reaction" class="anne-reaction" role="status" aria-live="polite" hidden></div>
                 <div class="seat-cards">
                     <div class="card-area computer-hand-area">
                         <div class="cards-label">Hand <b id="computer-hand-count">0</b></div>
@@ -88,13 +94,13 @@
 
             <!-- Centre: start panel, deck, current trick, status -->
             <section class="center-area">
-                <div id="deck" class="deck" aria-hidden="true"><i></i><i></i><i></i></div>
+                <div id="deck" class="deck" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
 
                 <div class="start-panel">
                     <div id="hero-fan" class="hero-fan" aria-hidden="true"></div>
                     <p class="start-eyebrow">A classic Indian trick game</p>
                     <h2 class="start-title">Seven <span>·</span> Eight</h2>
-                    <p class="start-tagline">Choose the trump, then win eight tricks before your opponent wins seven.</p>
+                    <p class="start-tagline">Choose trump wisely. The caller needs eight tricks; the opponent needs seven.</p>
                     <ul class="start-chips" aria-label="Game facts">
                         <li>30 cards</li>
                         <li>2 players</li>
@@ -216,11 +222,21 @@
                     </div>
                 </div>
                 <div class="game-over-content">
+                    <div id="result-felt" class="result-felt" aria-hidden="true"></div>
                     <div id="winner-announcement" class="winner-text"></div>
+                    <div id="match-context" class="match-context"></div>
                     <div id="final-scores" class="final-scores"></div>
+                    <div id="anne-result" class="anne-result">
+                        <span class="anne-result-avatar"><img id="anne-result-avatar" src="../../assets/anne.svg" alt="" width="64" height="64"></span>
+                        <div>
+                            <b>Anne</b>
+                            <p id="anne-result-line"></p>
+                        </div>
+                    </div>
                     <div class="game-over-actions">
-                        <button id="play-again" class="control-btn primary" type="button">Play again</button>
-                        <button id="exit-game" class="control-btn" type="button">Exit</button>
+                        <button id="play-again" class="control-btn primary" type="button">Play another match</button>
+                        <button id="result-settings" class="control-btn" type="button">Settings</button>
+                        <a class="control-btn result-home" href="../../index.html">All games</a>
                     </div>
                 </div>
             </div>
@@ -239,12 +255,26 @@
                     <p class="coin-toss-info">Call it. The winner chooses trump first.</p>
                     <div class="coin-container">
                         <span class="coin-halo" aria-hidden="true"></span>
-                        <div id="coin" class="coin">
-                            <div class="coin-face heads">H</div>
-                            <div class="coin-face tails">T</div>
+                        <span id="coin-shadow" class="coin-shadow" aria-hidden="true"></span>
+                        <div id="coin-rig" class="coin-rig">
+                            <div id="coin" class="coin" role="img" aria-label="A gold coin, showing heads">
+                                <span class="coin-edge" aria-hidden="true"></span>
+                                <div class="coin-face heads">
+                                    <span class="coin-rim" aria-hidden="true"></span>
+                                    <span class="coin-ornament" aria-hidden="true"></span>
+                                    <span class="coin-letter">H</span>
+                                    <span class="coin-word">Heads</span>
+                                </div>
+                                <div class="coin-face tails">
+                                    <span class="coin-rim" aria-hidden="true"></span>
+                                    <span class="coin-ornament" aria-hidden="true"></span>
+                                    <span class="coin-letter">T</span>
+                                    <span class="coin-word">Tails</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div id="coin-result" class="coin-result" style="display: none;"></div>
+                    <div id="coin-result" class="coin-result" style="display: none;" role="status" aria-live="assertive"></div>
                     <div id="coin-choice" class="coin-choice">
                         <p>Your call</p>
                         <div class="coin-buttons">
@@ -266,6 +296,13 @@
                     <span id="tutorial-step-label" class="tutorial-step-label">Step 1 of 3</span>
                     <button id="tutorial-close" class="close-modal" type="button" aria-label="Close tutorial">&times;</button>
                 </div>
+                <div class="tutorial-guide">
+                    <span class="tutorial-guide-avatar"><img src="../../assets/anne.svg" alt="" width="46" height="46"></span>
+                    <div>
+                        <b>Anne <span>your guide</span></b>
+                        <p id="tutorial-guide-line">Start with the five cards you can see. Trump is a promise about where your strength lives.</p>
+                    </div>
+                </div>
                 <div id="tutorial-body" class="tutorial-body"></div>
             </div>
         </div>
@@ -282,7 +319,7 @@
                 </div>
                 <div class="rules-content">
                     <h4>Objective</h4>
-                    <p>Win tricks strategically to score points. First player to reach <strong>5 points wins</strong> the game!</p>
+                    <p>Win tricks strategically to score points. The first player to reach the <strong>match target</strong> wins. The target is 5 points by default; you can choose 3, 5 or 7 in Settings.</p>
 
                     <h4>The special deck (30 cards)</h4>
                     <ul>
@@ -291,10 +328,10 @@
                         <li><strong>Card power:</strong> 7 is the weakest, followed by 8, 9, 10, J, Q, K, and Ace is the strongest</li>
                     </ul>
 
-                    <h4>Coin toss — first round only</h4>
+                    <h4>Coin toss - first round only</h4>
                     <ul>
                         <li>At the start of a <strong>new game</strong>, a coin toss determines who selects trump first</li>
-                        <li>Choose <strong>Heads</strong> or <strong>Tails</strong> — the coin will flip!</li>
+                        <li>Choose <strong>Heads</strong> or <strong>Tails</strong> - the coin will flip!</li>
                         <li>The <strong>winner</strong> of the coin toss gets to choose the trump suit in Round 1</li>
                         <li>After the first round, trump selection <strong>alternates</strong> between players</li>
                         <li><strong>Note:</strong> The coin toss only happens once per game, not every round</li>
@@ -308,7 +345,7 @@
                         <li><strong>5 face-down cards:</strong> Hidden cards beneath face-up cards (dealt after trump selection)</li>
                     </ul>
 
-                    <h4>Trump selection — the key decision</h4>
+                    <h4>Trump selection - the key decision</h4>
                     <ul>
                         <li>Players <strong>take turns</strong> selecting the trump suit each round</li>
                         <li>Look at your <strong>5 hand cards</strong> and choose wisely!</li>
@@ -354,16 +391,16 @@
                     <h4>Winning the game</h4>
                     <ul>
                         <li>The game continues through multiple rounds</li>
-                        <li><strong>First player to reach 5 points wins!</strong></li>
-                        <li>Play aggressively — try to win more tricks than your target to score points!</li>
+                        <li><strong>First player to reach the match target wins</strong> (5 by default)</li>
+                        <li>Play aggressively - try to win more tricks than your target to score points!</li>
                     </ul>
 
                     <h4>Pro tips</h4>
                     <ul>
                         <li>Pay attention to which cards have been played</li>
                         <li>Remember what face-up cards your opponent has</li>
-                        <li>Winning the coin toss lets you set the pace — choose a strong trump!</li>
-                        <li>Use trump cards wisely — they're powerful but limited</li>
+                        <li>Winning the coin toss lets you set the pace - choose a strong trump!</li>
+                        <li>Use trump cards wisely - they're powerful but limited</li>
                         <li>Watch when face-down cards get revealed</li>
                     </ul>
 
@@ -389,21 +426,63 @@
                 </div>
                 <div class="settings-content">
                     <div class="settings-section">
-                        <h4>Difficulty</h4>
-                        <p class="settings-note">Changes apply on the next game or round.</p>
+                        <h4>Match target</h4>
+                        <p class="settings-note">First to this many match points wins. A change applies to your next match.</p>
+                        <div class="target-options" role="group" aria-label="Match target">
+                            <button class="target-btn" data-target="3" type="button" aria-pressed="false">3</button>
+                            <button class="target-btn active" data-target="5" type="button" aria-pressed="true">5</button>
+                            <button class="target-btn" data-target="7" type="button" aria-pressed="false">7</button>
+                        </div>
+                        <p id="target-note" class="settings-note target-note">The current match is first to 5.</p>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Anne's difficulty</h4>
+                        <p class="settings-note">A new strategy applies immediately, including mid-round.</p>
                         <div class="difficulty-options">
                             <button class="difficulty-btn" data-difficulty="easy" type="button" aria-pressed="false">Easy</button>
                             <button class="difficulty-btn active" data-difficulty="medium" type="button" aria-pressed="true">Medium</button>
                             <button class="difficulty-btn" data-difficulty="hard" type="button" aria-pressed="false">Hard</button>
                         </div>
                         <div class="difficulty-description">
-                            <p id="difficulty-desc">Balanced AI that analyzes visible cards.</p>
+                            <p id="difficulty-desc">Anne plays a balanced game and watches your visible cards.</p>
                         </div>
                     </div>
 
                     <div class="settings-section">
-                        <h4>More</h4>
+                        <h4>Sound and feedback</h4>
+                        <div class="setting-row">
+                            <span class="setting-label">Sound effects</span>
+                            <button id="settings-sound" class="switch-btn" type="button" role="switch" aria-checked="true"><i></i><span>On</span></button>
+                        </div>
+                        <label class="volume-row" for="settings-volume">
+                            <span class="setting-label">Master volume</span>
+                            <input id="settings-volume" type="range" min="0" max="100" step="5" value="55" aria-describedby="volume-value">
+                            <output id="volume-value" for="settings-volume">55%</output>
+                        </label>
+                        <div class="setting-row">
+                            <span class="setting-label">Haptics <small id="haptics-note">On supported phones</small></span>
+                            <button id="settings-haptics" class="switch-btn" type="button" role="switch" aria-checked="true"><i></i><span>On</span></button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Motion</h4>
+                        <p class="settings-note">Reduced motion keeps the card table still and shows results immediately. Fast shortens the deal and coin.</p>
+                        <div class="motion-options" role="group" aria-label="Animation preference">
+                            <button class="motion-btn active" data-motion="full" type="button" aria-pressed="true">Full</button>
+                            <button class="motion-btn" data-motion="fast" type="button" aria-pressed="false">Fast</button>
+                            <button class="motion-btn" data-motion="reduced" type="button" aria-pressed="false">Reduced</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>At the table</h4>
                         <div class="settings-actions">
+                            <button id="settings-tutorial" class="settings-action-btn" type="button">
+                                <span>Replay Anne's tutorial</span>
+                                <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
+                            </button>
                             <button id="settings-game-log" class="settings-action-btn" type="button">
                                 <span>Game log</span>
                                 <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
@@ -418,6 +497,19 @@
                             </a>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Small confirmation dialog for abandoning a live match -->
+        <div id="confirm-modal" class="modal" style="display: none;">
+            <div class="modal-content confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-copy">
+                <p class="modal-kicker">Before you leave</p>
+                <h3 id="confirm-title">Start a new match?</h3>
+                <p id="confirm-copy" class="confirm-copy">The current score will be cleared. This cannot be undone.</p>
+                <div class="confirm-actions">
+                    <button id="confirm-cancel" class="control-btn" type="button">Keep playing</button>
+                    <button id="confirm-accept" class="control-btn primary" type="button">Start new match</button>
                 </div>
             </div>
         </div>
@@ -442,8 +534,11 @@
         </div>
     </div>
 
-    <!-- Vendored libraries -->
+    <!-- Vendored libraries and local preferences -->
     <script src="../../assets/vendor/gsap.min.js"></script>
+    <script src="../../settings.js"></script>
+    <script src="../../audio.js"></script>
+    <script src="../../character.js"></script>
     <!-- Presentation layer (DOM, timing, animation) -> engine (state, rules, AI) -> UI wiring -->
     <script src="../../presentation.js"></script>
     <script src="../../script.js"></script>

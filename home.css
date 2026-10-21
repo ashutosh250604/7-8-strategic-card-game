@@ -1,5 +1,5 @@
 /* =====================================================================
-   The Indian Card Table — collection homepage
+   The Indian Card Table - collection homepage
    A quiet, editorial front door for the games. Same walnut, emerald and
    gold language as 7–8, but with its own layout and typography.
    ===================================================================== */
@@ -155,6 +155,19 @@ img, svg { max-width: 100%; }
     box-shadow: inset 0 0 0 1px rgba(208, 170, 94, .34);
 }
 .btn-ghost:hover { color: var(--gold-bright); background: rgba(208, 170, 94, .12); box-shadow: inset 0 0 0 1px var(--gold); }
+.hero-host {
+    display: inline-flex; align-items: center; gap: 9px;
+    margin-top: 18px; padding: 4px 12px 4px 4px; border-radius: 999px;
+    font-size: 11px; letter-spacing: .01em; color: var(--text-dim);
+    background: rgba(0, 0, 0, .2);
+    box-shadow: inset 0 0 0 1px rgba(208, 170, 94, .2);
+}
+.hero-host b { font: 600 10px/1 var(--serif); letter-spacing: .16em; text-transform: uppercase; color: var(--gold-bright); }
+.hero-host-avatar {
+    flex: none; width: 30px; height: 30px; padding: 1px; border-radius: 50%;
+    background: linear-gradient(160deg, rgba(241, 217, 154, .65), rgba(13, 69, 51, .9));
+}
+.hero-host-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; object-position: 50% 18%; display: block; }
 .hero-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 20px; font-size: 10px; letter-spacing: .06em; color: var(--text-mute); }
 .hero-note span { display: inline-flex; align-items: center; gap: 6px; }
 .hero-note i { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); font-style: normal; }

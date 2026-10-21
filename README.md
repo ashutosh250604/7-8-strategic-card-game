@@ -24,21 +24,27 @@ playing without a lobby or an account.
 
 ## Features
 
-- Three difficulty levels (Easy, Medium, Hard)
-- Coin toss for first round
+- Anne, a resident card-table host with a custom local portrait, contextual reactions and match-result lines
+- First to 5 match points by default, with 3 and 7 also selectable; changes apply to the next match
+- Three genuinely different difficulty levels (Easy, Medium, Hard). Hard samples the unseen hands with Monte Carlo and never reads hidden cards
+- A deliberate opening shuffle, face-down deal, face-up turn and trick sweep, all coordinated through the presentation beats
+- Local Web Audio card, coin and result sounds with a master volume, mute control and persisted preferences
+- 3D coin toss with heads and tails faces, plus reduced-motion handling
+- Optional haptics on browsers that support vibration, with a setting and a clear unsupported state
+- Victory and defeat screens with the final score, Anne's reaction, a restrained spark burst and a one-click rematch
 - Optional interactive tutorial: trump choice, the 8-vs-7 target, and follow-suit
 - Live first-round coaching after the tour: a recommendation from your real hand, then your first real follow-suit decision
 - **Rules** in the game HUD (Settings on phones) and a **Deal the cards** start (no lobby, no account)
-- Game log to track moves
+- Game log to track moves, safe restart confirmation, keyboard play and reduced motion
 - Works on mobile too
 
 ## Collection roadmap
 
-- **7–8** — ready to play
-- **3–2–5** — in development (three players, same 30-card deck)
-- **Coat & Shuffle** — in development (four players, 52 cards, partners)
-- **Kachuful** — planned
-- **Seep** — planned
+- **7–8** - ready to play
+- **3–2–5** - in development (three players, same 30-card deck)
+- **Coat & Shuffle** - in development (four players, 52 cards, partners)
+- **Kachuful** - planned
+- **Seep** - planned
 
 The homepage lists these with honest status labels; no unfinished game is
 presented as playable.
@@ -49,12 +55,13 @@ presented as playable.
 - Trump selector needs 8 tricks, opponent needs 7
 - Must follow suit if you can
 - Trump beats everything
-- First to 5 points wins
+- Points are tricks won above your target; the first player to the match target wins (5 by default, 3 or 7 optional)
 
 ## Tech
 
 Just vanilla HTML, CSS, and JavaScript. GSAP is vendored locally for the game's
-card motion; the launcher uses CSS only. No build step and no runtime CDN.
+card motion; sound is synthesised with Web Audio, so there are no audio files or
+runtime CDNs. The launcher uses CSS only. No build step.
 
 ## Play Online
 

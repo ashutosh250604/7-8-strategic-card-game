@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 520" role="img" aria-label="Anne, the card-table host">
+  <defs>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b1712"/>
+      <stop offset=".45" stop-color="#4b2a20"/>
+      <stop offset="1" stop-color="#1a0e0b"/>
+    </linearGradient>
+    <linearGradient id="skin" x1=".2" y1="0" x2=".85" y2="1">
+      <stop offset="0" stop-color="#e6b58d"/>
+      <stop offset=".45" stop-color="#cf9368"/>
+      <stop offset="1" stop-color="#a96c49"/>
+    </linearGradient>
+    <linearGradient id="skinShade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c2815a" stop-opacity="0"/>
+      <stop offset="1" stop-color="#8e5338" stop-opacity=".55"/>
+    </linearGradient>
+    <linearGradient id="emerald" x1=".1" y1="0" x2=".9" y2="1">
+      <stop offset="0" stop-color="#1f6d53"/>
+      <stop offset=".5" stop-color="#0e4a39"/>
+      <stop offset="1" stop-color="#062a21"/>
+    </linearGradient>
+    <linearGradient id="emeraldLight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2d8a69"/>
+      <stop offset="1" stop-color="#11513e"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6dea0"/>
+      <stop offset=".45" stop-color="#d0aa5e"/>
+      <stop offset="1" stop-color="#8d6a2d"/>
+    </linearGradient>
+    <linearGradient id="lips" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b8585c"/>
+      <stop offset="1" stop-color="#7d303a"/>
+    </linearGradient>
+    <radialGradient id="cheek" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#c76c5f" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#c76c5f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="halo" cx=".5" cy=".38" r=".62">
+      <stop offset="0" stop-color="#d0aa5e" stop-opacity=".22"/>
+      <stop offset=".7" stop-color="#0e4a39" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#062a21" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+    <clipPath id="portrait">
+      <path d="M0 0h420v520H0z"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#portrait)">
+    <rect width="420" height="520" fill="#0b2a21"/>
+    <ellipse cx="210" cy="218" rx="235" ry="230" fill="url(#halo)"/>
+    <path d="M18 520c8-93 64-145 148-165l88 1c86 20 142 72 150 164z" fill="url(#emerald)"/>
+    <path d="M110 520c5-76 47-119 100-130l28 78 26-78c54 13 94 55 99 130z" fill="url(#emeraldLight)" opacity=".5"/>
+    <path d="M158 365c18 14 34 22 52 22s35-8 53-22l-8 62c-14 13-28 19-45 19s-31-6-45-19z" fill="#0a392b"/>
+    <path d="M187 356v47c8 8 15 12 23 12s16-4 24-12v-47z" fill="url(#skin)"/>
+    <path d="M187 377c10 9 18 13 23 13s14-4 24-13v26c-8 8-16 12-24 12s-15-4-23-12z" fill="#8e5338" opacity=".35"/>
+
+    <!-- hair behind the shoulders -->
+    <path d="M118 210c-10-78 26-139 92-149 69-10 121 42 117 116-2 44-11 80-30 110 5 30 14 55 30 76-40-6-60-18-73-38l-6 33-23-31-26 33-22-35-19 35-8-40c-17 21-36 33-73 43 19-30 29-60 31-95-7-25-13-48-10-68z" fill="url(#hair)"/>
+    <path d="M132 190c4-65 38-101 87-105 48-4 84 27 92 82-22-20-48-30-79-28-42 3-70 20-100 51z" fill="#5d3528" opacity=".48"/>
+    <path d="M140 222c-2 36 2 66 13 92-11 17-17 37-18 61-22-50-22-106 5-153z" fill="#170c09" opacity=".5"/>
+
+    <!-- face -->
+    <path d="M148 168c9-44 39-67 76-67 42 0 70 26 73 74l-3 72c-2 32-15 56-35 68-15 9-30 13-44 11-30-3-52-24-60-59-4-19-6-40-7-63z" fill="url(#skin)"/>
+    <path d="M148 168c9-44 39-67 76-67 42 0 70 26 73 74l-3 72c-2 32-15 56-35 68-15 9-30 13-44 11-30-3-52-24-60-59-4-19-6-40-7-63z" fill="url(#skinShade)" opacity=".55"/>
+    <ellipse cx="166" cy="241" rx="28" ry="22" fill="url(#cheek)"/>
+    <ellipse cx="256" cy="243" rx="26" ry="20" fill="url(#cheek)"/>
+
+    <!-- ears and earrings -->
+    <path d="M142 207c-10-4-17 5-16 17 1 12 7 21 17 21 5 0 8-2 10-5l-1-27z" fill="url(#skin)"/>
+    <path d="M279 207c10-4 17 5 16 17-1 12-7 21-17 21-5 0-8-2-10-5l1-27z" fill="url(#skin)"/>
+    <circle cx="134" cy="259" r="10" fill="none" stroke="url(#gold)" stroke-width="3"/>
+    <circle cx="288" cy="259" r="10" fill="none" stroke="url(#gold)" stroke-width="3"/>
+    <circle cx="134" cy="272" r="3.4" fill="#f1d99a"/>
+    <circle cx="288" cy="272" r="3.4" fill="#f1d99a"/>
+
+    <!-- brows and eyes -->
+    <path d="M166 190c9-7 21-8 31-3" fill="none" stroke="#3d231b" stroke-width="5" stroke-linecap="round"/>
+    <path d="M230 187c10-5 22-4 31 3" fill="none" stroke="#3d231b" stroke-width="5" stroke-linecap="round"/>
+    <path d="M164 209c8-8 20-8 28 0-7 9-20 9-28 0z" fill="#fbf6ea"/>
+    <path d="M232 209c8-8 20-8 28 0-7 9-20 9-28 0z" fill="#fbf6ea"/>
+    <circle cx="178" cy="209" r="5.8" fill="#4a2a1a"/>
+    <circle cx="246" cy="209" r="5.8" fill="#4a2a1a"/>
+    <circle cx="178" cy="209" r="2.6" fill="#140b07"/>
+    <circle cx="246" cy="209" r="2.6" fill="#140b07"/>
+    <circle cx="180.5" cy="206.6" r="1.7" fill="#fff8e8"/>
+    <circle cx="248.5" cy="206.6" r="1.7" fill="#fff8e8"/>
+    <path d="M160 204c9-7 22-8 33-3" fill="none" stroke="#2a1711" stroke-width="2" stroke-linecap="round"/>
+    <path d="M230 201c11-5 23-4 32 3" fill="none" stroke="#2a1711" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- nose -->
+    <path d="M212 214c-2 14-5 26-9 34 4 4 9 5 14 2" fill="none" stroke="#8e5338" stroke-width="3.4" stroke-linecap="round" opacity=".62"/>
+    <path d="M199 250c6 3 12 3 18 0" fill="none" stroke="#9c5f42" stroke-width="2.2" stroke-linecap="round" opacity=".5"/>
+
+    <!-- lips -->
+    <path d="M187 274c8-4 14-6 23-6 9 0 17 2 23 6-6 12-13 18-23 18s-17-6-23-18z" fill="url(#lips)"/>
+    <path d="M190 276c8 2 15 2 22 1 7 1 13 1 20-1" fill="none" stroke="#5e2430" stroke-width="1.4" opacity=".6"/>
+    <path d="M197 270c5-3 10-4 14-3" fill="none" stroke="#d78b86" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+
+    <!-- hair over the forehead and shoulders -->
+    <path d="M144 181c17-32 45-47 74-45 32 2 55 18 72 47-20-12-38-17-57-16-24 1-46 6-67 21z" fill="url(#hair)"/>
+    <path d="M150 174c-5 34-3 63 6 87-10 27-13 58-9 92-20-47-21-105 3-179z" fill="#3d2118" opacity=".8"/>
+    <path d="M281 176c8 26 11 53 8 79 10 27 12 55 7 84 19-41 19-93-15-163z" fill="#26140f" opacity=".7"/>
+    <path d="M153 184c26-12 49-17 71-16" fill="none" stroke="#7a4935" stroke-width="5" stroke-linecap="round" opacity=".35"/>
+    <path d="M276 185c-8-9-18-14-28-17" fill="none" stroke="#8a553d" stroke-width="4" stroke-linecap="round" opacity=".28"/>
+
+    <!-- blazer and blouse -->
+    <path d="M171 375c-31 10-74 32-101 72l-28 73h118l44-83 8-54z" fill="url(#emerald)"/>
+    <path d="M249 375c31 10 74 32 101 72l28 73H260l-44-83-8-54z" fill="url(#emerald)"/>
+    <path d="M210 383l-22 38 22 36 22-36z" fill="#f2e6cf"/>
+    <path d="M210 383l-22 38 22 36-13-34z" fill="#d8c7a8" opacity=".65"/>
+    <path d="M188 421l-17 27-21-73c17-10 33-17 48-21l-6 34z" fill="url(#emeraldLight)"/>
+    <path d="M232 421l17 27 21-73c-17-10-33-17-48-21l6 34z" fill="#0c3b2d"/>
+    <path d="M188 421l22 36-6 63h-41z" fill="#093a2b" opacity=".65"/>
+    <path d="M232 421l-22 36 6 63h41z" fill="#062a21" opacity=".6"/>
+    <path d="M151 387c-17 9-33 21-48 34" fill="none" stroke="#2d8a69" stroke-width="2" opacity=".28"/>
+    <path d="M269 387c17 9 33 21 48 34" fill="none" stroke="#041f18" stroke-width="2" opacity=".35"/>
+
+    <!-- necklace -->
+    <path d="M185 365c8 19 16 27 25 27s18-8 25-27" fill="none" stroke="url(#gold)" stroke-width="2.2"/>
+    <path d="M210 391l7 9-7 9-7-9z" fill="url(#gold)"/>
+    <path d="M210 398l3 4-3 4-3-4z" fill="#1f6d53"/>
+
+    <!-- a quiet table-light rim -->
+    <path d="M131 203c6-51 35-85 80-88 43-3 74 25 85 70" fill="none" stroke="#f1d99a" stroke-width="2" opacity=".18" filter="url(#glow)"/>
+    <path d="M18 520c8-93 64-145 148-165" fill="none" stroke="#f1d99a" stroke-width="1.4" opacity=".14"/>
+    <path d="M402 520c-8-92-64-145-148-165" fill="none" stroke="#f1d99a" stroke-width="1.4" opacity=".14"/>
+  </g>
+</svg>

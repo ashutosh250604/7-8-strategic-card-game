@@ -115,12 +115,12 @@
         if (best.count === 1) {
             why = `Your hand is spread out, but <strong>${SUIT_LABEL[best.suit]}</strong> gives you its highest card, <strong>${short(best.cards[0])}</strong>. It is the safest call.`;
         } else if (highCards.length >= 2) {
-            why = `<strong>${SUIT_LABEL[best.suit]}</strong> is your strongest suit — ${best.count} cards, including ${highCards.slice(0, 2).map(short).join(' and ')}. That is where your eight tricks can come from.`;
+            why = `<strong>${SUIT_LABEL[best.suit]}</strong> is your strongest suit: ${best.count} cards, including ${highCards.slice(0, 2).map(short).join(' and ')}. That is where your eight tricks can come from.`;
         } else {
-            why = `<strong>${SUIT_LABEL[best.suit]}</strong> is your strongest suit — ${best.count} cards (${shown.join(', ')}). Calling it gives you the best chance at eight tricks.`;
+            why = `<strong>${SUIT_LABEL[best.suit]}</strong> is your strongest suit: ${best.count} cards (${shown.join(', ')}). Calling it gives you the best chance at eight tricks.`;
         }
         return '<div class="trump-coach-head"><span>Coach pick</span><button class="trump-coach-off" type="button" data-coach-off>Skip coaching</button></div>' +
-            `<p>${why} Trump beats every other suit, but calling it sets <strong>your target to 8 tricks</strong>; the computer needs 7.</p>`;
+            `<p>${why} Trump beats every other suit, but calling it sets <strong>your target to 8 tricks</strong>; Anne needs 7.</p>`;
     }
 
     function renderTrumpCoach() {
@@ -162,9 +162,9 @@
         if (!gs.trumpSuit) return '';
         const playerTarget = GameEngine.getTrickTarget('player');
         const cpuTarget = GameEngine.getTrickTarget('computer');
-        const who = gs.lastTrumpSelector === 'player' ? 'You called' : 'The computer called';
+        const who = gs.lastTrumpSelector === 'player' ? 'You called' : 'Anne called';
         return `${who} <strong>${SUIT_LABEL[gs.trumpSuit]} ${GLYPH[gs.trumpSuit]}</strong>. ` +
-            `You need <strong>${playerTarget}</strong> tricks; the computer needs <strong>${cpuTarget}</strong>.`;
+            `You need <strong>${playerTarget}</strong> tricks; Anne needs <strong>${cpuTarget}</strong>.`;
     }
 
     function showFollowCoach(gs, prefix = '') {
@@ -177,7 +177,7 @@
 
         clearPicks();
         if (!suited.length) {
-            setBar(prefix + `The computer led <strong>${short(led)}</strong>. You have no ${SUIT_NAME[lead]} — <strong>any card is legal</strong>, including a trump.`);
+            setBar(prefix + `Anne led <strong>${short(led)}</strong>. You have no ${SUIT_NAME[lead]}, so <strong>any card is legal</strong>, including a trump.`);
             return;
         }
 
@@ -189,11 +189,11 @@
 
         if (suited.length === 1) {
             const wins = value(pick.card) > ledValue;
-            setBar(prefix + `The computer led <strong>${short(led)}</strong>. You hold one ${SUIT_SINGULAR[lead]}, so you must follow ${SUIT_NAME[lead]} — play <strong>${short(pick.card)}</strong>${wins ? ', and it wins the trick.' : ', even though it loses.'}`);
+            setBar(prefix + `Anne led <strong>${short(led)}</strong>. You hold one ${SUIT_SINGULAR[lead]}, so you must follow ${SUIT_NAME[lead]}. Play <strong>${short(pick.card)}</strong>${wins ? ', and it wins the trick.' : ', even though it loses.'}`);
         } else if (winners.length) {
-            setBar(prefix + `The computer led <strong>${short(led)}</strong>. You hold ${suited.length} ${SUIT_NAME[lead]}, so you must follow suit. <strong>${short(pick.card)}</strong> is legal and wins the trick.`);
+            setBar(prefix + `Anne led <strong>${short(led)}</strong>. You hold ${suited.length} ${SUIT_NAME[lead]}, so you must follow suit. <strong>${short(pick.card)}</strong> is legal and wins the trick.`);
         } else {
-            setBar(prefix + `The computer led <strong>${short(led)}</strong>. You must follow ${SUIT_NAME[lead]} — <strong>${short(pick.card)}</strong> is legal, though it loses to the ${short(led)}.`);
+            setBar(prefix + `Anne led <strong>${short(led)}</strong>. You must follow ${SUIT_NAME[lead]}: <strong>${short(pick.card)}</strong> is legal, though it loses to the ${short(led)}.`);
         }
 
         // Keep the explanation honest: there should always be at least one legal card here.
@@ -206,7 +206,7 @@
         followTaught = true;
         armed = false;
         completingUntil = Date.now() + 6500;
-        setBar('<strong>You followed suit.</strong> That is the rule that catches everyone — the rest of the round is yours.');
+        setBar('<strong>You followed suit.</strong> That is the rule that catches everyone. The rest of the round is yours.');
         clearPicks();
         const until = completingUntil;
         if (hideTimer) clearTimeout(hideTimer);
@@ -221,8 +221,8 @@
     function syncPlay(gs) {
         if (gs.currentPlayer !== 'player' || gs.resolvingTrick) {
             if (followActive) finishFollow();
-            // While the computer takes the first turn, keep the target / called
-            // trump on screen instead of a bare "computer is playing" status.
+            // While Anne takes the first turn, keep the target / called
+            // trump on screen instead of a bare "Anne is playing" status.
             else if (!completingUntil && !targetTaught) {
                 // Leave targetTaught false so the player's first follow/lead note
                 // repeats the target once, at the moment they have to act.
@@ -236,7 +236,7 @@
                 leadTaught = true;
                 const prefix = targetTaught ? '' : targetNote() + ' ';
                 targetTaught = true;
-                setBar(prefix + 'You lead the first trick. <strong>Any card is legal</strong> — lead from the suit where your hand is strongest.');
+                setBar(prefix + 'You lead the first trick. <strong>Any card is legal</strong>. Lead from the suit where your hand is strongest.');
             }
             return;
         }
@@ -289,7 +289,7 @@
                 renderTrumpCoach();
             } else {
                 clearTrumpCoach();
-                setBar('The computer won the toss and is choosing trump. You will need <strong>7</strong> tricks this round; it needs 8.');
+                setBar('Anne won the toss and is choosing trump. You will need <strong>7</strong> tricks this round; she needs 8.');
             }
             return;
         }

@@ -6,7 +6,14 @@
     "trace": "node run-trace.js",
     "trace:baseline": "node run-trace.js --write baseline",
     "trace:compare": "node run-trace.js --compare baseline",
-    "test:e2e": "node tutorial-e2e.js"
+    "test:e2e": "node tutorial-e2e.js",
+    "test:settings": "node settings-e2e.js",
+    "test:layout": "node layout-e2e.js",
+    "test:smoke": "node browser-smoke.js",
+    "test:full": "node browser-smoke.js --full",
+    "test:target": "node match-target.js",
+    "test:ai:rules": "node sim/ai-rules.js",
+    "test:ai": "node sim/ai-match.js"
   },
   "devDependencies": {
     "jsdom": "22.1.0",

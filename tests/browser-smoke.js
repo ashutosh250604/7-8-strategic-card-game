@@ -33,7 +33,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // Edge is a GUI-subsystem exe on Windows, so Puppeteer cannot read its startup banner: launch it
     // ourselves with a debugging port and connect to that.
     const profile = fs.mkdtempSync(path.join(require('os').tmpdir(), 'edge-smoke-'));
-    const port = 9333;
+    const port = 9400 + (process.pid % 400);
     const proc = require('child_process').spawn(EDGE, ['--headless=new', '--disable-gpu', '--no-first-run', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
     let browser;
     for (let i = 0; i < 60 && !browser; i++) {
@@ -44,6 +44,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const shutdown = async () => { try { await browser.close(); } catch (e) {} proc.kill(); };
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
+    // The full-motion path is what this test is for; make it explicit instead of
+    // depending on the headless browser's default accessibility preference.
+    await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
 
     const problems = [], infos = [];
     // Never send analytics hits from tests.
@@ -78,6 +81,28 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const visible = sel => page.$eval(sel, e => getComputedStyle(e).display !== 'none').catch(() => false);
     const state = () => page.evaluate(() => ({ phase: GameEngine.state.gamePhase, cp: GameEngine.state.currentPlayer, trump: GameEngine.state.trumpSuit, tricks: GameEngine.state.trickCount, cards: GameEngine.state.trick.cards.length }));
 
+    // Record the presentation stages so the deal can be checked without relying
+    // on a screenshot landing at exactly the right millisecond.
+    await page.evaluate(() => {
+        window.__stages = [];
+        const original = GameView.beat;
+        GameView.beat = function (name, payload) {
+            const result = original(name, payload);
+            if (name === 'shuffle' || name === 'deal-face-down' || name === 'trick-cleared') {
+                // Capture after the beat has settled, not when it starts: a deal
+                // beat intentionally waits for the cards that were just launched.
+                result.then(() => window.__stages.push({
+                    name,
+                    phase: GameEngine.state.gamePhase,
+                    faceUp: document.querySelectorAll('#player-faceup .card').length,
+                    backs: document.querySelectorAll('#player-faceup .slot.has-under').length,
+                    flying: document.querySelectorAll('.card.flying').length
+                }), () => {});
+            }
+            return result;
+        };
+    });
+
     await page.click('#start-game');
     await page.waitForSelector('#coin-toss-modal', { visible: true });
     await page.click('.coin-btn[data-choice="heads"]');
@@ -94,12 +119,22 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     }
     await page.waitForFunction(() => GameEngine.state.gamePhase === 'playing', { timeout: 15000 });
     console.log('playing; state:', JSON.stringify(await state()));
+    const stages = await page.evaluate(() => window.__stages || []);
+    console.log('presentation stages:', JSON.stringify(stages));
+    if (!stages.some((s) => s.name === 'shuffle')) problems.push('opening shuffle beat did not run');
+    const down = stages.find((s) => s.name === 'deal-face-down');
+    if (!down) problems.push('face-down deal beat did not run');
+    else {
+        if (down.faceUp !== 0) problems.push('face-up cards existed during the face-down deal');
+        if (down.backs !== 5) problems.push('face-down deal did not show five backs: ' + down.backs);
+        if (down.flying) problems.push('cards were still flying when the face-down deal finished');
+    }
     if (shots) await page.screenshot({ path: path.join(outDir, 'shot-3-playing.png') });
 
     // Play 3 tricks with real clicks on playable cards.
     for (let i = 0; i < 3; i++) {
         try {
-            await page.waitForFunction(() => GameEngine.state.currentPlayer === 'player' && !GameEngine.state.resolvingTrick && GameEngine.state.trick.cards.length < 2 && document.querySelector('#player-hand .card, #player-faceup .card'), { timeout: 30000, polling: 200 });
+            await page.waitForFunction(() => GameEngine.state.currentPlayer === 'player' && !GameEngine.state.resolvingTrick && GameEngine.state.trick.cards.length < 2 && document.querySelector('#player-hand .card.playable, #player-faceup .card.playable'), { timeout: 30000, polling: 200 });
         } catch (e) {
             console.log('STALL DIAGNOSTIC:', JSON.stringify(await page.evaluate(() => ({
                 s: { ph: GameEngine.state.gamePhase, cp: GameEngine.state.currentPlayer, res: GameEngine.state.resolvingTrick, think: GameEngine.state.computerThinking, trick: GameEngine.state.trick.cards, tc: GameEngine.state.trickCount, over: GameEngine.state.gameOver },
@@ -111,12 +146,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
             throw e;
         }
         await sleep(600);
-        // Real clicks on real card elements until the game accepts one (invalid plays must be rejected).
+        // Exercise one illegal click if the table offers one, then play a legal
+        // card. Hammering every card made the old test needlessly racy.
         const clicked = await page.evaluate(() => {
             const s = GameEngine.state;
             const before = s.trick.cards.length + s.trickCount * 2;
             let rejected = 0;
-            for (const c of document.querySelectorAll('#player-hand .card, #player-faceup .card')) {
+            const invalid = document.querySelector('#player-hand .card.invalid, #player-faceup .card.invalid');
+            if (invalid) { invalid.click(); rejected++; }
+            if (s.trick.cards.length + s.trickCount * 2 !== before) return { accepted: true, rejected };
+            for (const c of document.querySelectorAll('#player-hand .card.playable, #player-faceup .card.playable')) {
                 c.click();
                 if (s.trick.cards.length + s.trickCount * 2 !== before) return { accepted: true, rejected };
                 rejected++;
@@ -124,7 +163,20 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
             return { accepted: false, rejected };
         });
         console.log(`trick ${i + 1}: click result =`, JSON.stringify(clicked));
-        await page.waitForFunction((n) => GameEngine.state.trickCount > n, { timeout: 20000 }, i);
+        try {
+            await page.waitForFunction((n) => GameEngine.state.trickCount > n, { timeout: 20000 }, i);
+        } catch (e) {
+            console.log('TRICK STALL:', JSON.stringify(await page.evaluate(() => ({
+                g: { phase: GameEngine.state.gamePhase, cp: GameEngine.state.currentPlayer, res: GameEngine.state.resolvingTrick, think: GameEngine.state.computerThinking, trick: GameEngine.state.trick, tc: GameEngine.state.trickCount, over: GameEngine.state.gameOver },
+                status: document.getElementById('game-status').textContent.trim(),
+                cards: [...document.querySelectorAll('#player-hand .card, #player-faceup .card')].map(c => ({ cls: c.className, face: c.dataset.face, src: c.dataset.source })),
+                flying: document.querySelectorAll('.card.flying').length,
+                pending: GameView.pendingCount(),
+                pendingLabels: GameView.pendingLabels(),
+                modals: [...document.querySelectorAll('.modal')].filter(m => getComputedStyle(m).display !== 'none').map(m => m.id)
+            })), null, 1));
+            throw e;
+        }
     }
     console.log('after 3 tricks:', JSON.stringify(await state()));
     if (shots) await page.screenshot({ path: path.join(outDir, 'shot-4-mid.png') });
@@ -160,19 +212,49 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
         const end = await page.evaluate(() => ({
             cards: document.querySelectorAll('.card').length, flying: document.querySelectorAll('.card.flying').length,
             inTrick: document.querySelectorAll('.trick-slot .card').length, modal: document.getElementById('winner-announcement').textContent,
-            score: `${GameEngine.state.player.score}-${GameEngine.state.computer.score}`, sparks: document.querySelectorAll('.spark').length
+            score: `${GameEngine.state.player.score}-${GameEngine.state.computer.score}`, target: GameEngine.state.matchTarget,
+            over: GameEngine.state.gameOver, resultVisible: getComputedStyle(document.getElementById('game-over-modal')).display !== 'none',
+            sparks: document.querySelectorAll('.spark').length
         }));
         console.log('game over reached:', over, 'rounds:', rounds + 1, 'secs:', Math.round((Date.now() - t0) / 1000), 'max .card elements seen:', maxCards, JSON.stringify(end));
         if (!over) problems.push('full game did not finish');
+        if (!end.over || !end.resultVisible) problems.push('result was not based on a finished, visible match');
+        if (!end.modal) problems.push('result screen has no winner announcement');
+        // Sparks are the human victory celebration; a loss gets the quieter
+        // Anne result treatment instead.
+        if (/You win/.test(end.modal) && !end.sparks) problems.push('victory screen produced no celebration sparks');
         if (end.flying) problems.push('stuck flying cards: ' + end.flying);
         if (maxCards > 40) problems.push('too many card elements (leak?): ' + maxCards);
         if (shots) await page.screenshot({ path: path.join(outDir, 'shot-5-gameover.png') });
+
+        // A backdrop click must not hide the only result summary.
+        await page.mouse.click(20, 20);
+        await sleep(200);
+        const stillVisible = await page.$eval('#game-over-modal', (el) => getComputedStyle(el).display !== 'none');
+        if (!stillVisible) problems.push('backdrop click dismissed the result screen');
+
+        // Play another match starts dealing immediately, then the next restart
+        // happens inside that live rematch.
         await page.click('#play-again');
-        await sleep(400);
+        await page.waitForSelector('#coin-toss-modal', { visible: true, timeout: 5000 });
+        await page.click('.coin-btn[data-choice="heads"]');
+        await page.waitForFunction(() => ['trump-selection', 'dealing-remaining', 'playing'].includes(GameEngine.state.gamePhase) && GameEngine.state.lastTrumpSelector, { timeout: 15000 });
+        if ((await state()).phase === 'trump-selection') {
+            const modal = await visible('#trump-selection-modal');
+            if (modal) await page.click('.trump-btn[data-suit="spades"]');
+        }
+        await page.waitForFunction(() => GameEngine.state.gamePhase === 'playing', { timeout: 15000 });
+        const rematch = await page.evaluate(() => ({ started: GameEngine.state.gameStarted, over: GameEngine.state.gameOver, score: `${GameEngine.state.player.score}-${GameEngine.state.computer.score}`, target: GameEngine.state.matchTarget }));
+        console.log('rematch state:', JSON.stringify(rematch));
+        if (!rematch.started || rematch.over || rematch.score !== '0-0') problems.push('play another match did not start a clean rematch');
     }
 
-    // Restart mid-game must leave a clean setup state.
+    // Restart mid-game must confirm first.
     await page.click('#restart-game');
+    const needsConfirm = await page.$eval('#confirm-modal', (el) => getComputedStyle(el).display !== 'none').catch(() => false);
+    console.log('restart asked for confirmation:', needsConfirm);
+    if (!needsConfirm) problems.push('restart did not confirm a live match');
+    else await page.click('#confirm-accept');
     await sleep(3500);
     const after = await page.evaluate(() => ({ phase: GameEngine.state.gamePhase, start: getComputedStyle(document.getElementById('start-game')).display, status: document.getElementById('game-status').textContent.trim() }));
     console.log('after restart (+3.5s):', JSON.stringify(after));

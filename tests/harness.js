@@ -118,8 +118,20 @@ async function runScenario(cfg, rootDir) {
         const code = fs.readFileSync(path.join(rootDir, rel), 'utf8');
         new vm.Script(code, { filename: rel }).runInContext(ctx);
     }
+    if (doc.readyState === 'loading') await new Promise(r => win.addEventListener('DOMContentLoaded', r));
     if (doc.readyState !== 'complete') await new Promise(r => win.addEventListener('load', r));
     await flush();
+
+    // The recorded traces predate configurable match targets. Pin the harness to
+    // the old one-point finish so the engine comparison still tests rules and AI,
+    // not the production first-to-five setting.
+    vm.runInContext('gameState.matchTarget = 1; gameState.pendingMatchTarget = 1;', ctx);
+    // The opening shuffle is a presentation beat added after the baseline was
+    // recorded. Resolve it immediately in the harness so engine timing stays
+    // comparable; a real browser covers the animation itself.
+    vm.runInContext(`GameView.beat = (function (original) {
+        return function (name, payload) { return name === 'shuffle' ? Promise.resolve() : original(name, payload); };
+    })(GameView.beat);`, ctx);
 
     const gs = () => vm.runInContext('gameState', ctx);
     const el = id => doc.getElementById(id);
@@ -224,6 +236,8 @@ async function runScenario(cfg, rootDir) {
                 if (this.pendingId) { clock.clearTimeout(this.pendingId); this.pending = null; this.pendingId = null; }
                 return this.schedule('restart-midflow', () => {
                     click('restart-game');
+                    // A live match now asks for confirmation before clearing the score.
+                    if (disp('confirm-modal') === 'flex') click('confirm-accept');
                     this.started = false; this.tourDone = false; this.blockedSig = null;
                     this.schedule('resume-after-restart', () => { this.runAsserts(); }, 7000);
                 }, 0);
