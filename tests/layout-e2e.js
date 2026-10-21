@@ -187,6 +187,20 @@ const server = http.createServer((req, res) => {
     await page.screenshot({ path: path.join(outDir, 'layout-settings-390x844.png') });
     await page.click('#close-settings');
 
+    // Keyboard: a real Tab-focusable card must accept Arrow keys and Enter.
+    await page.waitForFunction(() => GameEngine.state.currentPlayer === 'player' && !GameEngine.state.resolvingTrick && document.querySelector('#player-hand .card.playable, #player-faceup .card.playable'), { timeout: 20000 });
+    const beforeKeyboard = await page.evaluate(() => {
+        const card = document.querySelector('#player-hand .card.playable, #player-faceup .card.playable');
+        card.focus();
+        return { active: document.activeElement === card, label: card.getAttribute('aria-label'), count: GameEngine.state.trick.cards.length + GameEngine.state.trickCount * 2 };
+    });
+    await page.keyboard.press('ArrowRight');
+    const moved = await page.evaluate(() => !!document.activeElement && document.activeElement.classList.contains('card'));
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Enter');
+    const keyboardPlayed = await page.waitForFunction((before) => GameEngine.state.trick.cards.length + GameEngine.state.trickCount * 2 > before, { timeout: 5000 }, beforeKeyboard.count).then(() => true).catch(() => false);
+    expect('390x844: cards are keyboard focusable and playable', beforeKeyboard.active && !!beforeKeyboard.label && moved && keyboardPlayed, { beforeKeyboard, moved, keyboardPlayed });
+
     // The result screen is checked with full motion so the victory celebration
     // is exercised, not just the layout of a still panel.
     await page.evaluate(() => TableSettings.update({ motion: 'full' }));

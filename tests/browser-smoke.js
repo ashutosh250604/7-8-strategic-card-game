@@ -256,8 +256,18 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     if (!needsConfirm) problems.push('restart did not confirm a live match');
     else await page.click('#confirm-accept');
     await sleep(3500);
-    const after = await page.evaluate(() => ({ phase: GameEngine.state.gamePhase, start: getComputedStyle(document.getElementById('start-game')).display, status: document.getElementById('game-status').textContent.trim() }));
+    const after = await page.evaluate(() => ({
+        phase: GameEngine.state.gamePhase,
+        start: getComputedStyle(document.getElementById('start-game')).display,
+        status: document.getElementById('game-status').textContent.trim(),
+        cards: document.querySelectorAll('.game-board .card').length,
+        flying: document.querySelectorAll('.card.flying').length,
+        pending: GameView.pendingCount()
+    }));
     console.log('after restart (+3.5s):', JSON.stringify(after));
+    if (after.phase !== 'setup' || after.start !== 'block' || after.cards !== 0 || after.flying !== 0 || after.pending !== 0) {
+        problems.push('restart did not leave a clean, animation-free table');
+    }
 
     console.log('\ninfo (not failures):', infos.length ? '\n  ' + infos.join('\n  ') : 'none');
     console.log('PROBLEMS:', problems.length ? '\n  ' + problems.join('\n  ') : 'none');

@@ -175,6 +175,29 @@ const server = http.createServer((req, res) => {
     }
 
     await page.screenshot({ path: path.join(outDir, 'settings-reduced.png') });
+
+    // A browser without Web Audio must still be able to deal and play. Remove
+    // the constructors before the page loads and drive the opening flow.
+    const failPage = await browser.newPage();
+    await failPage.setViewport({ width: 1024, height: 800 });
+    await failPage.setRequestInterception(true);
+    failPage.on('request', (r) => (/googletagmanager|google-analytics/.test(r.url()) ? r.abort('blockedbyclient') : r.continue()));
+    failPage.on('pageerror', (e) => problems.push('audio-fallback pageerror: ' + e.message));
+    failPage.on('console', (m) => { if (m.type() === 'error' && !/ERR_BLOCKED_BY_CLIENT/.test(m.text())) problems.push('audio-fallback console: ' + m.text()); });
+    await failPage.evaluateOnNewDocument(() => {
+        try { window.AudioContext = undefined; window.webkitAudioContext = undefined; } catch (e) { /* leave it */ }
+    });
+    await failPage.goto('http://127.0.0.1:8100/' + gamePath, { waitUntil: 'load' });
+    await failPage.click('#start-game');
+    await failPage.waitForSelector('#coin-toss-modal', { visible: true, timeout: 5000 });
+    const noAudio = await failPage.evaluate(() => {
+        let threw = null;
+        try { GameAudio.play('shuffle'); } catch (e) { threw = e.message; }
+        return { supported: GameAudio.isSupported(), threw, phase: GameEngine.state.gamePhase };
+    });
+    expect('missing Web Audio does not break the deal', noAudio.supported === false && noAudio.threw === null && noAudio.phase === 'coin-toss', noAudio);
+    await failPage.close();
+
     console.log('\nPROBLEMS:', problems.length ? '\n  ' + problems.join('\n  ') : 'none');
     try { await browser.close(); } catch (e) { /* already gone */ }
     proc.kill();

@@ -66,7 +66,8 @@ node settings-e2e.js        # or: npm run test:settings
 
 Checks malformed `localStorage` fallback, persisted sound/difficulty/target/motion preferences,
 the live-match target deferral, reduced-motion coin timing, and graceful behaviour when the
-Vibration API is missing. Also verifies that a live match keeps its target until the next match.
+Vibration API or Web Audio is missing. Also verifies that a live match keeps its target until
+the next match.
 
 ## Responsive layout E2E
 
@@ -74,10 +75,11 @@ Vibration API is missing. Also verifies that a live match keeps its target until
 node layout-e2e.js        # or: npm run test:layout
 ```
 
-Checks setup, a reduced-motion live table, the settings dialog and both result
-layouts at 1440x900, 390x844, 320x568 and 844x390. It fails on horizontal
-overflow, clipped player cards, an unloaded Anne portrait, or result actions that
-cannot be reached. Screenshots go to `tests/out/`.
+Checks the collection host line, setup, a reduced-motion live table, keyboard card
+play, Anne's trick-target reaction, the settings dialog and both result layouts at
+1440x900, 390x844, 320x568 and 844x390. It fails on horizontal overflow, clipped
+player cards, an unloaded Anne portrait, inaccessible result actions, a missing
+victory spark burst, or a broken keyboard play. Screenshots go to `tests/out/`.
 
 ## Match target and AI checks
 
