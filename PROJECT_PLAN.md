@@ -190,7 +190,7 @@ The baseline is the same seeded `sensible` heuristic for every cell; all matches
 
 ### Next highest-value task
 
-The premium character/table milestone is verified and ready to commit. The next product step is a real-device mobile pass (touch card selection, vibration, audio unlock, landscape) and a human visual review of Anne's portrait and the result/settings screens. After that, save/resume or match history would add more value than another round of cosmetic changes. Do not start 3-2-5 or Coat & Shuffle until their rules and hosts are approved.
+The premium character/table milestone is verified and committed as `2ae6aaf`, with the earlier checkpoint at `622e883`; both are pushed to `origin/main`. The next product step is a real-device mobile pass (touch card selection, vibration, audio unlock, landscape) and a human visual review of Anne's portrait and the result/settings screens. After that, save/resume or match history would add more value than another round of cosmetic changes. Do not start 3-2-5 or Coat & Shuffle until their rules and hosts are approved.
 
 Do not assume any milestone is incomplete or complete without checking the working tree and relevant tests.
 
