@@ -33,6 +33,7 @@ playing without a lobby or an account.
 - 14 local sound slots (13 effects plus the match-point cue) with synthesised fallbacks, recorded files over both localhost and `file://`, master volume, mute and persisted preferences
 - 3D coin toss with heads and tails faces, plus an in-app Calm motion setting that shortens every beat
 - Optional haptics on browsers that support vibration, with a setting and a clear unsupported state
+- Automatic local save/resume: refreshing or closing the tab reopens the same settled deal, trick and score; a new match deliberately clears it
 - Victory and defeat screens with the final score, Anne's reaction, optional canvas fireworks on a win (off by default; enable in Settings) and a one-click rematch
 - Optional interactive tutorial: trump choice, the 8-vs-7 target, and follow-suit
 - Live first-round coaching after the tour: a recommendation from your real hand, then your first real follow-suit decision
@@ -69,7 +70,7 @@ only. No build step and no runtime CDNs.
 
 ## Play Online
 
-[Play here](https://ashutosh250604.github.io/7-8-A-Strategic-Card-Game/)
+[Play here](https://site-ce1b006d23c6499196f6bc7cc15d028c.freebuff.page/)
 
 ---
 

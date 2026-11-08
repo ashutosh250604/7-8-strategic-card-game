@@ -62,7 +62,12 @@ const server = http.createServer((req, res) => {
 
     await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
     await page.setViewport({ width: 1440, height: 900 });
-    await page.evaluateOnNewDocument(() => localStorage.setItem('78-settings-v3', JSON.stringify({ motion: 'reduced', sound: false })));
+    await page.evaluateOnNewDocument(() => {
+        // This suite reloads to measure fresh setups; start each document from
+        // setup rather than resuming the previous viewport's deal.
+        localStorage.removeItem('78-match-v1');
+        localStorage.setItem('78-settings-v3', JSON.stringify({ motion: 'reduced', sound: false }));
+    });
 
     // The collection homepage is the first thing a new player sees. Anne's
     // host line and the 7-8 live tile must both fit at phone sizes.

@@ -8,6 +8,7 @@
     "trace:compare": "node run-trace.js --compare baseline",
     "test:e2e": "node tutorial-e2e.js",
     "test:settings": "node settings-e2e.js",
+    "test:resume": "node resume-e2e.js",
     "test:layout": "node layout-e2e.js",
     "test:mobile": "node mobile-pass.js",
     "test:smoke": "node browser-smoke.js",

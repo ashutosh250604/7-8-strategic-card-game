@@ -39,7 +39,8 @@ const gameState = {
     voids: { player: [], computer: [] }, // Suits a side has publicly shown out of
     lastTrick: null, // Public summary of the trick that just finished
     coinTossWinner: null, // Who won the coin toss
-    isFirstRound: true // Track if this is the first round (for coin toss)
+    isFirstRound: true, // Track if this is the first round (for coin toss)
+    roundOver: false // The between-rounds gap, safe to save and resume
 };
 
 // ---------------------------------------------------------------------------
@@ -1311,12 +1312,17 @@ function endRound() {
     if (checkGameEnd()) {
         return;
     }
+
+    // The score and table are settled before the short reveal beat. Save here
+    // so closing the tab during that beat still comes back to this round result.
+    gameState.roundOver = true;
+    persistMatch();
     
     // Prepare for next round
     runBeat('round-end', {}, () => {
-        gameState.roundNumber++;
         GameView.setNewRoundButton(true);
         showStatus("Click 'New Round' to continue");
+        persistMatch();
     });
 }
 
@@ -1356,6 +1362,8 @@ function checkGameEnd() {
         const playerWon = gameState.player.score >= target;
         const winner = playerWon ? 'Player' : 'Computer';
         gameState.gameOver = true;
+        gameState.roundOver = false;
+        clearSavedMatch();
         addToLog(`Match complete. ${winner === 'Player' ? 'You win' : 'Anne wins'} ${playerWon ? gameState.player.score : gameState.computer.score} to ${playerWon ? gameState.computer.score : gameState.player.score} (first to ${target}).`, 'trick-won');
         if (GameView.event) GameView.event('match', { winner, playerScore: gameState.player.score, computerScore: gameState.computer.score, target });
         showGameOver(winner);
@@ -1365,6 +1373,13 @@ function checkGameEnd() {
 }
 
 function startNewRound() {
+    // The completed round keeps its number while its result is on screen. The
+    // next round is numbered only when the player actually starts it.
+    if (gameState.roundOver) gameState.roundNumber++;
+    gameState.roundOver = false;
+    // Do not let a refresh during the next deal reopen the completed result.
+    clearSavedMatch();
+
     // Reset trick data
     gameState.player.wonTricks = [];
     gameState.computer.wonTricks = [];
@@ -1531,6 +1546,7 @@ function setTrump(suit) {
 // Game actions (called from ui.js)
 function startGame() {
     if (gameState.gameStarted && !gameState.gameOver) return;
+    clearSavedMatch();
     gameState.gameStarted = true;
     gameState.gameOver = false;
     gameState.matchTarget = gameState.pendingMatchTarget;
@@ -1563,8 +1579,11 @@ function restartGame() {
     gameState.playedCards = [];
     gameState.voids = { player: [], computer: [] };
     gameState.lastTrick = null;
+    gameState.roundOver = false;
     gameState.isFirstRound = true;  // Reset for coin toss
     gameState.coinTossWinner = null;
+
+    clearSavedMatch();
 
     GameView.resetForRestart();
 
@@ -1627,6 +1646,307 @@ function getTrickTarget(side) {
     return gameState.lastTrumpSelector === side ? 8 : 7;
 }
 
+// ---------------------------------------------------------------------------
+// Saved match (local only)
+// ---------------------------------------------------------------------------
+// A checkpoint is a settled turn, not an animation frame. We never store a
+// half-dealt pack, a mid-trick resolution, or Anne's pending thinking state, so
+// restoring can never duplicate a card or skip the computer's reply. The save
+// is small, local to this browser, and deliberately validated before it reaches
+// the engine: localStorage is user-editable, not trusted input.
+const MATCH_SAVE_KEY = '78-match-v1';
+const MATCH_SAVE_VERSION = 1;
+const MATCH_SAVE_SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
+let savedCardIds = null;
+
+function savedCardSet() {
+    if (!savedCardIds) savedCardIds = new Set(createDeck());
+    return savedCardIds;
+}
+
+function readSavedCardArray(value, max) {
+    if (!Array.isArray(value) || value.length > max) return null;
+    const cards = [];
+    for (const card of value) {
+        if (card === null || card === undefined) cards.push(null);
+        else if (typeof card === 'string' && savedCardSet().has(card)) cards.push(card);
+        else return null;
+    }
+    return cards;
+}
+
+function readSavedSide(value) {
+    if (!value || typeof value !== 'object') return null;
+    const hand = readSavedCardArray(value.hand, 5);
+    const faceUp = readSavedCardArray(value.faceUp, 5);
+    const faceDown = readSavedCardArray(value.faceDown, 5);
+    if (!hand || !faceUp || !faceDown) return null;
+    if (!Number.isInteger(value.score) || value.score < 0 || value.score > 999) return null;
+    if (!Number.isInteger(value.tricksWon) || value.tricksWon < 0 || value.tricksWon > 15) return null;
+    return {
+        hand, faceUp, faceDown,
+        score: value.score,
+        tricksWon: value.tricksWon,
+        wonTricks: []
+    };
+}
+
+function readSavedTrick(value, currentPlayer) {
+    if (!value || typeof value !== 'object' || !Array.isArray(value.cards) || value.cards.length > 1) return null;
+    const cards = [];
+    for (const play of value.cards) {
+        if (!play || typeof play !== 'object' || (play.player !== 'player' && play.player !== 'computer')) return null;
+        if (!savedCardSet().has(play.card)) return null;
+        cards.push({ card: play.card, player: play.player });
+    }
+    const leadSuit = value.leadSuit === null ? null :
+        (typeof value.leadSuit === 'string' && MATCH_SAVE_SUITS.includes(value.leadSuit) ? value.leadSuit : undefined);
+    if (leadSuit === undefined) return null;
+    if (cards.length === 1) {
+        if (leadSuit !== getCardSuit(cards[0].card)) return null;
+        if (cards[0].player === currentPlayer) return null;
+    } else if (leadSuit !== null) {
+        return null;
+    }
+    return { cards, leadSuit };
+}
+
+function readSavedVoids(value) {
+    if (!value || typeof value !== 'object') return null;
+    const voids = { player: [], computer: [] };
+    for (const side of ['player', 'computer']) {
+        if (!Array.isArray(value[side])) return null;
+        const suits = [];
+        for (const suit of value[side]) {
+            if (!MATCH_SAVE_SUITS.includes(suit) || suits.includes(suit)) return null;
+            suits.push(suit);
+        }
+        voids[side] = suits;
+    }
+    return voids;
+}
+
+function readSavedPlayedCards(value) {
+    if (!Array.isArray(value) || value.length > 30) return null;
+    const cards = [];
+    for (const card of value) {
+        if (!savedCardSet().has(card) || cards.includes(card)) return null;
+        cards.push(card);
+    }
+    return cards;
+}
+
+function parseSavedMatch(value) {
+    if (!value || value.v !== MATCH_SAVE_VERSION || !value.state || typeof value.state !== 'object') return null;
+    const raw = value.state;
+    if (raw.gamePhase !== 'trump-selection' && raw.gamePhase !== 'playing') return null;
+    if (raw.currentPlayer !== 'player' && raw.currentPlayer !== 'computer') return null;
+    if (raw.lastTrumpSelector !== 'player' && raw.lastTrumpSelector !== 'computer') return null;
+    if (!Number.isInteger(raw.roundNumber) || raw.roundNumber < 1 || raw.roundNumber > 99) return null;
+    if (!Number.isInteger(raw.trickCount) || raw.trickCount < 0 || raw.trickCount > 15) return null;
+    if (![3, 5, 7].includes(raw.matchTarget)) return null;
+    const player = readSavedSide(raw.player);
+    const computer = readSavedSide(raw.computer);
+    if (!player || !computer) return null;
+    const trick = readSavedTrick(raw.trick, raw.currentPlayer);
+    if (!trick) return null;
+    const voids = readSavedVoids(raw.voids);
+    const playedCards = readSavedPlayedCards(raw.playedCards || []);
+    const remainingCards = readSavedCardArray(raw.remainingCards || [], 20);
+    if (!voids || !playedCards || !remainingCards) return null;
+    if (raw.gamePhase === 'trump-selection') {
+        if (raw.trumpSuit !== null || remainingCards.length < 10) return null;
+        if (player.hand.filter(Boolean).length !== 5 || computer.hand.filter(Boolean).length !== 5) return null;
+    } else if (!MATCH_SAVE_SUITS.includes(raw.trumpSuit)) {
+        return null;
+    }
+    const active = [
+        ...player.hand, ...player.faceUp, ...player.faceDown,
+        ...computer.hand, ...computer.faceUp, ...computer.faceDown,
+        ...trick.cards.map((play) => play.card)
+    ].filter(Boolean);
+    if (new Set(active).size !== active.length) return null;
+    if (new Set(remainingCards.filter(Boolean)).size !== remainingCards.filter(Boolean).length) return null;
+    if (trick.cards.length && raw.gamePhase !== 'playing') return null;
+    let roundOver = raw.roundOver === true;
+    if (roundOver && (trick.cards.length || active.some(Boolean))) return null;
+    if (!roundOver && raw.gamePhase === 'playing' && !active.length) {
+        if (raw.trickCount >= 15) roundOver = true;
+        else return null;
+    }
+    return {
+        deck: [],
+        player, computer,
+        trumpSuit: raw.trumpSuit,
+        currentPlayer: raw.currentPlayer,
+        trick,
+        gameStarted: true,
+        gamePhase: raw.gamePhase,
+        gameOver: false,
+        trickCount: raw.trickCount,
+        lastRoundWinner: null,
+        resolvingTrick: false,
+        lastTrumpSelector: raw.lastTrumpSelector,
+        computerThinking: false,
+        roundNumber: raw.roundNumber,
+        difficulty: gameState.difficulty,
+        matchTarget: raw.matchTarget,
+        pendingMatchTarget: gameState.pendingMatchTarget,
+        playedCards,
+        voids,
+        lastTrick: null,
+        coinTossWinner: null,
+        isFirstRound: false,
+        roundOver,
+        remainingCards
+    };
+}
+
+function currentMatchSnapshot() {
+    const gs = gameState;
+    if (!gs.gameStarted || gs.gameOver) return null;
+    if (gs.gamePhase !== 'trump-selection' && gs.gamePhase !== 'playing') return null;
+    if (gs.resolvingTrick || gs.computerThinking) return null;
+    if (gs.gamePhase === 'trump-selection') {
+        if (gs.lastTrumpSelector !== 'player' || gs.currentPlayer !== 'player') return null;
+        if (gs.player.hand.filter(Boolean).length !== 5) return null;
+    } else {
+        if (!gs.trumpSuit || !gs.lastTrumpSelector) return null;
+        if (gs.trick.cards.length > 1) return null;
+    }
+    const side = (data) => ({
+        hand: data.hand.slice(),
+        faceUp: data.faceUp.slice(),
+        faceDown: data.faceDown.slice(),
+        score: data.score,
+        tricksWon: data.tricksWon
+    });
+    return {
+        v: MATCH_SAVE_VERSION,
+        savedAt: Date.now(),
+        state: {
+            player: side(gs.player),
+            computer: side(gs.computer),
+            trumpSuit: gs.trumpSuit,
+            currentPlayer: gs.currentPlayer,
+            trick: {
+                cards: gs.trick.cards.map((play) => ({ card: play.card, player: play.player })),
+                leadSuit: gs.trick.leadSuit
+            },
+            gamePhase: gs.gamePhase,
+            trickCount: gs.trickCount,
+            lastTrumpSelector: gs.lastTrumpSelector,
+            roundNumber: gs.roundNumber,
+            matchTarget: gs.matchTarget,
+            playedCards: gs.playedCards.slice(),
+            voids: { player: gs.voids.player.slice(), computer: gs.voids.computer.slice() },
+            remainingCards: (gs.remainingCards || []).slice(),
+            roundOver: !!gs.roundOver
+        }
+    };
+}
+
+function persistMatch() {
+    if (typeof localStorage === 'undefined') return false;
+    if (gameState.gameOver) { clearSavedMatch(); return false; }
+    const snapshot = currentMatchSnapshot();
+    if (!snapshot) return false;
+    try {
+        localStorage.setItem(MATCH_SAVE_KEY, JSON.stringify(snapshot));
+        return true;
+    } catch (e) {
+        // Private mode, a full quota, or file:// with storage disabled.
+        return false;
+    }
+}
+
+function clearSavedMatch() {
+    try { localStorage.removeItem(MATCH_SAVE_KEY); } catch (e) { /* storage unavailable */ }
+}
+
+function readSavedMatch() {
+    try {
+        const raw = localStorage.getItem(MATCH_SAVE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        const state = parseSavedMatch(parsed);
+        if (!state) clearSavedMatch();
+        return state;
+    } catch (e) {
+        clearSavedMatch();
+        return null;
+    }
+}
+
+let saveTimer = null;
+function queueMatchSave() {
+    if (saveTimer) return;
+    saveTimer = setTimeout(() => {
+        saveTimer = null;
+        persistMatch();
+    }, 60);
+}
+
+document.addEventListener('gameview:render', queueMatchSave);
+window.addEventListener('pagehide', persistMatch);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') persistMatch();
+});
+
+function restoreSavedGame() {
+    const saved = readSavedMatch();
+    if (!saved) return false;
+
+    // A restored table is a new flow: cancel anything the old page left in a
+    // timer and clear the transient flags before mounting settled cards.
+    flowSession++;
+    if (computerWatchdog) { clearTimeout(computerWatchdog); computerWatchdog = null; }
+    const difficulty = gameState.difficulty;
+    const pendingTarget = gameState.pendingMatchTarget;
+    Object.assign(gameState, saved);
+    gameState.difficulty = difficulty;
+    gameState.pendingMatchTarget = pendingTarget;
+    gameState.gameStarted = true;
+    gameState.gameOver = false;
+    gameState.resolvingTrick = false;
+    gameState.computerThinking = false;
+    gameState.coinTossWinner = null;
+    gameState.lastTrick = null;
+    gameState.isFirstRound = false;
+    gameState.player.wonTricks = [];
+    gameState.computer.wonTricks = [];
+
+    GameView.resetForRestart();
+    GameView.setStartButton(false);
+    addToLog('Saved match restored. Your table is exactly where you left it.');
+    updateDisplay();
+    GameView.toast('Match restored');
+
+    if (gameState.roundOver) {
+        GameView.setNewRoundButton(true);
+        showStatus("Click 'New Round' to continue");
+        return true;
+    }
+    if (gameState.gamePhase === 'trump-selection') {
+        showStatus('Choose trump to continue the restored round');
+        showTrumpSelection();
+        return true;
+    }
+    if (gameState.currentPlayer === 'computer') {
+        showStatus('Anne is playing...');
+        const session = flowSession;
+        // Let the restored cards settle before the AI's visible thinking beat.
+        setTimeout(() => {
+            if (session !== flowSession || gameState.gameOver || gameState.gamePhase !== 'playing' ||
+                gameState.currentPlayer !== 'computer' || gameState.trick.cards.length >= 2) return;
+            computerPlay();
+        }, 220);
+        return true;
+    }
+    showStatus(gameState.trick.cards.length ? 'Your turn to play' : 'You lead the next trick');
+    return true;
+}
+
 // Public engine API: the only thing presentation.js and ui.js may use.
 const GameEngine = {
     state: gameState,
@@ -1646,6 +1966,10 @@ const GameEngine = {
     setDifficulty,
     setMatchTarget,
     getMatchTarget,
+    restoreSavedGame,
+    hasSavedMatch: () => !!readSavedMatch(),
+    clearSavedMatch,
+    saveKey: MATCH_SAVE_KEY,
     reopenTrumpSelection,
     updateSelectTrumpButtonVisibility,
     ready

@@ -231,6 +231,7 @@ body::before {
 .hud-icon { width: 30px; padding: 0; border-color: transparent; font-size: 14px; }
 .hud-rules { color: var(--arc-mute); border-color: transparent; padding-inline: 8px; }
 .hud-rules:hover { color: var(--gold-bright); }
+.hud-label-compact { display: none; }
 .mute-btn.is-muted { color: var(--gold); }
 
 /* ------------------------------------------------------------------ table */
@@ -2043,6 +2044,11 @@ html {
     .brand-mark { width: 32px; height: 32px; font-size: 11.5px; border-radius: 7px; }
     .hud-btn { height: 36px; min-height: 36px; padding: 0 8px; font-size: 10.5px; }
     .hud-icon { width: 36px; min-width: 36px; }
+    .hud-right { gap: 3px; }
+    #hud-rules { padding: 0 7px; letter-spacing: .04em; }
+    #restart-game { padding: 0 7px; letter-spacing: .04em; }
+    .hud-label-wide { display: none; }
+    .hud-label-compact { display: inline; }
     .score-board { min-height: 32px; padding: 2px 8px; }
     .score-name { font-size: 10.5px; }
     .score-num { font-size: 22px; }
@@ -2054,10 +2060,10 @@ html {
     :root { --cw-base: 52px; }
     .center-area { --cw-seat: calc(var(--cw-base) * 1.06); }
     .anne-speech-lane { min-height: 48px; }
-    .anne-speech-lane .anne-reaction { font-size: 11.5px; line-height: 1.3; padding: 6px 8px 7px; }
+    .anne-speech-lane .anne-reaction { max-width: calc(100vw - 12px); font-size: 11.5px; line-height: 1.3; padding: 6px 8px 7px; }
     .computer-area .seat-bar { padding: 2px 4px; }
     .computer-area .anne-avatar { width: 32px; height: 40px; }
     .player-area .seat-bar { min-height: 24px; }
     .game-status { min-height: 16px; }
-    .game-status span { font-size: 12.5px; line-height: 1.15; }
+    .game-status span { font-size: 12.5px; line-height: 1.15; text-wrap: balance; }
 }

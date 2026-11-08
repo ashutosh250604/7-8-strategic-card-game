@@ -74,6 +74,10 @@ function expect(label, ok, detail) {
     const pageErrors = [];
     page.on('pageerror', (e) => pageErrors.push(e.message));
     await page.evaluateOnNewDocument(() => {
+        // Each viewport iteration needs its own fresh deal; the resume suite
+        // covers restored matches separately. The first document is about:blank,
+        // where storage is unavailable.
+        try { localStorage.removeItem('78-match-v1'); } catch (e) { /* opaque document */ }
         window.__mobileProbe = { vibrations: [], audioContexts: 0, audioResumes: 0, unlocks: 0 };
         try {
             Object.defineProperty(navigator, 'vibrate', {
@@ -223,6 +227,22 @@ function expect(label, ok, detail) {
     expect('emulated phone exposes a coarse touch pointer', environment.coarse && environment.touchPoints > 0, environment);
     await settle();
     await checkFit('320x568');
+    const compactNew = await page.evaluate(() => {
+        const button = document.getElementById('restart-game');
+        const wide = button.querySelector('.hud-label-wide');
+        const compact = button.querySelector('.hud-label-compact');
+        const rect = button.getBoundingClientRect();
+        return {
+            text: button.innerText.replace(/\s+/g, ' ').trim(),
+            wide: getComputedStyle(wide).display,
+            compact: getComputedStyle(compact).display,
+            width: Math.round(rect.width),
+            height: Math.round(rect.height)
+        };
+    });
+    expect('320x568: new-match control uses its compact label',
+        /^new$/i.test(compactNew.text) && compactNew.wide === 'none' && compactNew.compact !== 'none' &&
+        compactNew.width >= 36 && compactNew.height >= 36, compactNew);
 
     const before = await page.evaluate(() => ({
         selected: document.querySelectorAll('#player-hand .card.selected, #player-faceup .card.selected').length,

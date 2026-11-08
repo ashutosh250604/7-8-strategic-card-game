@@ -73,7 +73,8 @@ closes.
 
 - Physical speaker output, vibration hardware and iOS Safari behavior were not tested
   on a real phone; browser emulation cannot prove those.
-- The game still has no save/resume, statistics or match history, and the other
-  collection tiles remain clearly labelled placeholders.
+- Save/resume now restores a settled live deal, trump choice, one-card trick or
+  between-rounds gap. The game still has no statistics or match history, and the
+  other collection tiles remain clearly labelled placeholders.
 - The 320×568 layout is deliberately dense; it is verified to fit, not to feel as
   spacious as a 390×844 phone.

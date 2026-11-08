@@ -104,6 +104,19 @@ preferences, the winner-fireworks default and toggle, the live-match target defe
 Calm shuffle, and graceful behaviour when the Vibration API or Web Audio is missing. Also verifies
 that a live match keeps its target until the next match.
 
+## Save/resume E2E
+
+```
+node resume-e2e.js        # or: npm run test:resume
+```
+
+Starts a real match, leaves Anne's reply on the table, reloads, and compares the
+exact hands, face-up/face-down rows, score, trump, turn and trick. It then plays
+the restored turn, checks that a new match clears the checkpoint, reopens the
+five-card trump choice, proves the remaining deal has all 30 cards exactly once,
+and checks that malformed storage falls back to a fresh table. Screenshots go to
+`tests/out/`.
+
 ## Responsive layout E2E
 
 ```

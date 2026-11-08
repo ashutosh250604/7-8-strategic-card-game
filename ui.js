@@ -536,7 +536,9 @@ function initializeUI() {
     });
 
     ensurePreferences();
-    GameEngine.ready();
+    // Restore after preferences so the current difficulty and pending match
+    // target win over whatever was saved with the interrupted match.
+    if (!GameEngine.restoreSavedGame()) GameEngine.ready();
 }
 
 // Start the game when page loads

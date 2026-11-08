@@ -55,8 +55,8 @@ and motion plumbing.
 Remaining honest limits: Anne is a designed illustration rather than a
 photograph, so she reads as the game's host rather than a real person; her
 speaking mouth is a stylised loop, not phoneme lip-sync. The collection's other
-games are still clearly labelled placeholders; save/resume, statistics and match
-history are not built.
+games are still clearly labelled placeholders; statistics and match history are
+not built. Save/resume now covers settled live turns.
 
 ## Current Pass - Portrait, AI and Riffle Polish (November 2026)
 
@@ -349,16 +349,16 @@ The baseline is the same seeded `sensible` heuristic for every cell; all matches
 - Anne is the supplied reference photograph, mounted from the single asset `assets/anne/anne-portrait.png` on every screen. Breath, mood grading, the speaking ring and voice bars animate the photo; it is not a phoneme-level lip-sync rig.
 - All fourteen sound slots have a file. Thirteen are recordings; `matchPoint` is rendered from the game's own synth by `tests/render-sound.js` (a rising two-note bell, gain 3.5 so it matches the other event cues) until a recording replaces it. The synth remains the fallback for any slot whose file is missing or fails to decode.
 - Haptics were verified through the API path and a simulated missing-API fallback in headless Edge; they have not been felt on real mobile hardware.
-- Save/resume, statistics/history, achievements, and additional tables are not implemented. 3–2–5 and Coat & Shuffle remain status-only tiles; the character registry has two empty avatar slots for them.
+- Save/resume is implemented for the opening trump choice, a settled live turn, a one-card trick and the between-rounds gap; it clears on a new match or game over. Statistics/history, achievements, and additional tables are not implemented. 3–2–5 and Coat & Shuffle remain status-only tiles; the character registry has two empty avatar slots for them.
 - The rules modal remains the long reference; the tutorial and first-round coach cover the opening decisions, not every scoring edge case.
 - The setup hero cards and sample tutorial cards are decorative/sample only; the live coach reads the real hand and trick but never changes them.
 
 ### Current state and next work
 
-The working tree contains the portrait, AI, fireworks, file-audio and
-riffle-polish pass. It is verified by the checks above but intentionally
-uncommitted; the earlier character/table checkpoint is `2ae6aaf`. Do not commit
-or publish without explicit approval.
+The current release includes the portrait, AI, fireworks, file-audio and
+riffle-polish work, plus automatic save/resume and the 320px HUD pass. It is
+verified by the checks above. A refreshed tab restores a settled turn, trick,
+trump choice or between-rounds result; New deliberately clears it.
 
 The game now defaults to Medium, first to 3 points, Anne's voice off and fireworks
 off. The supplied photograph is mounted consistently everywhere, and the
@@ -369,9 +369,10 @@ riffle is centered and timed to the recording; `file://` has recorded-audio
 parity; victory fireworks are opt-in.
 
 **Next product step:** a real-device mobile pass (touch selection, vibration,
-audio unlock, landscape) and a human visual review of the result and settings
-screens. A phoneme-level mouth or second pose would add more than another CSS
-pass. After that, save/resume or match history is the next high-value feature.
+audio unlock, iOS Safari, landscape) and a human visual review of the result and
+settings screens; browser emulation verifies fit and input, not speaker or
+vibration hardware. A phoneme-level mouth or second pose would add more than
+another CSS pass. Match history is the next product feature.
 Do not start 3-2-5 or Coat & Shuffle until their rules and hosts are approved.
 
 ## Definition of Done
