@@ -26,7 +26,9 @@ function mulberry32(seed) {
 const settle = () => new Promise(r => setImmediate(r));
 
 function createEngine(rng) {
-    const box = { console, __rng: rng };
+    // The engine schedules one watchdog with the browser timer API; mirror it
+    // here so the simulator runs the same code path as the page.
+    const box = { console, __rng: rng, setTimeout, clearTimeout };
     const ctx = vm.createContext(box);
     vm.runInContext(`
       var __h = { trump: null, ended: false };

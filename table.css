@@ -1,0 +1,1027 @@
+/* =====================================================================
+   THE TABLE - layout and responsive plumbing
+   Loaded after style.css; theme.css owns the final skin. Structure and motion still belong
+   to style.css; this file owns colour, type, shape and depth.
+   ===================================================================== */
+
+body {
+    background:
+        radial-gradient(120% 90% at 50% -20%, #241811 0%, #0f0b08 42%, var(--void) 100%);
+    color: var(--arc-text);
+    font-family: var(--font-ui);
+    overflow: hidden;
+}
+body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+        linear-gradient(rgba(201, 163, 92, .05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201, 163, 92, .05) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(80% 70% at 50% 0%, #000 0%, transparent 78%);
+    -webkit-mask-image: radial-gradient(80% 70% at 50% 0%, #000 0%, transparent 78%);
+}
+.game-container {
+    position: relative; z-index: 1;
+    gap: 4px;
+    padding: 8px clamp(10px, 2vw, 24px) clamp(8px, 1.4vh, 16px);
+    max-width: 1600px;
+    height: 100dvh;
+}
+::selection { background: var(--pink); color: #160a14; }
+:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; border-radius: 6px; }
+
+/* ---------------------------------------------------------------- HUD */
+.hud {
+    gap: clamp(8px, 1.6vw, 22px);
+    padding: 4px 0 6px;
+    align-items: center;
+}
+.hud-brand { gap: 12px; }
+.brand-mark {
+    width: 46px; height: 46px; border-radius: 12px;
+    font: 400 16px/1 var(--font-display);
+    letter-spacing: .02em;
+    color: #1b1209;
+    background: linear-gradient(160deg, #ff8ab4, var(--pink) 55%, #cf2360);
+    border: 2px solid #17100c;
+    box-shadow: 3px 3px 0 #17100c, 0 0 22px rgba(201, 163, 92, .35);
+    transform: rotate(-2deg);
+}
+.hud-brand:hover .brand-mark {
+    box-shadow: 3px 3px 0 #17100c, 0 0 30px rgba(201, 163, 92, .55);
+    transform: rotate(2deg) scale(1.04);
+}
+.brand-mark i { color: #3a0e24; opacity: .8; }
+.brand-text { gap: 4px; }
+.brand-name {
+    font: 400 clamp(13px, 1.3vw, 17px)/1 var(--font-display);
+    letter-spacing: .03em;
+    color: var(--cream);
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, .55);
+}
+.brand-name i { color: var(--pink); font-style: normal; }
+.brand-sub {
+    font: 700 9.5px/1 var(--font-ui);
+    letter-spacing: .2em;
+    color: var(--cyan);
+}
+
+.score-board {
+    gap: clamp(6px, 1.2vw, 16px);
+    padding: 5px clamp(10px, 1.4vw, 16px);
+    border-radius: 14px;
+    background: linear-gradient(180deg, #1a1410, #0f0b08);
+    border: 2px solid var(--stroke-2);
+    box-shadow: var(--hard-sm), inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+.score-side { gap: 8px; min-width: clamp(58px, 7vw, 90px); }
+.score-name {
+    font: 700 10px/1 var(--font-ui);
+    letter-spacing: .14em;
+    color: var(--arc-dim);
+}
+.score-num {
+    font: 400 clamp(22px, 2.1vw, 30px)/1 var(--font-display);
+    color: var(--lime);
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, .5), 0 0 18px rgba(214, 174, 98, .25);
+    min-width: .72em;
+}
+.score-side-cpu .score-num { color: var(--pink-soft); text-shadow: 2px 2px 0 rgba(0,0,0,.5), 0 0 18px rgba(201, 163, 92, .3); }
+.round-info {
+    min-width: 58px; padding: 2px 14px;
+    border-inline: 1px solid rgba(255, 255, 255, .1);
+    gap: 3px;
+}
+.round-info small { font: 700 9.5px/1 var(--font-ui); letter-spacing: .12em; color: var(--arc-mute); }
+.round-info b { font: 400 15px/1 var(--font-display); color: var(--gold); letter-spacing: .02em; }
+.round-info em { font: 700 9.5px/1 var(--font-ui); letter-spacing: .08em; color: var(--arc-mute); }
+
+.hud-right { gap: 7px; }
+.hud-divider { height: 24px; background: rgba(255, 255, 255, .12); }
+.difficulty-indicator {
+    font: 700 10px/1 var(--font-ui);
+    letter-spacing: .12em;
+    color: var(--lime);
+    padding: 7px 11px;
+    border-radius: 8px;
+    border: 2px solid rgba(214, 174, 98, .32);
+    background: rgba(214, 174, 98, .06);
+}
+.trump-indicator {
+    gap: 8px;
+    padding: 4px 5px 4px 10px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, .35);
+    border: 2px solid var(--stroke-2);
+    box-shadow: none;
+}
+.trump-label { font: 700 9.5px/1 var(--font-ui); letter-spacing: .14em; color: var(--arc-mute); }
+.trump-suit {
+    width: 28px; height: 28px; border-radius: 7px;
+    font-size: 17px;
+    background: var(--cream); color: var(--ink);
+    border: 1.5px solid #241335;
+    box-shadow: none;
+}
+.hud-btn {
+    height: 34px; padding: 0 14px;
+    border-radius: 9px;
+    border: 2px solid var(--stroke-2);
+    font: 700 10.5px/1 var(--font-ui);
+    letter-spacing: .1em;
+    color: var(--arc-text);
+    background: #1b1410;
+    box-shadow: var(--hard-sm);
+    transition: transform .12s, box-shadow .12s, background .12s, border-color .12s;
+}
+.hud-btn:hover {
+    background: #2a2018;
+    border-color: var(--pink);
+    color: var(--cream);
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, .72);
+}
+.hud-btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 rgba(0,0,0,.72); }
+.hud-icon { width: 34px; padding: 0; font-size: 15px; }
+.hud-rules { border-color: rgba(157, 181, 168, .35); color: var(--cyan); }
+.mute-btn.is-muted { color: var(--pink); border-color: var(--pink); }
+
+/* ---------------------------------------------------------------- table */
+.game-board {
+    margin: 8px 2px 0;
+    padding: clamp(10px, 1.5vh, 16px) clamp(10px, 2vw, 26px);
+    border-radius: 24px;
+    border: 2px solid #54402b;
+    background:
+        radial-gradient(58% 52% at 50% 48%, rgba(96, 52, 138, .55) 0%, rgba(44, 24, 74, 0) 72%),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 46px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .022) 0 1px, transparent 1px 46px),
+        radial-gradient(100% 80% at 50% 0%, #1c1410 0%, #1a1033 55%, #0a0705 100%);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, .05),
+        inset 0 0 90px 18px rgba(0, 0, 0, .5),
+        0 0 0 5px #150d26,
+        0 0 0 7px rgba(201, 163, 92, .35),
+        0 18px 40px rgba(0, 0, 0, .55);
+}
+.game-board::before {
+    inset: 8px;
+    border-radius: 18px;
+    box-shadow: inset 0 0 0 1.5px rgba(157, 181, 168, .12);
+}
+.game-board::after {
+    font: 400 min(26vh, 28vw)/1 var(--font-display);
+    color: var(--pink);
+    opacity: .05;
+}
+.game-board.is-setup::after { content: "7·8"; opacity: .055; }
+
+/* ---------------------------------------------------------------- seats */
+.seat { gap: 6px; }
+.seat-bar {
+    min-height: 34px;
+    padding: 4px 14px 4px 6px;
+    border-radius: 12px;
+    gap: clamp(10px, 1.6vw, 18px);
+    border: 2px solid transparent;
+    transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.seat.is-turn .seat-bar {
+    background: rgba(214, 174, 98, .05);
+    border-color: rgba(214, 174, 98, .3);
+    box-shadow: 0 0 22px rgba(214, 174, 98, .1);
+}
+.player-area .seat-bar { padding: 4px 6px 4px 12px; }
+.anne-avatar {
+    width: clamp(58px, 5.8vw, 76px);
+    height: clamp(58px, 5.8vw, 76px);
+    border-radius: 14px;
+    box-shadow: 0 0 0 2px #1a0f2b, 0 0 0 4px var(--pink), 0 6px 16px rgba(0, 0, 0, .5);
+    background: #f28aa8;
+}
+.seat.is-turn .anne-avatar {
+    box-shadow: 0 0 0 2px #1a0f2b, 0 0 0 4px var(--lime), 0 0 26px rgba(214, 174, 98, .35);
+}
+.computer-area[data-mood="tease"] .anne-avatar { box-shadow: 0 0 0 2px #1a0f2b, 0 0 0 4px var(--pink), 0 0 26px rgba(201, 163, 92, .45); }
+.computer-area[data-mood="happy"] .anne-avatar { box-shadow: 0 0 0 2px #1a0f2b, 0 0 0 4px var(--lime), 0 0 26px rgba(214, 174, 98, .4); }
+.computer-area[data-mood="impressed"] .anne-avatar { box-shadow: 0 0 0 2px #1a0f2b, 0 0 0 4px var(--gold), 0 0 26px rgba(255, 207, 74, .4); }
+.computer-area[data-mood="thinking"] .anne-avatar { box-shadow: 0 0 0 2px #1a0f2b, 0 0 0 4px var(--cyan), 0 0 22px rgba(157, 181, 168, .3); }
+.computer-area[data-mood="sorry"] .anne-avatar { box-shadow: 0 0 0 2px #1a0f2b, 0 0 0 4px #d9b9a3, 0 0 20px rgba(217, 185, 163, .25); }
+
+.anne-name-row { gap: 8px; }
+.player-label {
+    font: 400 12px/1 var(--font-display);
+    letter-spacing: .05em;
+    color: var(--cream);
+    text-transform: uppercase;
+}
+.seat.is-turn .player-label { color: var(--lime); }
+.anne-role { font: 500 11px/1.2 var(--font-ui); color: var(--arc-dim); letter-spacing: .01em; }
+.anne-mood {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font: 700 10px/1.2 var(--font-ui);
+    letter-spacing: .04em;
+    color: #2c2118;
+    background: var(--pink-soft);
+    box-shadow: none;
+}
+.anne-difficulty {
+    padding: 3px 7px;
+    border-radius: 5px;
+    font: 700 9.5px/1 var(--font-ui);
+    letter-spacing: .1em;
+    color: var(--lime);
+    border: 1.5px solid rgba(214, 174, 98, .4);
+}
+.won-tricks { gap: 8px; }
+.tricks-label { font: 600 11px/1 var(--font-ui); color: var(--arc-dim); }
+.tricks-label .trick-count { font: 400 15px/1 var(--font-display); color: var(--lime); }
+.tricks-label .trick-target { color: var(--arc-mute); }
+.meter { gap: 3px; }
+.meter i {
+    width: 5px; height: 12px; border-radius: 2px;
+    background: rgba(0, 0, 0, .45);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+}
+.meter i.won { background: var(--lime); box-shadow: 0 0 8px rgba(214, 174, 98, .5); }
+.meter i.target { box-shadow: inset 0 0 0 1px var(--gold); }
+
+.cards-label { font: 700 10.5px/1 var(--font-ui); letter-spacing: .12em; color: var(--arc-mute); }
+.cards-label b { font: 700 10.5px/1 var(--font-ui); color: var(--lime); }
+.cards-label, .tricks-label, .trick-caption, .score-name, .player-label,
+.round-info small, .round-info em, .anne-role, .brand-sub { text-shadow: none; }
+.seat-avatar {
+    width: 26px; height: 26px; border-radius: 7px;
+    font: 400 12px/1 var(--font-display);
+    color: #1b1209;
+    background: var(--lime);
+    box-shadow: none;
+}
+.seat.is-turn .seat-avatar { color: #1b1209; box-shadow: 0 0 0 2px rgba(214, 174, 98, .35); }
+.anne-reaction {
+    border-radius: 4px 14px 14px 14px;
+    padding: 10px 14px 11px;
+    font: 600 clamp(13px, 1.02vw, 15px)/1.42 var(--font-ui);
+    color: #2c2118;
+    background: linear-gradient(180deg, #fffaf2, #ffe9f0);
+    border: 2px solid #17100c;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, .6);
+}
+.anne-reaction::before { background: #fffaf2; border-left: 2px solid #17100c; border-bottom: 2px solid #17100c; }
+
+/* ---------------------------------------------------------------- centre */
+.center-area::before {
+    border-radius: 20px;
+    border: 2px solid rgba(157, 181, 168, .12);
+    background: rgba(6, 4, 14, .22);
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, .35);
+    height: min(78%, 380px);
+}
+.trick-caption { font: 700 11px/1 var(--font-ui); letter-spacing: .14em; color: var(--arc-dim); }
+.lead-chip {
+    font: 700 10px/1 var(--font-ui);
+    letter-spacing: .08em;
+    color: #2c2118;
+    background: var(--cyan);
+    border-radius: 5px;
+    padding: 4px 8px;
+    box-shadow: none;
+}
+.trick-slot { border-radius: 10px; }
+.trick-slot::before {
+    border: 2px dashed rgba(122, 91, 168, .55);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, .16);
+}
+.game-status {
+    font: 600 12.5px/1.35 var(--font-ui);
+    letter-spacing: .02em;
+    color: var(--arc-dim);
+}
+.game-status b, .game-status strong { color: var(--cream); }
+
+/* ---------------------------------------------------------------- start cabinet */
+.start-panel {
+    position: relative;
+    width: min(560px, 94%);
+    padding: clamp(20px, 3vh, 30px) clamp(20px, 3vw, 36px);
+    border-radius: 20px;
+    border: 2px solid #54402b;
+    background:
+        radial-gradient(120% 90% at 50% -20%, rgba(201, 163, 92, .16), transparent 60%),
+        linear-gradient(180deg, #1a1410, #0f0b08);
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, .65), inset 0 1px 0 rgba(255, 255, 255, .07);
+    text-align: center;
+}
+.start-panel::before {
+    content: "INSERT LUCK";
+    position: absolute; top: -13px; left: 50%;
+    transform: translateX(-50%) rotate(-1.5deg);
+    padding: 5px 14px;
+    border-radius: 5px;
+    border: 2px solid #17100c;
+    background: var(--lime);
+    color: #1b1209;
+    font: 700 9.5px/1 var(--font-ui);
+    letter-spacing: .18em;
+    white-space: nowrap;
+    box-shadow: 2px 2px 0 #17100c;
+}
+.start-eyebrow { font: 700 10px/1 var(--font-ui); letter-spacing: .22em; color: var(--cyan); margin-bottom: 10px; }
+.start-title {
+    font: 400 clamp(30px, 5.2vw, 48px)/.95 var(--font-display);
+    letter-spacing: .01em;
+    color: var(--cream);
+    text-transform: uppercase;
+    text-shadow: 3px 3px 0 #3a1f24, 0 0 30px rgba(201, 163, 92, .25);
+    margin-bottom: 8px;
+}
+.start-title span { color: var(--pink); }
+.start-tagline {
+    font: 500 13.5px/1.55 var(--font-ui);
+    color: var(--arc-dim);
+    max-width: 40ch;
+    margin: 0 auto 14px;
+}
+.start-chips { gap: 7px; justify-content: center; margin-bottom: 16px; }
+.start-chips li {
+    font: 700 9.5px/1 var(--font-ui);
+    letter-spacing: .1em;
+    color: var(--arc-text);
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: 1.5px solid var(--stroke-2);
+    background: rgba(0, 0, 0, .25);
+}
+.start-chips li:nth-child(1) { border-color: rgba(201, 163, 92, .45); color: var(--pink-soft); }
+.start-chips li:nth-child(2) { border-color: rgba(157, 181, 168, .4); color: var(--cyan); }
+.start-chips li:nth-child(3) { border-color: rgba(214, 174, 98, .4); color: var(--lime); }
+.start-actions { gap: 10px; flex-wrap: wrap; justify-content: center; }
+.start-note { font: 500 10.5px/1.45 var(--font-ui); color: var(--arc-mute); margin-top: 12px; }
+.hero-fan { filter: drop-shadow(0 14px 18px rgba(0,0,0,.55)); }
+
+/* ---------------------------------------------------------------- buttons */
+.control-btn, .coin-btn, .settings-action-btn, .difficulty-btn, .clear-log-btn {
+    padding: 11px 20px;
+    border-radius: 9px;
+    border: 2px solid var(--stroke-2);
+    font: 700 10.5px/1 var(--font-ui);
+    letter-spacing: .12em;
+    color: var(--arc-text);
+    background: #1a1410;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, .7);
+    transition: transform .12s, box-shadow .12s, background .12s, border-color .12s, color .12s;
+}
+.control-btn:hover, .coin-btn:hover:not(:disabled), .settings-action-btn:hover,
+.difficulty-btn:hover, .clear-log-btn:hover {
+    background: #2a2018;
+    border-color: var(--pink);
+    color: var(--cream);
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, .7);
+}
+.control-btn.primary, .difficulty-btn.active {
+    color: #1b1209;
+    background: linear-gradient(180deg, #e2ff7a, var(--lime) 55%, #97c022);
+    border-color: #1b1209;
+    box-shadow: 3px 3px 0 #1b1209, 0 0 22px rgba(214, 174, 98, .22);
+    text-shadow: none;
+    font-weight: 700;
+}
+.control-btn.primary:hover {
+    color: #1b1209;
+    background: linear-gradient(180deg, #ecff9d, #d4ff5c 55%, #a9d42b);
+    box-shadow: 4px 4px 0 #1b1209, 0 0 26px rgba(214, 174, 98, .3);
+    filter: none;
+}
+.control-btn.primary:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #1b1209; }
+.text-btn {
+    font: 700 10.5px/1 var(--font-ui);
+    letter-spacing: .1em;
+    color: var(--arc-mute);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 2px;
+    background: none;
+    border: 0;
+    padding: 10px 6px;
+}
+.text-btn:hover { color: var(--cyan); }
+.mini-btn {
+    padding: 7px 12px;
+    border-radius: 7px;
+    border: 2px solid var(--stroke-2);
+    font: 700 10px/1 var(--font-ui);
+    letter-spacing: .08em;
+    color: var(--arc-text);
+    background: #1a1410;
+}
+.mini-btn.primary { background: var(--pink); border-color: #17100c; color: #1b1209; }
+
+/* ---------------------------------------------------------------- cards */
+.card-front {
+    border-radius: calc(var(--cw) * .085);
+    background:
+        radial-gradient(120% 90% at 20% 0%, rgba(255, 255, 255, .9), transparent 55%),
+        linear-gradient(165deg, #fffdf7, #f5ead2);
+    box-shadow:
+        inset 0 0 0 1.5px rgba(60, 34, 16, .45),
+        inset 0 0 0 calc(var(--cw) * .03) #fffdf7,
+        inset 0 0 0 calc(var(--cw) * .037) rgba(120, 84, 36, .22),
+        0 2px 0 rgba(0, 0, 0, .45),
+        0 calc(var(--cw) * .07) calc(var(--cw) * .13) rgba(0, 0, 0, .45);
+    font-family: var(--font-ui);
+    color: #221526;
+}
+.card-front.red { color: #cf1f45; }
+.card-back, .slot.has-under::before, .deck i, .deck .shuffle-card {
+    border-radius: calc(var(--cw) * .085);
+    background:
+        radial-gradient(closest-side at 50% 50%, rgba(201, 163, 92, .18) 0 30%, transparent 32%),
+        repeating-linear-gradient(45deg, rgba(201, 163, 92, .34) 0 1.5px, transparent 1.5px calc(var(--cw) * .085)),
+        repeating-linear-gradient(-45deg, rgba(157, 181, 168, .24) 0 1.5px, transparent 1.5px calc(var(--cw) * .085)),
+        linear-gradient(160deg, #3d2228, #211216);
+    box-shadow:
+        inset 0 0 0 calc(var(--cw) * .038) #fff8ec,
+        inset 0 0 0 calc(var(--cw) * .052) #2a171b,
+        inset 0 0 0 calc(var(--cw) * .066) var(--pink),
+        0 2px 0 rgba(0, 0, 0, .5),
+        0 calc(var(--cw) * .05) calc(var(--cw) * .1) rgba(0, 0, 0, .45);
+}
+.card-back::after, .deck .shuffle-card::after {
+    content: "7·8";
+    font: 400 calc(var(--cw) * .2)/1 var(--font-display);
+    color: var(--pink-soft);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, .5);
+}
+.card-back::before, .deck .shuffle-card::before { border-color: rgba(226, 192, 138, .55); }
+.card.playable .card-front {
+    box-shadow:
+        inset 0 0 0 1.5px rgba(60, 34, 16, .45),
+        inset 0 0 0 calc(var(--cw) * .03) #fffdf7,
+        inset 0 -3px 0 var(--lime),
+        0 2px 0 rgba(0, 0, 0, .45),
+        0 calc(var(--cw) * .07) calc(var(--cw) * .13) rgba(0, 0, 0, .45);
+}
+@media (hover: hover) {
+    .card.playable:hover .card-front {
+        box-shadow:
+            inset 0 0 0 1.5px rgba(60, 34, 16, .45),
+            inset 0 0 0 calc(var(--cw) * .03) #fffdf7,
+            inset 0 -3px 0 var(--lime),
+            0 0 0 2px var(--lime),
+            0 calc(var(--cw) * .19) calc(var(--cw) * .24) rgba(0, 0, 0, .55);
+    }
+}
+.card.selected .card-front { box-shadow: 0 0 0 3px var(--lime), 0 calc(var(--cw) * .28) calc(var(--cw) * .3) rgba(0, 0, 0, .55); }
+.card.winning .card-front { box-shadow: 0 0 0 3px var(--pink), 0 0 26px rgba(201, 163, 92, .65), 0 6px 14px rgba(0,0,0,.5); }
+.card.coach-pick .card-front { box-shadow: 0 0 0 3px var(--cyan), 0 0 22px rgba(157, 181, 168, .4), 0 2px 0 rgba(0,0,0,.4); }
+.highlight-winner .seat-avatar { box-shadow: 0 0 0 2px var(--lime); }
+.highlight-winner .player-label { color: var(--lime); }
+
+/* The trump sheet's little portrait and the result card both use the same
+   drawing, just at different sizes. */
+.anne-line-avatar {
+    --aa-size: 34px;
+    display: inline-block;
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    overflow: hidden;
+    flex: none;
+    box-shadow: 0 0 0 2px #1a0f2b, 0 0 0 3px var(--pink);
+}
+.anne-result-avatar { --aa-size: 64px; width: 64px; height: 64px; border-radius: 14px; }
+.tutorial-guide-avatar { --aa-size: 44px; width: 44px; height: 44px; border-radius: 10px; }
+
+/* =====================================================================
+   LAYOUT PASS 2 - nameplates at the rails, cards in the middle.
+   The old sheet centred both seats and floated the player's trick meter
+   under the hand, where it clipped off the bottom of the viewport. Seats
+   are now two-column rails: Anne's plate on the left, your plate on the
+   right, and all the cards in one band that the trick stage can trust.
+   ===================================================================== */
+.game-board {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: clamp(4px, .9vh, 10px);
+}
+.game-board > .computer-area,
+.game-board > .player-area { flex: 0 0 auto; }
+.game-board > .center-area { flex: 1 1 auto; min-height: 0; }
+
+.computer-area {
+    display: grid;
+    grid-template-columns: minmax(180px, 236px) minmax(0, 1fr);
+    grid-template-areas:
+        "rail cards"
+        "say  cards";
+    align-items: center;
+    column-gap: clamp(12px, 2.2vw, 40px);
+    row-gap: 6px;
+    padding: 0 4px;
+}
+.computer-area .seat-bar { grid-area: rail; }
+.computer-area .seat-cards { grid-area: cards; }
+
+.player-area {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(170px, 224px);
+    grid-template-areas: "cards rail";
+    align-items: end;
+    column-gap: clamp(12px, 2.2vw, 40px);
+    padding: 0 4px;
+}
+.player-area .seat-cards { grid-area: cards; }
+.player-area .seat-bar { grid-area: rail; }
+
+/* The plate: a real nameplate you could lift off the felt. */
+.seat-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 7px;
+    min-height: 0;
+    padding: 8px 12px 9px;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, .08);
+    background: linear-gradient(180deg, rgba(24, 15, 44, .92), rgba(15, 9, 29, .92));
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.player-area .seat-bar { padding: 8px 12px 9px; align-items: stretch; }
+.seat.is-turn .seat-bar {
+    border-color: rgba(214, 174, 98, .45);
+    background: linear-gradient(180deg, rgba(38, 51, 20, .92), rgba(18, 24, 10, .92));
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .45), 0 0 24px rgba(214, 174, 98, .18);
+}
+.computer-area .seat-who { align-items: center; }
+.anne-ident { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.anne-name-row { flex-wrap: wrap; }
+.anne-role-row { flex-wrap: wrap; }
+.won-tricks { width: 100%; justify-content: flex-start; }
+.player-area .won-tricks { justify-content: flex-start; }
+.player-area .seat-who { align-items: center; }
+
+/* Her line hangs under her plate, so it can never cover her own cards. */
+.anne-reaction {
+    position: static;
+    width: max-content;
+    max-width: min(100%, 460px);
+    margin-top: 2px;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity .2s ease, transform .24s cubic-bezier(.2, .8, .3, 1);
+}
+.anne-reaction.is-visible { transform: translateY(0); }
+.anne-reaction::before {
+    left: 22px; top: -7px; bottom: auto; right: auto;
+    border: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 7px solid #fffaf2;
+}
+.anne-reaction::after {
+    content: "";
+    position: absolute; left: 21px; top: -10px;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid #17100c;
+}
+
+/* Speaking must not erase her name, mood or trick meter. */
+.computer-area.is-speaking .anne-ident,
+.computer-area.is-speaking .won-tricks,
+.computer-area.is-speaking .thinking-indicator { opacity: 1; }
+.computer-area .seat-cards { align-items: flex-end; gap: clamp(10px, 1.8vw, 26px); }
+.player-area .seat-cards {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    gap: clamp(10px, 2vw, 30px);
+}
+
+/* Card sizes that always leave the trick stage its own room. */
+:root { --cw-base: clamp(46px, min(6.6vw, 10.4vh), 84px); }
+.computer-area { --cw-seat: calc(var(--cw-base) * .6); }
+.player-area { --cw-seat: var(--cw-base); }
+.computer-area .face-up-cards { --cw-seat: calc(var(--cw-base) * .78); }
+.face-up-cards { --cw-seat: calc(var(--cw-base) * .82); }
+.center-area { --cw-seat: calc(var(--cw-base) * 1.14); }
+
+/* A stage the trick can own: caption pill, felt oval, deck on the wing. */
+.trick-stage {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(4px, 1vh, 10px);
+    min-height: 0;
+}
+.trick-meta { align-items: center; }
+.trick-caption {
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(255, 255, 255, .1);
+    background: rgba(9, 5, 17, .7);
+    font: 700 11px/1 var(--font-ui);
+    letter-spacing: .16em;
+    color: var(--arc-dim);
+}
+.current-trick { min-height: 0; }
+.trick-cards {
+    gap: calc(var(--cw-seat) * -.08);
+    padding: clamp(10px, 1.8vh, 20px) clamp(22px, 4vw, 56px);
+    border-radius: 28px;
+    background:
+        radial-gradient(closest-side, rgba(201, 163, 92, .12), transparent 72%),
+        linear-gradient(180deg, rgba(10, 6, 20, .75), rgba(10, 6, 20, .5));
+    box-shadow:
+        inset 0 0 0 1.5px rgba(255, 255, 255, .07),
+        inset 0 0 60px rgba(0, 0, 0, .45),
+        0 12px 30px rgba(0, 0, 0, .4);
+}
+.trick-slot { border-radius: 9px; }
+.trick-slot::before {
+    border: 2px dashed rgba(255, 255, 255, .18);
+    border-radius: 9px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(0, 0, 0, .25));
+}
+.trick-slot::after {
+    font: 700 10px/1 var(--font-ui);
+    letter-spacing: .2em;
+    color: rgba(255, 255, 255, .34);
+}
+.center-area::before {
+    width: min(86%, 1040px);
+    height: min(92%, 420px);
+    border: 1.5px solid rgba(201, 163, 92, .16);
+    background: radial-gradient(closest-side, rgba(201, 163, 92, .07), rgba(0, 0, 0, 0) 76%);
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, .35);
+}
+.deck { top: 50%; right: clamp(6px, 2.4vw, 40px); }
+
+@media (max-width: 1080px) {
+    .computer-area { grid-template-columns: minmax(0, 1fr); grid-template-areas: "rail" "say" "cards"; row-gap: 6px; }
+    .computer-area .seat-bar { align-items: flex-start; width: 100%; flex-direction: row; align-items: center; gap: 14px; }
+    .computer-area .seat-bar .won-tricks { width: auto; }
+    .player-area { grid-template-columns: minmax(0, 1fr); grid-template-areas: "rail" "cards"; row-gap: 6px; }
+    .player-area .seat-bar { width: 100%; flex-direction: row; align-items: center; gap: 14px; } .player-area .seat-bar .won-tricks { width: auto; }
+    .player-area .seat-cards { justify-content: center; }
+}
+
+/* =====================================================================
+   FINAL POLISH - readable labels, an oval table inlay and a table crest.
+   ===================================================================== */
+.computer-area { grid-template-columns: minmax(190px, 268px) minmax(0, 1fr); }
+.anne-reaction { max-width: 268px; }
+
+.cards-label, .cards-label b { font-size: 11px; letter-spacing: .1em; }
+.tricks-label { font-size: 11px; }
+.tricks-label .trick-count { font-size: 16px; }
+.trick-slot::after { font-size: 11px; color: rgba(255, 255, 255, .42); }
+.trick-caption { font-size: 11px; }
+.game-status { font-size: 13px; }
+
+.center-area::before {
+    left: 50%;
+    top: 50%;
+    width: min(72%, 860px);
+    height: min(86%, 380px);
+    border-radius: 50%;
+    border: 2px solid rgba(201, 163, 92, .16);
+    background:
+        radial-gradient(closest-side, rgba(201, 163, 92, .14), rgba(70, 30, 110, .16) 58%, rgba(0, 0, 0, 0) 78%);
+    box-shadow:
+        inset 0 0 0 10px rgba(255, 255, 255, .018),
+        inset 0 0 90px rgba(0, 0, 0, .5);
+}
+.center-area::after {
+    content: "7·8";
+    position: absolute;
+    left: 50%;
+    top: 47%;
+    transform: translate(-50%, -50%);
+    font: 400 min(20vh, 150px)/1 var(--font-display);
+    letter-spacing: .02em;
+    color: transparent;
+    -webkit-text-stroke: 2px rgba(201, 163, 92, .1);
+    text-shadow: 0 0 40px rgba(201, 163, 92, .08);
+    pointer-events: none;
+    z-index: 0;
+}
+.center-area > * { position: relative; z-index: 1; }
+/* The deck is positioned against the table, not laid out in the centre grid. */
+.center-area > .deck { position: absolute; }
+.trick-cards { position: relative; z-index: 2; }
+
+/* Player plate reads as "you" even when it is not your turn. */
+.player-area .seat-avatar { background: var(--lime); color: #1b1209; }
+.player-area .seat.is-turn .seat-avatar { background: #fff; }
+
+@media (max-width: 1080px) {
+    .computer-area { grid-template-columns: minmax(0, 1fr); }
+    .anne-reaction { max-width: min(100%, 460px); }
+}
+
+/* =====================================================================
+   PHONE PASS - two-row HUD and a start panel that fits a 390px screen.
+   ===================================================================== */
+@media (max-width: 640px) {
+    .game-container { padding: 6px 6px 6px; gap: 2px; }
+    .hud {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "brand actions"
+            "score score";
+        align-items: center;
+        gap: 5px;
+        padding: 0;
+    }
+    .hud-brand { grid-area: brand; min-width: 0; }
+    .hud-brand .brand-text { display: none; }
+    .brand-mark { width: 34px; height: 34px; font-size: 12px; border-radius: 9px; }
+    .hud-right { grid-area: actions; gap: 5px; justify-self: end; }
+    .hud-rules { display: inline-flex; }
+    .hud-btn { height: 32px; padding: 0 10px; font-size: 11px; border-width: 1.5px; border-radius: 6px; letter-spacing: .04em; }
+    .hud-icon { width: 32px; font-size: 14px; }
+    .score-board { grid-area: score; width: 100%; justify-content: space-between; padding: 4px 12px; }
+    .score-side { min-width: 0; gap: 5px; }
+    .score-name { font-size: 11px; }
+    .score-num { font-size: 21px; }
+    .round-info { padding: 2px 8px; min-width: 66px; }
+    .round-info small, .round-info em { font-size: 11px; letter-spacing: .02em; }
+    .round-info b { font-size: 15px; }
+    .trump-indicator { display: none; }
+
+    .game-board { margin-top: 4px; padding: 8px 8px 10px; border-radius: 16px; }
+    .start-panel { padding: 14px 12px 12px; gap: 7px; border-radius: 14px; }
+    .start-panel::before { font-size: 8.5px; padding: 4px 10px; top: -11px; }
+    .hero-fan { --hw: clamp(54px, 13.5vh, 74px); margin-bottom: 0; }
+    .start-eyebrow { font-size: 10px; margin-bottom: 2px; }
+    .start-title { font-size: clamp(25px, 7.4vw, 32px); margin-bottom: 2px; }
+    .start-tagline { font-size: 12px; line-height: 1.45; margin-bottom: 8px; }
+    .start-chips { gap: 5px; margin-bottom: 10px; }
+    .start-chips li { font-size: 10px; padding: 4px 8px; }
+    .tutorial-invite { padding: 8px 9px; gap: 7px; border-radius: 8px; }
+    .tutorial-invite p { font-size: 11px; line-height: 1.35; }
+    .tutorial-invite-actions { gap: 5px; margin-top: 4px; }
+    .mini-btn { font-size: 10.5px; padding: 6px 9px; }
+    .start-actions { gap: 7px; }
+    .control-btn { padding: 11px 16px; font-size: 11px; }
+    .text-btn { font-size: 11px; }
+    .start-note { display: none; }
+
+    .anne-reaction { font-size: 12px; padding: 8px 11px; }
+    .cards-label, .cards-label b { font-size: 11px; }
+    .trick-caption { font-size: 11px; }
+    .game-status { font-size: 12px; }
+}
+
+/* Phone HUD, second pass: let both rows shrink below their min-content. */
+@media (max-width: 640px) {
+    .game-container { width: 100%; max-width: 100%; min-width: 0; }
+    .hud { width: 100%; min-width: 0; }
+    .hud-brand, .hud-right { min-width: 0; }
+    .score-board {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center;
+        width: 100%;
+        min-width: 0;
+        gap: 8px;
+    }
+    .score-side { min-width: 0; }
+    .score-side-cpu { justify-content: flex-end; }
+    .round-info { min-width: 0; padding: 2px 7px; }
+    .score-name, .score-num { line-height: 1; }
+    .hud-btn { white-space: nowrap; }
+}
+
+@media (max-width: 640px) {
+    /* The mute control is the only in-game volume switch: keep it. */
+    .mute-btn { display: inline-flex; }
+    .hud .hud-rules { display: inline-flex; }
+    .hud { grid-template-columns: minmax(0, 1fr) auto; }
+}
+
+/* Phone table: two short rows per seat instead of one long row that bled
+   off the right edge. Cards stay above 40px so ranks remain readable. */
+@media (max-width: 640px) {
+    :root { --cw-base: clamp(42px, 10.4vw, 56px); }
+    .game-container { overflow: hidden; }
+    .game-board { min-height: 0; }
+    .computer-area {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "rail" "say" "cards";
+        row-gap: 4px;
+    }
+    .computer-area .seat-cards { flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+    .computer-area .seat-cards .card-area:first-child { order: 2; }
+    .computer-area .seat-cards .card-area:last-child { order: 1; }
+    .computer-area .seat-bar { flex-direction: column; align-items: flex-start; gap: 5px; padding: 6px 10px 7px; }
+    .computer-area .seat-bar .won-tricks { width: 100%; }
+    .player-area { grid-template-columns: minmax(0, 1fr); grid-template-areas: "rail" "cards"; row-gap: 4px; }
+    .player-area .seat-bar { flex-direction: row; align-items: center; gap: 10px; padding: 6px 10px; }
+    .player-area .seat-bar .won-tricks { width: auto; }
+    .player-area .seat-cards { flex-direction: column; align-items: center; gap: 4px; width: 100%; }
+    .player-area .seat-cards .card-area { width: 100%; }
+    .player-area .seat-cards .card-area .cards-container { justify-content: center; }
+    .seat-divider { display: none; }
+    .player-area .hand-area { order: 2; }
+    .anne-reaction { font-size: 11.5px; padding: 7px 10px; }
+    .trick-stage { gap: 2px; }
+    /* A larger caption needs real air above the tray, or the pill clips the
+       top card by a few pixels. */
+    .trick-meta { margin-bottom: 9px; }
+    .trick-cards { padding: 8px 16px 10px; border-radius: 22px; }
+    .trick-slot::after { font-size: 10px; }
+    .center-area::before { width: 88%; height: 88%; }
+    .center-area::after { font-size: 84px; }
+}
+
+/* Very short screens (landscape phones): cards and chrome step down again. */
+@media (max-height: 620px) and (min-width: 641px) {
+    :root { --cw-base: clamp(38px, min(6vw, 12vh), 66px); }
+    .game-container { padding-block: 4px; }
+    .hud { padding: 0; }
+    .game-board { margin-top: 2px; padding-block: 6px; }
+    .start-panel { padding: 10px 16px; }
+    .hero-fan { --hw: clamp(48px, 12vh, 62px); margin-bottom: 0; }
+    .start-title { font-size: 26px; }
+    .start-tagline { font-size: 11.5px; margin-bottom: 8px; }
+    .start-chips { display: none; }
+    .tutorial-invite { display: none; }
+    .start-note { display: none; }
+    .computer-area { grid-template-columns: minmax(0, 1fr); grid-template-areas: "rail" "cards"; }
+    .computer-area .seat-bar { flex-direction: row; align-items: center; gap: 12px; width: 100%; }
+    .player-area { grid-template-columns: minmax(0, 1fr); grid-template-areas: "rail" "cards"; row-gap: 3px; }
+    .player-area .seat-bar { flex-direction: row; align-items: center; width: 100%; }
+
+}
+
+@media (max-width: 640px) {
+    /* Her hand backs are scenery on a phone; the count is in the log and the
+       face-up row is what matters. The reclaimed height keeps your hand whole. */
+    .computer-hand-area { display: none; }
+    .computer-area { grid-template-areas: "rail" "say" "cards"; }
+    .computer-area .seat-bar { flex-direction: row; align-items: center; gap: 9px; padding: 5px 9px; }
+    .computer-area .seat-bar .anne-ident { gap: 3px; }
+    .computer-area .seat-bar .anne-role-row { display: none; }
+    .computer-area .seat-bar .won-tricks { width: auto; flex: 1; }
+    .computer-area .anne-avatar { width: 44px; height: 44px; }
+    .center-area { flex: 1 1 0; min-height: 0; }
+    .player-area { flex: 0 0 auto; }
+    .player-area .seat-bar { padding: 5px 9px; }
+    .player-area .seat-cards { gap: 3px; }
+    .player-area .cards-label { font-size: 9px; }
+    .player-area .face-up-cards .cards-container { min-height: 0; }
+    .center-area::before { height: 82%; }
+    .center-area::after { font-size: 64px; }
+    .game-status { font-size: 11.5px; }
+}
+
+/* Unplayable cards stay readable: a light wash, not a blackout. */
+.card.invalid .card-front::after { background: rgba(10, 10, 18, .14); }
+.card.invalid { opacity: .92; }
+
+/* =====================================================================
+   TYPE FLOOR - nothing a player must read sits below 11px on desktop.
+   ===================================================================== */
+.brand-sub { font-size: 11px; letter-spacing: .16em; }
+.score-name { font-size: 11px; letter-spacing: .1em; }
+.round-info small, .round-info em { font-size: 11px; letter-spacing: .08em; }
+.round-info b { font-size: 17px; }
+.trump-label { font-size: 11px; }
+.hud-btn { font-size: 11px; }
+.anne-difficulty { font-size: 11px; }
+.anne-mood { font-size: 11px; }
+.anne-role { font-size: 11.5px; }
+.trick-caption { font-size: 11.5px; }
+.cards-label, .cards-label b { font-size: 11.5px; }
+.game-status { font-size: 13px; }
+.log-message { font-size: 13px; }
+.start-note, .hint, .legend-note { font-size: 11.5px; }
+.tile-players { font-size: 10px; }
+
+@media (max-width: 640px) {
+    .score-name { font-size: 10.5px; }
+    .round-info small, .round-info em { font-size: 9.5px; }
+    .round-info b { font-size: 15px; }
+    .hud-btn { font-size: 10px; }
+    .diff, .anne-difficulty, .anne-mood { font-size: 10px; }
+    .cards-label, .cards-label b { font-size: 11px; }
+    .trick-caption { font-size: 11px; }
+}
+
+/* Compact setup for short phones (320x568 and similar). */
+@media (max-width: 640px) and (max-height: 700px) {
+    .hero-fan { --hw: 44px; }
+    .start-panel { padding: 8px 10px 9px; gap: 4px; }
+    .start-eyebrow { display: none; }
+    .start-title { font-size: 22px; margin-bottom: 0; }
+    .start-tagline { font-size: 11px; line-height: 1.4; margin-bottom: 4px; }
+    .start-chips { display: none; }
+    /* The fan is decoration; the first-run invite is the useful thing to keep
+       on a 568px-tall screen. */
+    .hero-fan { display: none; }
+    .tutorial-invite { display: flex; padding: 6px 8px; gap: 6px; }
+    .tutorial-invite p { font-size: 10px; line-height: 1.3; }
+    .tutorial-invite-actions { margin-top: 3px; gap: 4px; }
+    .tutorial-invite-actions .mini-btn { font-size: 10px; padding: 5px 7px; }
+    .start-actions { gap: 4px; margin-top: 2px; }
+    .control-btn { padding: 9px 14px; font-size: 10.5px; }
+    .text-btn { font-size: 10.5px; }
+}
+
+/* Landscape phones: a compact one-screen table. Everything that is not a card
+   or a turn control steps down so the hand stays above the fold. */
+@media (max-height: 620px) and (min-width: 641px) {
+    body { overflow-y: auto; }
+    .game-container { height: auto; min-height: 100dvh; overflow: visible; padding-block: 2px; }
+    .hud { gap: 8px; flex-wrap: nowrap; }
+    .brand-text { display: none; }
+    .brand-mark { width: 34px; height: 34px; font-size: 12px; }
+    .difficulty-indicator, .trump-indicator, .hud-divider { display: none; }
+    .hud-btn { height: 28px; font-size: 10px; padding: 0 9px; }
+    .hud-icon { width: 28px; }
+    .score-board { padding: 3px 10px; }
+    .game-board { flex: none; min-height: 0; padding-block: 5px 7px; }
+    .computer-area, .player-area { flex: none; }
+    /* A "say" row keeps her line between the rail and the cards instead of
+       floating over the face-up row (overlays.css anchors it absolutely below
+       the whole seat at this width). */
+    .computer-area { grid-template-columns: minmax(0, 1fr); grid-template-areas: "rail" "say" "cards"; }
+    .game-board .computer-area > .anne-reaction {
+        position: static; inset: auto; grid-area: say;
+        max-width: 100%; margin: 2px 0 0; transform: translateY(-4px);
+        font-size: 11px; padding: 5px 9px;
+    }
+    .game-board .computer-area > .anne-reaction.is-visible { transform: none; }
+    .center-area { flex: none; min-height: 168px; }
+    .center-info { gap: 2px; padding-bottom: 0; }
+    .seat-bar { padding: 3px 8px; }
+    .computer-area .anne-avatar { width: 42px; height: 42px; }
+    .seat-avatar:not(.anne-avatar) { width: 30px; height: 30px; }
+    .seat-name { font-size: 12px; }
+    .seat-role, .anne-role { display: none; }
+    .won-tricks { font-size: 10px; }
+
+    .live-coach { padding: 5px 7px; gap: 6px; }
+    .live-coach-copy { font-size: 11px; line-height: 1.3; }
+    .live-coach-mark { font-size: 7px; padding: 2px 5px; }
+    .live-coach-close { font-size: 7.5px; }
+
+    .trump-modal { align-items: flex-start; overflow-y: auto; padding-block: 10px; }
+    .trump-modal .modal-content { padding: 12px 14px 12px; max-height: none; }
+    .trump-modal .modal-header { margin-bottom: 8px; padding-bottom: 6px; }
+    .trump-modal .modal-kicker { display: none; }
+    .trump-modal .modal-header h3 { font-size: 20px; }
+    .trump-anne-line { margin-bottom: 8px; padding: 6px 8px; }
+    .trump-anne-line p { font-size: 11px; line-height: 1.35; }
+    .trump-hint { font-size: 11px; line-height: 1.4; margin-bottom: 8px; }
+    .trump-coach { padding: 6px 8px; }
+    .trump-coach p { font-size: 10.5px; line-height: 1.35; }
+    #live-coach-trump { max-height: 54px; overflow: auto; }
+    .trump-options { gap: 6px; }
+    .trump-btn { padding: 8px 2px 6px; font-size: 10px; }
+    .trump-btn .suit-symbol { font-size: 22px; }
+    .suit-name { font-size: 10.5px; }
+    .suit-count, .trump-footnote { display: none; }
+}
+
+/* =====================================================================
+   320px phones - keep the score readable instead of hiding its labels.
+   style.css used to drop "You", "Anne" and the target here, which left two
+   bare numbers on the smallest screen. Stack the name over the number and
+   keep a compact target pill; two sides plus the pill still fit 320px.
+   ===================================================================== */
+@media (max-width: 380px) {
+    .score-side {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1px;
+        min-width: 0;
+    }
+    .score-side-cpu { justify-content: center; }
+    .score-name {
+        display: inline;
+        font-size: 10px;
+        letter-spacing: .06em;
+        line-height: 1;
+    }
+    .score-num { font-size: 18px; }
+    .round-info {
+        display: flex;
+        min-width: 54px;
+        padding: 1px 5px;
+        gap: 1px;
+    }
+    .round-info small, .round-info em { font-size: 9px; letter-spacing: 0; }
+    .round-info b { font-size: 14px; }
+    .score-board { padding: 3px 8px; gap: 4px; }
+}

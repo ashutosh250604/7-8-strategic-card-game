@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>7-8 Strategic Card Game</title>
-    <meta name="theme-color" content="#150d08">
+    <meta name="theme-color" content="#080605">
     <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="../../assets/favicon-16x16.png">
     <link rel="shortcut icon" href="../../assets/favicon.ico">
+    <link rel="stylesheet" href="../../fonts.css">
     <link rel="stylesheet" href="../../style.css">
+    <link rel="stylesheet" href="../../table.css">
+    <link rel="stylesheet" href="../../overlays.css">
+    <link rel="stylesheet" href="../../theme.css">
     <script>
       // A file:// page cannot fetch a web manifest, and the failed request shows up
       // as a console error. Install metadata is only useful over HTTP(S) anyway.
@@ -47,7 +51,7 @@
                     <span class="score-name">You</span>
                     <span class="score-num" id="score-player">0</span>
                 </div>
-                <div id="round-info" class="round-info"><small>Round</small><b>1</b><em id="match-goal">to 5</em></div>
+                <div id="round-info" class="round-info" title="Points decide the match, not the number of rounds"><small>First to</small><b id="match-goal">3</b><em>points</em></div>
                 <div class="score-side score-side-cpu">
                     <span class="score-num" id="score-computer">0</span>
                     <span class="score-name">Anne</span>
@@ -69,14 +73,22 @@
         <main class="game-board is-setup">
             <!-- Computer seat -->
             <section class="computer-area seat seat-top" aria-label="Anne, playing at Medium difficulty">
-                <div class="seat-bar">
+                <div class="seat-bar rival-bar">
                     <div class="seat-who">
-                        <span class="seat-avatar anne-avatar"><img id="anne-portrait" src="../../assets/anne.svg" alt="" width="44" height="44"></span>
-                        <span class="anne-ident">
-                            <span class="player-label">Anne</span>
-                            <span id="anne-seat-role" class="anne-role">The card-table host</span>
+                        <span class="anne-portrait-wrap">
+                            <span id="anne-portrait" class="seat-avatar anne-avatar" data-anne-avatar data-crop="bust" role="img" aria-label="Anne, your host, thinking"></span>
                         </span>
-                        <span id="anne-difficulty" class="anne-difficulty">Medium</span>
+                        <span class="anne-ident">
+                            <span class="anne-name-row">
+                                <span class="player-label">Anne</span>
+                                <span id="anne-difficulty" class="anne-difficulty">Medium</span>
+                                <span class="anne-voice" aria-hidden="true"><i></i><i></i><i></i></span>
+                            </span>
+                            <span class="anne-role-row">
+                                <span id="anne-seat-role" class="anne-role">The card-table host</span>
+                                <span id="anne-mood" class="anne-mood">Watching</span>
+                            </span>
+                        </span>
                         <div id="thinking-indicator" class="thinking-indicator" style="display: none;" role="status" aria-label="Anne is thinking"><span></span><span></span><span></span></div>
                     </div>
                     <div id="computer-tricks" class="won-tricks">
@@ -84,7 +96,9 @@
                         <div class="tricks-container meter"></div>
                     </div>
                 </div>
-                <div id="anne-reaction" class="anne-reaction" role="status" aria-live="polite" hidden></div>
+                <div class="anne-speech-lane">
+                    <div id="anne-reaction" class="anne-reaction" role="status" aria-live="polite" hidden></div>
+                </div>
                 <div class="seat-cards">
                     <div class="card-area computer-hand-area">
                         <div class="cards-label">Hand <b id="computer-hand-count">0</b></div>
@@ -197,24 +211,36 @@
                         <h3 id="trump-title">Choose trump</h3>
                     </div>
                 </div>
+                <div class="trump-anne-line">
+                    <span class="anne-line-avatar" data-anne-avatar data-crop="face" aria-hidden="true"></span>
+                    <p><b>Anne</b> <span id="trump-anne-text">Pick a suit you can defend. I will be watching it.</span></p>
+                </div>
                 <p class="trump-hint">Pick from your five cards. Choosing trump sets <strong>your target to 8 tricks</strong>; the opponent needs 7.</p>
                 <div id="live-coach-trump" class="trump-coach" role="note" aria-live="polite" aria-atomic="true" hidden></div>
-                <div class="trump-options">
-                    <button class="trump-btn hearts" data-suit="hearts" type="button">
+                <div class="trump-options" role="group" aria-label="Your cards by suit">
+                    <button class="trump-btn hearts" data-suit="hearts" type="button" aria-pressed="false">
                         <span class="suit-symbol">&hearts;&#xFE0E;</span>
                         <span class="suit-name">Hearts</span>
+                        <span class="trump-cards" aria-hidden="true"></span>
+                        <span class="suit-count">0 cards</span>
                     </button>
-                    <button class="trump-btn spades" data-suit="spades" type="button">
+                    <button class="trump-btn spades" data-suit="spades" type="button" aria-pressed="false">
                         <span class="suit-symbol">&spades;&#xFE0E;</span>
                         <span class="suit-name">Spades</span>
+                        <span class="trump-cards" aria-hidden="true"></span>
+                        <span class="suit-count">0 cards</span>
                     </button>
-                    <button class="trump-btn diamonds" data-suit="diamonds" type="button">
+                    <button class="trump-btn diamonds" data-suit="diamonds" type="button" aria-pressed="false">
                         <span class="suit-symbol">&diams;&#xFE0E;</span>
                         <span class="suit-name">Diamonds</span>
+                        <span class="trump-cards" aria-hidden="true"></span>
+                        <span class="suit-count">0 cards</span>
                     </button>
-                    <button class="trump-btn clubs" data-suit="clubs" type="button">
+                    <button class="trump-btn clubs" data-suit="clubs" type="button" aria-pressed="false">
                         <span class="suit-symbol">&clubs;&#xFE0E;</span>
                         <span class="suit-name">Clubs</span>
+                        <span class="trump-cards" aria-hidden="true"></span>
+                        <span class="suit-count">0 cards</span>
                     </button>
                 </div>
                 <p class="trump-footnote">The suit you choose becomes the most powerful card in every trick.</p>
@@ -223,6 +249,7 @@
 
         <!-- Game Over Modal -->
         <div id="game-over-modal" class="modal" style="display: none;">
+            <canvas id="fireworks-canvas" class="fireworks-canvas" aria-hidden="true"></canvas>
             <div class="modal-content gameover-modal" role="dialog" aria-modal="true" aria-labelledby="gameover-title">
                 <div class="modal-header">
                     <div>
@@ -236,7 +263,7 @@
                     <div id="match-context" class="match-context"></div>
                     <div id="final-scores" class="final-scores"></div>
                     <div id="anne-result" class="anne-result">
-                        <span class="anne-result-avatar"><img id="anne-result-avatar" src="../../assets/anne.svg" alt="" width="64" height="64"></span>
+                        <span class="anne-result-avatar" id="anne-result-avatar" data-anne-avatar data-crop="face" aria-hidden="true"></span>
                         <div>
                             <b>Anne</b>
                             <p id="anne-result-line"></p>
@@ -306,7 +333,7 @@
                     <button id="tutorial-close" class="close-modal" type="button" aria-label="Close tutorial">&times;</button>
                 </div>
                 <div class="tutorial-guide">
-                    <span class="tutorial-guide-avatar"><img src="../../assets/anne.svg" alt="" width="46" height="46"></span>
+                    <span class="tutorial-guide-avatar" data-anne-avatar data-crop="face" aria-hidden="true"></span>
                     <div>
                         <b>Anne <span>your guide</span></b>
                         <p id="tutorial-guide-line">Start with the five cards you can see. Trump is a promise about where your strength lives.</p>
@@ -328,7 +355,7 @@
                 </div>
                 <div class="rules-content">
                     <h4>Objective</h4>
-                    <p>Win tricks strategically to score points. The first player to reach the <strong>match target</strong> wins. The target is 5 points by default; you can choose 3, 5 or 7 in Settings.</p>
+                    <p>Win tricks strategically to score points. The first player to reach the <strong>match target</strong> wins. The target is 3 points by default; you can choose 3, 5 or 7 in Settings.</p>
 
                     <h4>The special deck (30 cards)</h4>
                     <ul>
@@ -400,7 +427,7 @@
                     <h4>Winning the game</h4>
                     <ul>
                         <li>The game continues through multiple rounds</li>
-                        <li><strong>First player to reach the match target wins</strong> (5 by default)</li>
+                        <li><strong>First player to reach the match target wins</strong> (3 by default)</li>
                         <li>Play aggressively - try to win more tricks than your target to score points!</li>
                     </ul>
 
@@ -438,31 +465,31 @@
                         <h4>Match target</h4>
                         <p class="settings-note">First to this many match points wins. A change applies to your next match.</p>
                         <div class="target-options" role="group" aria-label="Match target">
-                            <button class="target-btn" data-target="3" type="button" aria-pressed="false">3</button>
-                            <button class="target-btn active" data-target="5" type="button" aria-pressed="true">5</button>
+                            <button class="target-btn active" data-target="3" type="button" aria-pressed="true">3</button>
+                            <button class="target-btn" data-target="5" type="button" aria-pressed="false">5</button>
                             <button class="target-btn" data-target="7" type="button" aria-pressed="false">7</button>
                         </div>
-                        <p id="target-note" class="settings-note target-note">The current match is first to 5.</p>
+                        <p id="target-note" class="settings-note target-note" aria-live="polite">The current match is first to 3.</p>
                     </div>
 
                     <div class="settings-section">
                         <h4>Anne's difficulty</h4>
                         <p class="settings-note">A new strategy applies immediately, including mid-round.</p>
-                        <div class="difficulty-options">
+                        <div class="difficulty-options" role="group" aria-label="Anne's difficulty">
                             <button class="difficulty-btn" data-difficulty="easy" type="button" aria-pressed="false">Easy</button>
                             <button class="difficulty-btn active" data-difficulty="medium" type="button" aria-pressed="true">Medium</button>
                             <button class="difficulty-btn" data-difficulty="hard" type="button" aria-pressed="false">Hard</button>
                         </div>
                         <div class="difficulty-description">
-                            <p id="difficulty-desc">Anne plays a balanced game and watches your visible cards.</p>
+                            <p id="difficulty-desc" aria-live="polite">Anne plays a balanced game and watches your visible cards.</p>
                         </div>
                     </div>
 
                     <div class="settings-section">
                         <h4>Sound and feedback</h4>
                         <div class="setting-row">
-                            <span class="setting-label">Sound effects</span>
-                            <button id="settings-sound" class="switch-btn" type="button" role="switch" aria-checked="true"><i></i><span>On</span></button>
+                            <span class="setting-label" id="settings-sound-label">Sound effects</span>
+                            <button id="settings-sound" class="switch-btn" type="button" role="switch" aria-checked="true" aria-labelledby="settings-sound-label"><span>On</span><span class="switch-track" aria-hidden="true"><i></i></span></button>
                         </div>
                         <label class="volume-row" for="settings-volume">
                             <span class="setting-label">Master volume</span>
@@ -470,18 +497,34 @@
                             <output id="volume-value" for="settings-volume">55%</output>
                         </label>
                         <div class="setting-row">
-                            <span class="setting-label">Haptics <small id="haptics-note">On supported phones</small></span>
-                            <button id="settings-haptics" class="switch-btn" type="button" role="switch" aria-checked="true"><i></i><span>On</span></button>
+                            <span class="setting-label">Sound check <small>Hear the table</small></span>
+                            <button id="sound-test" class="mini-btn sound-test" type="button">Play sample</button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label" id="settings-voice-label">Anne's voice <small>Spoken lines</small></span>
+                            <button id="settings-voice" class="switch-btn" type="button" role="switch" aria-checked="false" aria-labelledby="settings-voice-label"><span>Off</span><span class="switch-track" aria-hidden="true"><i></i></span></button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">Voice check <small>Hear her</small></span>
+                            <button id="voice-test" class="mini-btn sound-test" type="button">Say hello</button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label" id="settings-haptics-label">Haptics <small id="haptics-note">On supported phones</small></span>
+                            <button id="settings-haptics" class="switch-btn" type="button" role="switch" aria-checked="true" aria-labelledby="settings-haptics-label"><span>On</span><span class="switch-track" aria-hidden="true"><i></i></span></button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label" id="settings-fireworks-label">Winner fireworks <small>Victory celebration</small></span>
+                            <button id="settings-fireworks" class="switch-btn" type="button" role="switch" aria-checked="false" aria-labelledby="settings-fireworks-label"><span>Off</span><span class="switch-track" aria-hidden="true"><i></i></span></button>
                         </div>
                     </div>
 
                     <div class="settings-section">
                         <h4>Motion</h4>
-                        <p class="settings-note">Reduced motion keeps the card table still and shows results immediately. Fast shortens the deal and coin.</p>
+                        <p class="settings-note">Full always animates the shuffle, deal, cards and coin. Fast keeps the same motion in less time. Calm uses short, quiet movement and still plays every sound.</p>
                         <div class="motion-options" role="group" aria-label="Animation preference">
                             <button class="motion-btn active" data-motion="full" type="button" aria-pressed="true">Full</button>
                             <button class="motion-btn" data-motion="fast" type="button" aria-pressed="false">Fast</button>
-                            <button class="motion-btn" data-motion="reduced" type="button" aria-pressed="false">Reduced</button>
+                            <button class="motion-btn" data-motion="reduced" type="button" aria-pressed="false">Calm</button>
                         </div>
                     </div>
 
@@ -545,8 +588,12 @@
 
     <!-- Vendored libraries and local preferences -->
     <script src="../../assets/vendor/gsap.min.js"></script>
+    <script src="../../assets/audio/manifest.js"></script>
     <script src="../../settings.js"></script>
     <script src="../../audio.js"></script>
+    <script src="../../fireworks.js"></script>
+    <script src="../../anne-avatar.js"></script>
+    <script src="../../anne-voice.js"></script>
     <script src="../../character.js"></script>
     <!-- Presentation layer (DOM, timing, animation) -> engine (state, rules, AI) -> UI wiring -->
     <script src="../../presentation.js"></script>

@@ -1,0 +1,2063 @@
+/* =====================================================================
+   THE TABLE - final visual layer
+   Loaded last on both pages. Structure and responsive plumbing live in
+   style.css / home.css / table.css / overlays.css; this file owns the room:
+   dark walnut, deep felt, warm gold, ivory cards, and Anne.
+
+   Rules here exist to replace the earlier neon arcade skin, not to add a
+   second one. Avoid new borders, glows and gradients unless they carry meaning.
+   ===================================================================== */
+
+:root {
+    /* The room */
+    --void: #080605;
+    --void-2: #0d0907;
+    --panel: #15100c;
+    --panel-2: #1c1510;
+    --panel-3: #261c14;
+    --stroke: #3a2d21;
+    --stroke-2: #54402b;
+
+    --walnut-0: #080605;
+    --walnut-1: #120d09;
+    --walnut-2: #1c1410;
+    --walnut-3: #2b1e15;
+    --felt-1: #0f3a2d;
+    --felt-2: #0a2b22;
+    --felt-3: #051611;
+
+    /* Warm metal and paper */
+    --gold: #c9a35c;
+    --gold-bright: #efd8a4;
+    --gold-soft: #e6cb95;
+    --gold-dim: #a98650;
+    --ivory: #f6ecd9;
+    --ivory-2: #e9dcc4;
+    --cream: #f7eeda;
+    --ink: #241a15;
+
+    /* Accents. The legacy names are kept because older sheets still read
+       them, but they now resolve into this room rather than the neon one. */
+    --pink: #c17b87;
+    --pink-hot: #d7959e;
+    --pink-deep: #7c3c4a;
+    --pink-soft: #e2b3b4;
+    --cyan: #9db5a8;
+    --cyan-deep: #4f6b5e;
+    --lime: #d6ae62;
+    --lime-deep: #8a6b38;
+    --coral: #c47c5a;
+    --seal: #a3444f;
+
+    --arc-text: #f4ecdf;
+    --arc-dim: #cbbda6;
+    --arc-mute: #b7a78e;
+
+    /* Type: a book face for the table, a quiet grotesk for the chrome. */
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --font-ui: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --font-brand: "Bungee", "Palatino Linotype", Georgia, serif;
+
+    --rad-sm: 5px;
+    --rad: 8px;
+    --rad-lg: 12px;
+    --line-soft: rgba(201, 163, 92, .16);
+    --line: rgba(201, 163, 92, .26);
+    --line-strong: rgba(201, 163, 92, .46);
+    --shadow-deep: 0 22px 50px rgba(0, 0, 0, .55);
+
+    /* Cards: the previous table ran to 92px on a desktop and about 61px on a
+       phone. The arcade pass cut that to 84 / 42. One formula restores the
+       larger feel at every width without letting five cards overflow. */
+    --cw-base: clamp(50px, min(calc((100vw - 56px) / 5.6), 13vh), 96px);
+}
+
+/* ------------------------------------------------------------------ room */
+html, body {
+    background: #080605;
+}
+body {
+    color: var(--arc-text);
+    font-family: var(--font-ui);
+    background:
+        radial-gradient(100% 80% at 50% -12%, #2a1b12 0%, #140e0a 44%, #080605 100%);
+}
+/* The neon grid is gone. A barely-there grain keeps the large dark areas
+   from banding on cheap panels without reading as a pattern. */
+body::before {
+    content: "";
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: .22;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.44  0 0 0 0 0.31  0 0 0 .16 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    mix-blend-mode: soft-light;
+}
+.game-container {
+    max-width: 1560px;
+    padding: 10px clamp(12px, 2vw, 26px) 14px;
+    gap: 6px;
+}
+
+/* ------------------------------------------------------------------ HUD */
+.hud {
+    gap: clamp(10px, 1.6vw, 24px);
+    padding: 0 2px 4px;
+}
+.hud-brand { gap: 11px; }
+.brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: var(--gold-bright);
+    background: linear-gradient(160deg, #2a1e15, #17100c);
+    border: 1px solid var(--line-strong);
+    box-shadow: inset 0 0 0 3px #17100c, inset 0 0 0 4px rgba(201, 163, 92, .22);
+    font: 400 15px/1 var(--font-brand);
+    transform: none;
+}
+.hud-brand:hover .brand-mark {
+    transform: none;
+    border-color: var(--gold);
+    box-shadow: inset 0 0 0 3px #17100c, inset 0 0 0 4px rgba(201, 163, 92, .4);
+}
+.brand-mark i { color: var(--gold-dim); }
+.brand-name {
+    font: 600 18px/1 var(--font-display);
+    letter-spacing: .02em;
+    color: var(--cream);
+    text-shadow: none;
+}
+.brand-name i { color: var(--gold); }
+.brand-sub {
+    font: 600 9px/1 var(--font-ui);
+    letter-spacing: .22em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+}
+
+.score-board {
+    gap: clamp(8px, 1.2vw, 18px);
+    padding: 4px clamp(10px, 1.4vw, 18px);
+    border-radius: 7px;
+    border: 1px solid var(--line-soft);
+    background: rgba(0, 0, 0, .18);
+    box-shadow: none;
+}
+.score-side { gap: 7px; min-width: clamp(56px, 6.4vw, 84px); }
+.score-name {
+    font: 600 9.5px/1 var(--font-ui);
+    letter-spacing: .2em;
+    color: var(--arc-mute);
+}
+.score-num {
+    font: 500 clamp(24px, 2.2vw, 31px)/.9 var(--font-display);
+    color: var(--cream);
+    text-shadow: none;
+    min-width: .68em;
+}
+.score-side-cpu .score-num { color: var(--gold-soft); text-shadow: none; }
+.round-info {
+    min-width: 70px;
+    padding: 1px 12px;
+    border-inline: 1px solid var(--line-soft);
+    gap: 2px;
+}
+.round-info small, .round-info em {
+    font: 600 9px/1 var(--font-ui);
+    letter-spacing: .14em;
+    color: var(--arc-mute);
+    text-transform: uppercase;
+}
+.round-info b {
+    font: 500 16px/1 var(--font-display);
+    color: var(--gold-bright);
+    letter-spacing: 0;
+}
+
+.hud-right { gap: 5px; }
+.hud-divider { height: 20px; background: var(--line-soft); }
+.difficulty-indicator {
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font: 600 9.5px/1 var(--font-ui);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--gold);
+}
+.trump-indicator {
+    padding: 3px 4px 3px 9px;
+    border-radius: 5px;
+    border: 1px solid var(--line-soft);
+    background: rgba(0, 0, 0, .22);
+    box-shadow: none;
+}
+.trump-label { font: 600 9px/1 var(--font-ui); letter-spacing: .16em; color: var(--arc-mute); }
+.trump-suit {
+    width: 26px;
+    height: 26px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    background: var(--ivory);
+    font-size: 15px;
+    box-shadow: none;
+}
+.hud-btn {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 5px;
+    border: 1px solid var(--line-soft);
+    background: transparent;
+    box-shadow: none;
+    color: var(--arc-dim);
+    font: 600 10px/1 var(--font-ui);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    transition: color .16s, border-color .16s, background .16s;
+}
+.hud-btn:hover {
+    color: var(--cream);
+    border-color: var(--line-strong);
+    background: rgba(201, 163, 92, .06);
+    transform: none;
+    box-shadow: none;
+}
+.hud-btn:active { transform: none; box-shadow: none; }
+.hud-icon { width: 30px; padding: 0; border-color: transparent; font-size: 14px; }
+.hud-rules { color: var(--arc-mute); border-color: transparent; padding-inline: 8px; }
+.hud-rules:hover { color: var(--gold-bright); }
+.mute-btn.is-muted { color: var(--gold); }
+
+/* ------------------------------------------------------------------ table */
+.game-board {
+    margin: 6px 2px 0;
+    padding: clamp(12px, 1.6vh, 18px) clamp(14px, 2.2vw, 28px);
+    border-radius: 22px;
+    border: 1px solid rgba(201, 163, 92, .3);
+    background:
+        radial-gradient(58% 54% at 50% 46%, rgba(31, 104, 79, .42) 0%, rgba(11, 58, 44, 0) 74%),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, .012) 0 1px, transparent 1px 52px),
+        radial-gradient(100% 90% at 50% 0%, #103a2c 0%, #0a2a21 52%, #051611 100%);
+    box-shadow:
+        inset 0 0 0 1px rgba(247, 238, 218, .035),
+        inset 0 0 90px 10px rgba(0, 0, 0, .5),
+        0 0 0 6px #1a120c,
+        0 0 0 7px rgba(201, 163, 92, .22),
+        0 20px 44px rgba(0, 0, 0, .55);
+}
+.game-board::before {
+    inset: 8px;
+    border-radius: 15px;
+    box-shadow: inset 0 0 0 1px rgba(201, 163, 92, .1);
+}
+.game-board::after {
+    font: 500 min(30vh, 32vw)/1 var(--font-display);
+    color: var(--gold);
+    opacity: .028;
+}
+.game-board.is-setup::after { content: "7 · 8"; opacity: .035; }
+
+/* ------------------------------------------------------------------ seats */
+.seat { gap: 5px; }
+
+/* A single centred rail above (or below) the cards. The arcade pass pushed
+   Anne's plate to the far left and the player's to the far right, which made
+   both feel detached from the hands they were playing. */
+.computer-area {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "rail" "say" "cards";
+    justify-items: center;
+    row-gap: 5px;
+}
+.player-area {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "cards" "rail";
+    justify-items: center;
+    row-gap: 6px;
+}
+.computer-area .seat-bar { grid-area: rail; }
+.computer-area .seat-cards { grid-area: cards; }
+
+/* Her cards were one size smaller than the player's by accident in the arcade
+   pass. Keep the deliberate difference, but bring both rows back up. */
+.computer-area { --cw-seat: calc(var(--cw-base) * .64); }
+.player-area { --cw-seat: var(--cw-base); }
+.computer-area .face-up-cards { --cw-seat: calc(var(--cw-base) * .86); }
+.face-up-cards { --cw-seat: calc(var(--cw-base) * .86); }
+.center-area { --cw-seat: calc(var(--cw-base) * 1.14); }
+.computer-area > .anne-reaction { grid-area: say; }
+.player-area .seat-cards { grid-area: cards; }
+.player-area .seat-bar { grid-area: rail; }
+
+.seat-bar {
+    min-height: 0;
+    padding: 2px 8px;
+    gap: 12px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    box-shadow: none;
+}
+.player-area .seat-bar { flex-direction: row; align-items: center; }
+.won-tricks { width: auto; flex: none; }
+.anne-ident { min-width: 0; }
+.seat.is-turn .seat-bar {
+    background: rgba(201, 163, 92, .045);
+    border: 0;
+    box-shadow: none;
+}
+.player-area .seat-bar { padding: 2px 8px; }
+
+.computer-area .anne-avatar {
+    --aa-size: 108px;
+    width: var(--aa-size);
+    height: calc(var(--aa-size) * 1.2308);
+    border-radius: 11px;
+}
+.anne-avatar {
+    border-radius: 11px;
+}
+.seat.is-turn .anne-avatar,
+.computer-area[data-mood="tease"] .anne-avatar,
+.computer-area[data-mood="happy"] .anne-avatar,
+.computer-area[data-mood="impressed"] .anne-avatar,
+.computer-area[data-mood="thinking"] .anne-avatar,
+.computer-area[data-mood="sorry"] .anne-avatar {
+    box-shadow: inset 0 0 0 1px rgba(201, 163, 92, .55), 0 10px 24px rgba(0, 0, 0, .42);
+}
+.seat.is-turn .anne-avatar { box-shadow: inset 0 0 0 1px var(--gold), 0 10px 26px rgba(0, 0, 0, .48); }
+
+.anne-name-row { gap: 8px; align-items: baseline; }
+.player-label {
+    font: 600 15px/1 var(--font-display);
+    letter-spacing: .01em;
+    color: var(--cream);
+    text-transform: none;
+}
+.seat.is-turn .player-label { color: var(--gold-bright); }
+.anne-role {
+    font: 500 10.5px/1.3 var(--font-ui);
+    letter-spacing: .02em;
+    color: var(--arc-mute);
+}
+.anne-mood {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font: italic 500 10.5px/1.3 var(--font-display);
+    letter-spacing: .02em;
+    color: var(--gold-soft);
+}
+.anne-difficulty {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    font: 600 9px/1 var(--font-ui);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+}
+.anne-ident { gap: 3px; }
+.won-tricks { gap: 7px; }
+.tricks-label {
+    font: 500 10px/1 var(--font-ui);
+    color: var(--arc-mute);
+    letter-spacing: .04em;
+}
+.tricks-label .trick-count {
+    font: 500 15px/1 var(--font-display);
+    color: var(--gold-bright);
+}
+.tricks-label .trick-target { color: var(--arc-mute); }
+.meter { gap: 3px; }
+.meter i {
+    width: 4px;
+    height: 11px;
+    border-radius: 1px;
+    background: rgba(0, 0, 0, .3);
+    box-shadow: inset 0 0 0 1px rgba(201, 163, 92, .16);
+}
+.meter i.won { background: var(--gold); box-shadow: none; }
+.meter i.target { box-shadow: inset 0 0 0 1px var(--gold-bright); }
+
+.cards-label {
+    font: 600 10px/1 var(--font-ui);
+    letter-spacing: .16em;
+    color: var(--arc-mute);
+}
+.cards-label b { font: 600 10px/1 var(--font-ui); color: var(--gold); }
+.cards-label, .tricks-label, .trick-caption, .score-name, .player-label,
+.round-info small, .round-info em, .anne-role, .brand-sub { text-shadow: none; }
+
+.seat-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font: 500 12px/1 var(--font-display);
+    color: var(--gold-bright);
+    background: #241a13;
+    box-shadow: inset 0 0 0 1px var(--line);
+}
+.seat.is-turn .seat-avatar { color: var(--gold-bright); box-shadow: inset 0 0 0 1px var(--gold); }
+.player-area .seat-avatar { background: #241a13; color: var(--gold-bright); }
+.player-area .seat.is-turn .seat-avatar { background: var(--gold); color: var(--ink); }
+
+/* A note on parchment, not a comic bubble. */
+.anne-reaction {
+    position: static;
+    left: auto;
+    top: auto;
+    width: auto;
+    max-width: min(100%, 360px);
+    transform: none;
+    margin: 2px 0 0;
+    padding: 9px 13px 10px;
+    border: 1px solid rgba(201, 163, 92, .55);
+    border-radius: 8px;
+    background: #f1e5d0;
+    color: #2c2118;
+    font: 500 13px/1.45 var(--font-ui);
+    text-align: left;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, .32);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .18s, transform .18s;
+}
+.anne-reaction.is-visible { opacity: 1; visibility: visible; transform: none; }
+.anne-reaction::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    margin-left: -4px;
+    background: #f1e5d0;
+    border-left: 1px solid rgba(201, 163, 92, .55);
+    border-top: 1px solid rgba(201, 163, 92, .55);
+    transform: rotate(45deg);
+}
+.anne-reaction::after { content: none; display: none; }
+.anne-reaction b { color: #1d1610; }
+
+/* Three small bars that move only while she is actually saying something. */
+.anne-voice {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 10px;
+    margin-left: 2px;
+    opacity: .35;
+    transition: opacity .2s;
+}
+.anne-voice i {
+    display: block;
+    width: 2px;
+    height: 4px;
+    border-radius: 1px;
+    background: var(--gold);
+}
+.computer-area.is-speaking .anne-voice,
+.anne-avatar.is-talking ~ .anne-voice,
+.anne-ident:has(.anne-avatar.is-talking) .anne-voice { opacity: 1; }
+.computer-area.is-speaking .anne-voice i:nth-child(2) { animation: voice-bar .48s ease-in-out infinite alternate; }
+.computer-area.is-speaking .anne-voice i:nth-child(3) { animation: voice-bar .36s .08s ease-in-out infinite alternate; }
+.computer-area.is-speaking .anne-voice i:nth-child(1) { animation: voice-bar .42s .04s ease-in-out infinite alternate; }
+@keyframes voice-bar {
+    from { height: 3px; }
+    to { height: 10px; }
+}
+
+/* ------------------------------------------------------------------ centre */
+.center-area::before {
+    width: min(68%, 820px);
+    height: min(78%, 360px);
+    border: 1px solid rgba(201, 163, 92, .12);
+    border-radius: 50%;
+    background:
+        radial-gradient(closest-side, rgba(38, 120, 91, .22), rgba(0, 0, 0, 0) 76%);
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, .28);
+}
+.center-area::after {
+    content: "7 · 8";
+    font: 500 min(22vh, 160px)/1 var(--font-display);
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(201, 163, 92, .08);
+    text-shadow: none;
+    opacity: 1;
+}
+.trick-caption {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    font: 600 10px/1 var(--font-ui);
+    letter-spacing: .24em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+}
+.lead-chip {
+    padding: 3px 7px;
+    border-radius: 3px;
+    background: var(--gold);
+    color: var(--ink);
+    font: 600 9px/1 var(--font-ui);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    box-shadow: none;
+}
+.trick-cards {
+    gap: calc(var(--cw-seat) * -.045);
+    padding: clamp(12px, 1.8vh, 20px) clamp(24px, 4vw, 52px);
+    border: 1px solid rgba(201, 163, 92, .14);
+    border-radius: 12px;
+    background: rgba(2, 12, 9, .28);
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, .28);
+}
+.trick-slot { border-radius: 6px; }
+.trick-slot::before {
+    border: 1px dashed rgba(201, 163, 92, .22);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, .12);
+}
+.trick-slot::after {
+    font: 600 9.5px/1 var(--font-ui);
+    letter-spacing: .2em;
+    color: rgba(201, 163, 92, .42);
+}
+.game-status {
+    font: 500 13px/1.4 var(--font-ui);
+    letter-spacing: .01em;
+    color: var(--arc-dim);
+}
+.game-status b, .game-status strong { color: var(--cream); }
+.deck { right: clamp(8px, 2.4vw, 34px); }
+
+/* ------------------------------------------------------------------ start */
+.start-panel {
+    width: min(520px, 92%);
+    padding: clamp(24px, 3.4vh, 34px) clamp(22px, 3vw, 38px);
+    border: 1px solid rgba(201, 163, 92, .28);
+    border-radius: 12px;
+    background:
+        radial-gradient(110% 80% at 50% -10%, rgba(181, 106, 118, .1), transparent 58%),
+        linear-gradient(180deg, #1b1410, #100c09);
+    box-shadow: 0 26px 60px rgba(0, 0, 0, .6);
+    text-align: center;
+}
+.start-panel::before { content: none; display: none; }
+.start-eyebrow {
+    font: 600 9.5px/1 var(--font-ui);
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 12px;
+}
+.start-title {
+    font: 500 clamp(34px, 5vw, 50px)/.98 var(--font-display);
+    letter-spacing: .01em;
+    color: var(--cream);
+    text-transform: none;
+    text-shadow: none;
+    margin-bottom: 10px;
+}
+.start-title span { color: var(--gold); }
+.start-tagline {
+    font: 400 13.5px/1.6 var(--font-ui);
+    color: var(--arc-dim);
+    max-width: 38ch;
+    margin: 0 auto 16px;
+}
+.start-chips {
+    gap: 0;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+.start-chips li {
+    padding: 0 12px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    font: 600 9.5px/1 var(--font-ui);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--arc-mute);
+}
+.start-chips li + li { border-left: 1px solid var(--line-soft); }
+.start-chips li:nth-child(1),
+.start-chips li:nth-child(2),
+.start-chips li:nth-child(3) { border-color: var(--line-soft); color: var(--arc-mute); }
+.start-actions { gap: 8px; }
+.start-note {
+    font: 400 10.5px/1.5 var(--font-ui);
+    color: var(--arc-mute);
+    margin-top: 14px;
+}
+.hero-fan { filter: drop-shadow(0 14px 18px rgba(0, 0, 0, .5)); }
+
+.tutorial-invite {
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    background: rgba(201, 163, 92, .04);
+}
+.tutorial-invite-mark {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--gold);
+}
+.tutorial-invite p { color: var(--arc-dim); }
+.tutorial-invite p strong { color: var(--cream); }
+
+/* ------------------------------------------------------------------ buttons */
+.control-btn, .coin-btn, .settings-action-btn, .difficulty-btn, .clear-log-btn {
+    padding: 11px 20px;
+    border-radius: 5px;
+    border: 1px solid var(--line-soft);
+    background: transparent;
+    box-shadow: none;
+    color: var(--arc-text);
+    font: 600 10.5px/1 var(--font-ui);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    transition: color .16s, border-color .16s, background .16s;
+}
+.control-btn:hover, .coin-btn:hover:not(:disabled), .settings-action-btn:hover,
+.difficulty-btn:hover, .clear-log-btn:hover {
+    background: rgba(201, 163, 92, .07);
+    border-color: var(--line-strong);
+    color: var(--cream);
+    transform: none;
+    box-shadow: none;
+}
+.control-btn.primary, .difficulty-btn.active {
+    color: #1b1209;
+    background: linear-gradient(180deg, #e7cd97, #c9a35c);
+    border-color: #8a6b38;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .3);
+    font-weight: 700;
+}
+.control-btn.primary:hover {
+    color: #1b1209;
+    background: linear-gradient(180deg, #f0dbaa, #d4ae68);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .34);
+    filter: none;
+}
+.control-btn.primary:active { transform: translateY(1px); box-shadow: 0 3px 8px rgba(0, 0, 0, .3); }
+.text-btn {
+    padding: 10px 6px;
+    border: 0;
+    background: none;
+    color: var(--arc-mute);
+    font: 600 10.5px/1 var(--font-ui);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+.text-btn:hover { color: var(--gold-bright); text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+.mini-btn {
+    padding: 7px 11px;
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--arc-dim);
+    font: 600 10px/1 var(--font-ui);
+    letter-spacing: .06em;
+}
+.mini-btn.primary { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+.tutorial-invite .mini-btn.primary { background: transparent; border-color: var(--line-strong); color: var(--gold-soft); }
+.tutorial-invite .mini-btn.primary:hover { background: rgba(201, 163, 92, .1); color: var(--cream); }
+.mini-btn:hover { border-color: var(--line-strong); color: var(--cream); }
+
+/* ------------------------------------------------------------------ cards */
+.card-front {
+    border-radius: calc(var(--cw) * .06);
+    background:
+        linear-gradient(165deg, #fffdf6, #f2e6d0);
+    box-shadow:
+        inset 0 0 0 1px rgba(92, 63, 33, .38),
+        inset 0 0 0 calc(var(--cw) * .018) rgba(255, 255, 255, .6),
+        0 2px 0 rgba(0, 0, 0, .35),
+        0 calc(var(--cw) * .06) calc(var(--cw) * .12) rgba(0, 0, 0, .4);
+    color: #241a16;
+}
+.card-front.red { color: #a83a44; }
+.card-back, .slot.has-under::before, .deck i, .deck .shuffle-card {
+    border-radius: calc(var(--cw) * .06);
+    background:
+        radial-gradient(closest-side at 50% 50%, rgba(201, 163, 92, .1) 0 30%, transparent 31%),
+        repeating-linear-gradient(45deg, rgba(201, 163, 92, .13) 0 1px, transparent 1px calc(var(--cw) * .09)),
+        repeating-linear-gradient(-45deg, rgba(201, 163, 92, .09) 0 1px, transparent 1px calc(var(--cw) * .09)),
+        linear-gradient(160deg, #3d2228, #211216);
+    box-shadow:
+        inset 0 0 0 calc(var(--cw) * .03) #f2e5cf,
+        inset 0 0 0 calc(var(--cw) * .045) #2a171b,
+        inset 0 0 0 calc(var(--cw) * .058) rgba(201, 163, 92, .7),
+        0 2px 0 rgba(0, 0, 0, .4),
+        0 calc(var(--cw) * .05) calc(var(--cw) * .1) rgba(0, 0, 0, .4);
+}
+.card-back::after, .deck .shuffle-card::after {
+    content: "7·8";
+    font: 500 calc(var(--cw) * .18)/1 var(--font-display);
+    color: var(--gold-soft);
+    text-shadow: none;
+}
+.card-back::before, .deck .shuffle-card::before { border-color: rgba(201, 163, 92, .4); }
+.card.playable .card-front {
+    box-shadow:
+        inset 0 0 0 1px rgba(201, 163, 92, .6),
+        inset 0 0 0 calc(var(--cw) * .018) rgba(255, 255, 255, .6),
+        0 2px 0 rgba(0, 0, 0, .35),
+        0 calc(var(--cw) * .07) calc(var(--cw) * .13) rgba(0, 0, 0, .4);
+}
+.card.playable:hover .card-front {
+    box-shadow:
+        inset 0 0 0 1px var(--gold),
+        inset 0 0 0 calc(var(--cw) * .018) rgba(255, 255, 255, .7),
+        0 calc(var(--cw) * .16) calc(var(--cw) * .22) rgba(0, 0, 0, .45);
+}
+.card.selected .card-front { box-shadow: 0 0 0 2px var(--gold-bright), 0 calc(var(--cw) * .22) calc(var(--cw) * .26) rgba(0, 0, 0, .45); }
+.card.winning .card-front { box-shadow: 0 0 0 2px var(--gold), 0 0 24px rgba(201, 163, 92, .45), 0 6px 14px rgba(0, 0, 0, .4); }
+.card.coach-pick .card-front { box-shadow: 0 0 0 2px var(--cyan), 0 0 18px rgba(157, 181, 168, .3), 0 2px 0 rgba(0, 0, 0, .35); }
+.card.invalid .card-front::after { background: rgba(10, 8, 6, .16); }
+.highlight-winner .seat-avatar { box-shadow: inset 0 0 0 1px var(--gold); }
+.flying-card, .fx-layer { color: var(--gold); }
+
+/* ------------------------------------------------------------------ modals */
+#game-over-modal { position: fixed; overflow: hidden; }
+.fireworks-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity .3s ease;
+}
+.fireworks-canvas.is-live { opacity: 1; }
+#game-over-modal .modal-content { position: relative; z-index: 2; }
+#game-over-modal .modal-content::-webkit-scrollbar { width: 0; height: 0; }
+#game-over-modal .modal-content { scrollbar-width: none; }
+.gameover-modal {
+    border-color: rgba(214, 174, 98, .46);
+    box-shadow: 0 34px 110px rgba(0, 0, 0, .8), 0 0 0 1px rgba(214, 174, 98, .08);
+}
+.gameover-modal::before {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border: 1px solid rgba(214, 174, 98, .14);
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 3;
+}
+.gameover-modal.is-win .winner-text {
+    color: var(--gold-bright);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, .45), 0 0 34px rgba(214, 174, 98, .3);
+}
+.modal {
+    background: rgba(4, 3, 2, .76);
+    backdrop-filter: blur(3px);
+}
+.modal-content {
+    border: 1px solid rgba(201, 163, 92, .28);
+    border-radius: 12px;
+    background:
+        radial-gradient(120% 80% at 50% -12%, rgba(181, 106, 118, .08), transparent 60%),
+        linear-gradient(180deg, #1a1410, #100c09);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .7);
+    color: var(--arc-text);
+}
+.modal-kicker {
+    font: 600 9px/1 var(--font-ui);
+    letter-spacing: .24em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+}
+.modal-header h3, .modal-content h3 { font: 500 30px/1.1 var(--font-display); color: var(--cream); }
+.modal-header p { color: var(--arc-mute); }
+.close-modal {
+    border: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--arc-mute);
+    border-radius: 4px;
+}
+.close-modal:hover { color: var(--cream); border-color: var(--line-strong); }
+.settings-section { border-top: 1px solid rgba(201, 163, 92, .12); }
+.settings-section h4 { font: 500 17px/1.2 var(--font-display); color: var(--gold-soft); }
+.settings-note { color: var(--arc-mute); }
+.settings-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: .02em;
+    font-size: 12px;
+}
+.switch-btn {
+    border: 1px solid var(--line-soft);
+    background: rgba(0, 0, 0, .22);
+    border-radius: 999px;
+}
+.switch-btn i { background: #3a2d21; }
+.switch-btn[aria-checked="true"] { border-color: var(--line-strong); background: rgba(201, 163, 92, .1); }
+.switch-btn[aria-checked="true"] i { background: var(--gold); }
+.target-btn, .difficulty-btn, .motion-btn {
+    border: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--arc-dim);
+    border-radius: 4px;
+    text-transform: none;
+    letter-spacing: .04em;
+}
+.target-btn.active, .difficulty-btn.active, .motion-btn.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--ink);
+}
+.settings-action-btn .action-chevron { color: var(--gold-dim); }
+input[type="range"] { accent-color: var(--gold); }
+.sound-test { border-color: var(--line-soft); }
+
+.gameover-modal .winner-text,
+.winner-text { color: var(--gold-bright); }
+.final-line b { color: var(--cream); }
+.final-line span { color: var(--arc-mute); }
+.anne-result {
+    border-top: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+}
+.anne-result b { color: var(--gold-soft); font-family: var(--font-display); font-weight: 500; }
+.anne-result p { color: var(--arc-dim); }
+.ann-result-avatar, .anne-result-avatar { border-radius: 8px; }
+
+.coin-face { background: radial-gradient(circle at 38% 30%, #f4dfae, #c9a35c 58%, #8a6b38); }
+.coin-rim { border-color: rgba(90, 62, 26, .55); }
+.coin-letter, .coin-word { color: #3a2a12; }
+
+.trump-btn {
+    border: 1px solid var(--line-soft);
+    background: rgba(0, 0, 0, .18);
+    border-radius: 6px;
+    color: var(--cream);
+}
+.trump-btn:hover { border-color: var(--gold); background: rgba(201, 163, 92, .07); }
+.trump-btn.red .suit-symbol { color: #c05a62; }
+.trump-btn .suit-symbol { color: var(--ivory); }
+.trump-anne-line {
+    border: 1px solid var(--line-soft);
+    background: rgba(201, 163, 92, .04);
+    border-radius: 7px;
+}
+.trump-anne-line p { color: var(--arc-dim); }
+.trump-anne-line b { color: var(--gold-soft); }
+.tutorial-guide {
+    border-bottom: 1px solid var(--line-soft);
+}
+.tutorial-guide b { color: var(--gold-soft); font-family: var(--font-display); font-weight: 500; }
+.tutorial-guide b span { color: var(--arc-mute); }
+.tutorial-guide p { color: var(--arc-dim); }
+.tutorial-step-label { color: var(--arc-mute); }
+.tutorial-progress i { background: rgba(201, 163, 92, .16); }
+.tutorial-progress i.done, .tutorial-progress i.active { background: var(--gold); }
+.tutorial-body h4 { color: var(--cream); }
+.tutorial-body p, .tutorial-body li { color: var(--arc-dim); }
+.rules-content h4 { color: var(--gold-soft); font-family: var(--font-display); font-weight: 500; }
+.rules-content p, .rules-content li { color: var(--arc-dim); }
+.rules-content strong { color: var(--cream); }
+.log-content { background: rgba(0, 0, 0, .18); border-color: var(--line-soft); }
+.log-message { color: var(--arc-dim); }
+.toast { background: #f1e5d0; color: #2c2118; border-color: rgba(201, 163, 92, .55); }
+
+/* ------------------------------------------------------------------ Anne */
+[data-anne-avatar] {
+    --aa-size: 92px;
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: var(--aa-size);
+    height: calc(var(--aa-size) * 1.2308);
+    overflow: hidden;
+    border-radius: 11px;
+    background: radial-gradient(120% 100% at 50% 0%, #3b2724, #150e0c 78%);
+    box-shadow: inset 0 0 0 1px rgba(201, 163, 92, .42), 0 8px 20px rgba(0, 0, 0, .38);
+    isolation: isolate;
+    vertical-align: middle;
+}
+.aa, .aa-portrait { display: block; width: 100%; height: 100%; }
+.aa-photo-live {
+    position: absolute;
+    inset: -2%;
+    display: block;
+    overflow: hidden;
+    transform-origin: 50% 64%;
+    animation: aa-breathe 10s ease-in-out infinite;
+    will-change: transform;
+}
+.aa-photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 42%;
+    transform: scale(1.08);
+    transform-origin: 50% 38%;
+    transition: filter .5s ease, transform .7s cubic-bezier(.2, .8, .2, 1);
+    user-select: none;
+    -webkit-user-drag: none;
+}
+.aa-crop-face .aa-photo {
+    transform: scale(1.95);
+    transform-origin: 50% 20%;
+    object-position: 50% 32%;
+}
+.aa-photo-tone {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(75% 60% at 68% 22%, rgba(255, 214, 196, .22), transparent 62%),
+        linear-gradient(180deg, transparent 56%, rgba(72, 22, 32, .2));
+    mix-blend-mode: soft-light;
+}
+.aa-photo-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    box-shadow: inset 0 0 18px rgba(10, 6, 5, .36), inset 0 0 0 1px rgba(255, 228, 190, .08);
+    background: linear-gradient(180deg, rgba(18, 10, 10, .03), transparent 24%, transparent 74%, rgba(24, 12, 10, .16));
+}
+@keyframes aa-breathe {
+    0%, 100% { transform: scale(1) translate3d(0, 0, 0); }
+    50% { transform: scale(1.018) translate3d(0, -1.2px, 0); }
+}
+[data-anne-avatar][data-mood="happy"] .aa-photo,
+[data-anne-avatar][data-mood="impressed"] .aa-photo { filter: saturate(1.08) brightness(1.04) contrast(1.01); }
+[data-anne-avatar][data-mood="tease"] .aa-photo { filter: saturate(1.05) brightness(1.03); }
+[data-anne-avatar][data-mood="focused"] .aa-photo { filter: saturate(.98) contrast(1.04); }
+[data-anne-avatar][data-mood="thinking"] .aa-photo { filter: saturate(.94) contrast(1.03); }
+[data-anne-avatar][data-mood="sorry"] .aa-photo { filter: saturate(.9) brightness(.98); }
+[data-anne-avatar].is-missing .aa-photo { opacity: 0; }
+[data-anne-avatar].is-missing::before {
+    content: "A";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--gold-soft);
+    font: 500 26px/1 var(--font-display);
+    background: radial-gradient(120% 100% at 50% 0%, #3b2724, #150e0c 78%);
+}
+[data-anne-avatar].is-talking { box-shadow: inset 0 0 0 1px var(--gold-bright), 0 8px 24px rgba(0, 0, 0, .42); }
+[data-anne-avatar].is-talking::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgba(239, 216, 164, .7);
+    animation: aa-speak-ring 1.2s ease-out infinite;
+    pointer-events: none;
+}
+@keyframes aa-speak-ring {
+    0% { opacity: .8; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.06); }
+}
+[data-anne-avatar].is-beating .aa-photo-live { animation: aa-lean .55s cubic-bezier(.2, .9, .25, 1), aa-breathe 10s ease-in-out infinite; }
+@keyframes aa-lean {
+    0%, 100% { transform: scale(1); }
+    38% { transform: scale(1.035) rotate(-.5deg); }
+}
+[data-anne-avatar].is-blinking .aa-photo-tone { opacity: .5; transition: opacity .06s linear; }
+
+/* Size overrides for the smaller mounts. */
+.anne-line-avatar { --aa-size: 38px; border-radius: 6px; }
+.anne-result-avatar { --aa-size: 64px; border-radius: 8px; }
+.tutorial-guide-avatar { --aa-size: 50px; border-radius: 7px; }
+.hero-host-avatar { --aa-size: 54px; border-radius: 8px; }
+
+/* The in-app Motion setting is the explicit choice. Full and Fast animate
+   even when the operating system asks for reduced motion; only Calm uses the
+   short, quiet version. Never let the OS flag silently remove the host's
+   living portrait or speaking ring. */
+html[data-motion="reduced"] .aa-photo-live,
+html[data-motion="reduced"] [data-anne-avatar].is-talking::after { animation: none; }
+
+/* ------------------------------------------------------------------ home */
+.site-header {
+    border-bottom: 1px solid var(--line-soft);
+}
+.wordmark-mark {
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--gold);
+    border-radius: 6px;
+}
+.wordmark b { font-family: var(--font-display); font-weight: 600; color: var(--cream); }
+.wordmark small { color: var(--arc-mute); }
+.site-nav a { color: var(--arc-dim); }
+.site-nav a:hover { color: var(--gold-bright); }
+.nav-play {
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--gold-bright);
+    border-radius: 4px;
+}
+.nav-play:hover { background: var(--gold); color: var(--ink); }
+.hero { border-bottom: 1px solid var(--line-soft); }
+.hero .eyebrow, .section-head .eyebrow { color: var(--gold-dim); }
+.hero h1 { font-family: var(--font-display); font-weight: 500; color: var(--cream); }
+.hero h1 em { color: var(--gold-soft); }
+.hero .lede { color: var(--arc-dim); }
+.btn {
+    border-radius: 4px;
+    border: 1px solid var(--line-soft);
+    box-shadow: none;
+    font: 600 10.5px/1 var(--font-ui);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+.btn-primary {
+    background: linear-gradient(180deg, #e7cd97, #c9a35c);
+    border-color: #8a6b38;
+    color: #1b1209;
+}
+.btn-primary:hover { background: linear-gradient(180deg, #f0dbaa, #d4ae68); box-shadow: 0 8px 20px rgba(0, 0, 0, .3); transform: none; }
+.btn-ghost { background: transparent; color: var(--arc-dim); }
+.btn-ghost:hover { border-color: var(--line-strong); color: var(--cream); background: rgba(201, 163, 92, .05); }
+.hero-host {
+    padding: 4px 12px 4px 4px;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, .18);
+    color: var(--arc-dim);
+}
+.hero-host b { color: var(--gold-soft); font-family: var(--font-display); font-weight: 500; }
+.hero-note span { color: var(--arc-mute); }
+.hero-note i { background: var(--gold); }
+.fan::before { background: radial-gradient(closest-side, rgba(201, 163, 92, .22), transparent 70%); }
+.fan-card { border: 1px solid rgba(201, 163, 92, .4); box-shadow: 0 22px 40px rgba(0, 0, 0, .5), inset 0 0 0 4px rgba(255, 255, 255, .4); }
+.fan-card.back { background: linear-gradient(160deg, #3d2228, #211216); }
+.fan-badge { background: var(--gold); color: var(--ink); border-color: #8a6b38; }
+.hero-caption { color: var(--arc-mute); }
+.game-tile {
+    border: 1px solid var(--line-soft);
+    background: #130e0b;
+    border-radius: 10px;
+    box-shadow: none;
+}
+.game-tile:hover { border-color: var(--line-strong); box-shadow: 0 18px 40px rgba(0, 0, 0, .45); transform: translateY(-2px); }
+.game-tile.is-live { border-color: rgba(201, 163, 92, .4); }
+.tile-badge.live { background: var(--gold); color: var(--ink); border-color: #8a6b38; }
+.tile-badge.soon { background: transparent; color: var(--arc-mute); border-color: var(--line-soft); }
+.tile-content h3 { font-family: var(--font-display); font-weight: 500; color: var(--cream); }
+.tile-content p { color: var(--arc-dim); }
+.tile-footer { color: var(--arc-mute); border-top-color: var(--line-soft); }
+.tile-go { color: var(--gold); }
+.tile-visual { background: #0d0a08; }
+.tile-card { border-color: rgba(201, 163, 92, .35); }
+.tile-card.back { background: linear-gradient(160deg, #3d2228, #211216); }
+
+/* ------------------------------------------------------------------ small screens */
+@media (max-width: 1080px) {
+    .computer-area { grid-template-columns: minmax(0, 1fr); grid-template-areas: "rail" "say" "cards"; }
+    .player-area { grid-template-columns: minmax(0, 1fr); grid-template-areas: "cards" "rail"; }
+    .computer-area .anne-avatar { --aa-size: 88px; }
+    .anne-reaction { max-width: min(100%, 430px); }
+}
+
+@media (max-width: 640px) {
+    .game-container { padding: 6px 6px 8px; gap: 2px; }
+    .hud { gap: 5px; }
+    .brand-mark { width: 34px; height: 34px; font-size: 12px; }
+    .hud-btn { height: 30px; padding: 0 9px; font-size: 10px; border-width: 1px; }
+    .hud-icon { width: 30px; }
+    .score-board { padding: 3px 9px; }
+    .score-name { font-size: 9.5px; }
+    .score-num { font-size: 22px; }
+    .round-info { min-width: 62px; padding: 1px 7px; }
+    .round-info small, .round-info em { font-size: 8.5px; }
+    .round-info b { font-size: 15px; }
+    .game-board { padding: 9px 8px 10px; border-radius: 14px; margin-top: 4px; }
+    .game-board::before { inset: 5px; border-radius: 10px; }
+    .computer-area { row-gap: 3px; }
+    .computer-area .anne-avatar { --aa-size: 68px; }
+    .center-area { --cw-seat: calc(var(--cw-base) * .94); }
+    .trick-stage { gap: 1px; }
+    .trick-cards { padding: 1px 8px; border-radius: 9px; }
+    .trick-meta { min-height: 13px; margin-bottom: 0; }
+    .trick-caption { font-size: 8.5px; }
+    .center-info { gap: 2px; padding-bottom: 0; }
+    .game-status { font-size: 11.5px; line-height: 1.25; }
+    .player-area .seat-cards { gap: 11px; }
+    .anne-role { display: none; }
+    .anne-mood { font-size: 10px; }
+    .seat-bar { gap: 8px; padding: 1px 4px; }
+    .anne-reaction { font-size: 12px; padding: 8px 11px; max-width: 100%; }
+    .start-panel { padding: 18px 14px 16px; border-radius: 9px; }
+    .start-title { font-size: 30px; }
+    .start-tagline { font-size: 12px; margin-bottom: 12px; }
+    .start-chips { margin-bottom: 14px; }
+    .start-chips li { font-size: 8.5px; padding: 0 8px; }
+    .control-btn { padding: 11px 15px; font-size: 10.5px; }
+    .text-btn { font-size: 10px; }
+    .mini-btn { font-size: 10px; }
+    .start-notes { display: none; }
+    .trick-caption { font-size: 9px; }
+    .trick-slot::after { font-size: 9px; }
+    .game-status { font-size: 12px; }
+    .cards-label, .cards-label b { font-size: 9.5px; }
+    .tricks-label { font-size: 9.5px; }
+    :root { --cw-base: clamp(46px, min(calc((100vw - 34px) / 5.5), 12.6vh), 66px); }
+}
+
+@media (max-height: 700px) {
+    /* A 568px-tall phone cannot show two readable five-card rows, a full
+       trick stage and the seats at once. Let the table scroll cleanly instead
+       of letting the status paint over the tray. */
+    html, body { height: auto; min-height: 100%; overflow-y: auto; }
+    .game-container { height: auto; min-height: 100dvh; }
+    .game-board { flex: none; min-height: 640px; }
+    .center-area { flex: none; min-height: 230px; }
+}
+
+@media (max-height: 700px) and (min-width: 641px) {
+    /* In landscape the coach belongs to the viewport, not to the part of the
+       felt below the fold. A fixed strip keeps the advice readable while the
+       player cards stay scrollable underneath. */
+    .live-coach {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 10px;
+        z-index: 80;
+        margin: 0 auto;
+        width: min(92vw, 560px);
+        animation: none;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(201, 163, 92, .4);
+    }
+}
+
+@media (max-width: 380px) {
+    /* At 320px the four suits must all be reachable without scrolling the
+       sheet. The hint is already carried by the coach, so drop the duplicate
+       paragraph and compact the guide line. */
+    .trump-hint { display: none; }
+    .trump-modal .modal-content { padding: 10px 10px 12px; }
+    .trump-modal .modal-header h3 { font-size: 18px; }
+    .trump-anne-line { margin-bottom: 6px; padding: 5px 6px; gap: 7px; }
+    .trump-anne-line p { font-size: 10.5px; line-height: 1.3; }
+    .trump-anne-line .anne-line-avatar { --aa-size: 30px; }
+    .trump-coach { max-height: 44px; overflow: auto; padding: 4px 6px; }
+    .trump-options { gap: 5px; }
+    .trump-btn { padding: 7px 2px 5px; }
+    .trump-btn .suit-symbol { font-size: 20px; }
+    .suit-name { font-size: 9.5px; }
+}
+
+@media (max-height: 620px) and (min-width: 641px) {
+    .computer-area .anne-avatar { --aa-size: 58px; }
+    .center-area { --cw-seat: calc(var(--cw-base) * .86); }
+    .trick-cards { padding: 4px 9px; }
+    .trick-meta { margin-bottom: 0; }
+    .computer-area { grid-template-columns: minmax(0, 1fr); grid-template-areas: "rail" "say" "cards"; }
+    .anne-reaction { font-size: 11px; padding: 6px 9px; }
+    :root { --cw-base: clamp(40px, min(6.2vw, 12.4vh), 62px); }
+}
+
+/* =====================================================================
+   SETTINGS CONTROL MECHANICS + SMALL-TEXT READABILITY
+   Loaded last: this block owns the final behaviour of the segmented choices
+   and switches, and lifts the quiet labels above the level where dark-room
+   contrast and small type make them disappear.
+   ===================================================================== */
+:root {
+    --ease-control: cubic-bezier(.23, 1, .32, 1);
+}
+
+.difficulty-options,
+.target-options,
+.motion-options {
+    position: relative;
+    isolation: isolate;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, .26);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+
+.seg-thumb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    border-radius: 5px;
+    background: linear-gradient(180deg, #f0d69a, var(--gold) 55%, #b98d45);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 2px 5px rgba(0, 0, 0, .35);
+    opacity: 1;
+    pointer-events: none;
+    transition: transform 220ms var(--ease-control);
+}
+
+.difficulty-btn,
+.target-btn,
+.motion-btn {
+    position: relative;
+    z-index: 1;
+    min-height: 34px;
+    padding: 9px 8px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--arc-dim);
+    box-shadow: none;
+    font-size: 11.5px;
+    transition: color .18s ease, background .18s ease;
+}
+
+.difficulty-btn:hover,
+.target-btn:hover,
+.motion-btn:hover {
+    background: rgba(201, 163, 92, .08);
+    color: var(--cream);
+    box-shadow: none;
+}
+
+.has-seg-thumb .difficulty-btn.active,
+.has-seg-thumb .target-btn.active,
+.has-seg-thumb .motion-btn.active,
+.has-seg-thumb .difficulty-btn.active:hover,
+.has-seg-thumb .target-btn.active:hover,
+.has-seg-thumb .motion-btn.active:hover {
+    border-color: transparent;
+    background: transparent;
+    color: var(--ink);
+    box-shadow: none;
+}
+
+.switch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 88px;
+    height: 34px;
+    padding: 4px 10px 4px 7px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .24);
+    color: var(--arc-mute);
+    box-shadow: none;
+}
+
+.switch-btn > span:first-child {
+    order: 2;
+    min-width: 18px;
+    font: 700 10.5px/1 var(--font-ui);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.switch-track {
+    position: relative;
+    order: 1;
+    flex: none;
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    background: #2c2117;
+    box-shadow: inset 0 0 0 1px rgba(201, 163, 92, .18);
+    transition: background .18s ease;
+}
+
+.switch-track i {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #8d7b63;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .18);
+    transition: transform 190ms var(--ease-control), background .18s ease;
+}
+
+.switch-btn[aria-checked="true"] .switch-track,
+.switch-btn.is-on .switch-track {
+    background: rgba(201, 163, 92, .3);
+}
+
+.switch-btn[aria-checked="true"] .switch-track i,
+.switch-btn.is-on .switch-track i {
+    background: var(--gold-bright);
+    transform: translateX(16px);
+}
+
+.switch-btn.is-on,
+.switch-btn[aria-checked="true"] {
+    border-color: var(--line-strong);
+    background: rgba(201, 163, 92, .07);
+    color: var(--gold-soft);
+    box-shadow: none;
+}
+
+.switch-btn:disabled {
+    opacity: .6;
+    cursor: default;
+}
+
+.modal-kicker {
+    color: var(--gold-soft);
+    font-size: 10px;
+}
+
+.brand-sub {
+    color: var(--gold);
+    font-size: 9.5px;
+}
+
+.action-chevron {
+    color: var(--gold);
+}
+
+.settings-note,
+.difficulty-description p {
+    color: var(--arc-mute);
+    font-size: 12.5px;
+}
+
+.setting-label {
+    font-size: 13px;
+}
+
+.setting-label small {
+    color: var(--arc-mute);
+    font-size: 11px;
+}
+
+.volume-row output {
+    font-size: 11px;
+}
+
+.creator-attribution {
+    color: var(--arc-mute);
+    font-size: 12px;
+}
+
+.round-info small,
+.round-info em {
+    font-size: 10px;
+}
+
+.score-name {
+    font-size: 10px;
+}
+
+.trump-label {
+    font-size: 10px;
+}
+
+.anne-role {
+    font-size: 11px;
+}
+
+.anne-mood {
+    font-size: 10.5px;
+}
+
+.start-eyebrow {
+    font-size: 10px;
+}
+
+.start-chips li {
+    font-size: 9.5px;
+}
+
+.trick-caption {
+    font-size: 11px;
+}
+
+.trick-slot::after {
+    font-size: 10px;
+}
+
+.cards-label,
+.cards-label b {
+    font-size: 11px;
+}
+
+.tutorial-step-label {
+    font-size: 10.5px;
+}
+
+.hero-host {
+    background: rgba(0, 0, 0, .18);
+}
+
+.eyebrow {
+    color: var(--gold);
+    font-size: 10.5px;
+}
+
+.hero-note span {
+    color: var(--arc-mute);
+    font-size: 10.5px;
+}
+
+.tile-badge {
+    font-size: 9px;
+}
+
+.tile-players,
+.tile-footer {
+    font-size: 10px;
+}
+
+.game-tile.is-soon {
+    opacity: .9;
+}
+
+.about-list span {
+    font-size: 12px;
+}
+
+.site-footer {
+    font-size: 11.5px;
+}
+
+.modal-content {
+    scrollbar-color: var(--gold-dim) transparent;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: var(--gold-dim);
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .seg-thumb,
+    .switch-track i {
+        transition-duration: 1ms;
+    }
+}
+
+/* =====================================================================
+   TRUMP SHEET, STABLE SUBTITLES AND RESULT PERFORMANCE
+   Loaded last so the decision surface is sharp and every choice is legible.
+   ===================================================================== */
+
+.trump-modal {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(4, 3, 2, .64);
+    padding: 16px;
+}
+
+.trump-modal .modal-content {
+    width: min(94vw, 560px);
+    padding: 20px 22px 18px;
+    text-align: center;
+}
+
+.trump-modal .modal-header {
+    margin-bottom: 12px;
+}
+
+/* A centred host block: portrait, name and line share one axis. */
+.trump-anne-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin: 0 auto 13px;
+    padding: 9px 14px 10px;
+    border: 1px solid rgba(201, 163, 92, .34);
+    border-radius: 9px;
+    background: rgba(201, 163, 92, .055);
+    text-align: center;
+}
+
+.trump-anne-line .anne-line-avatar {
+    --aa-size: 46px;
+    width: 46px;
+    height: 46px;
+    margin: 0 auto;
+    border-radius: 8px;
+    box-shadow: 0 0 0 1px rgba(201, 163, 92, .6), 0 5px 14px rgba(0, 0, 0, .35);
+}
+
+.trump-anne-line p {
+    max-width: 44ch;
+    color: var(--arc-dim);
+    font: 500 12.5px/1.45 var(--font-ui);
+    text-align: center;
+}
+
+.trump-anne-line b {
+    display: block;
+    margin-bottom: 1px;
+    color: var(--gold-soft);
+    font: 500 14px/1.2 var(--font-display);
+    letter-spacing: .04em;
+}
+
+.trump-hint {
+    max-width: 44ch;
+    margin: 0 auto 14px;
+    color: var(--arc-dim);
+    font: 500 13px/1.55 var(--font-ui);
+}
+
+.trump-hint strong { color: var(--gold-bright); }
+.trump-btn .suit-count { display: inline-flex; }
+
+.trump-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Each option is a dark plaque holding real ivory cards. The old theme made
+   the button dark while leaving its suit name and count dark too. */
+.trump-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+    min-height: 148px;
+    padding: 11px 4px 9px;
+    border: 1px solid rgba(201, 163, 92, .32);
+    border-radius: 9px;
+    background: linear-gradient(180deg, #241b14, #120e0b);
+    color: var(--cream);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 8px 18px rgba(0, 0, 0, .32);
+    transition: transform .15s, border-color .15s, background .15s, box-shadow .15s;
+}
+
+.trump-btn:hover,
+.trump-btn:focus-visible {
+    transform: translateY(-3px);
+    border-color: var(--gold);
+    background: linear-gradient(180deg, #2b2017, #17110c);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 0 0 1px rgba(201, 163, 92, .3), 0 12px 24px rgba(0, 0, 0, .4);
+}
+
+.trump-btn:active { transform: translateY(0); }
+
+.trump-btn .suit-symbol {
+    color: var(--ivory);
+    font: 500 30px/1 var(--font-ui);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, .35);
+}
+
+.trump-btn.hearts .suit-symbol,
+.trump-btn.diamonds .suit-symbol { color: #d6808a; }
+
+.suit-name {
+    color: var(--cream);
+    font: 600 10.5px/1 var(--font-ui);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.suit-count {
+    color: var(--gold-soft);
+    font: 600 9.5px/1 var(--font-ui);
+    letter-spacing: .04em;
+}
+
+.trump-cards {
+    --tm-w: clamp(17px, 3.5vw, 25px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 35px;
+    padding: 1px 4px 0;
+    overflow: visible;
+}
+
+.trump-mini {
+    position: relative;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    width: var(--tm-w);
+    height: calc(var(--tm-w) * 1.42);
+    margin-left: calc(var(--tm-w) * -.46);
+    padding: 2px 1px;
+    border: 1px solid rgba(70, 43, 19, .55);
+    border-radius: 2px;
+    background: linear-gradient(160deg, #fffaf0, #ecd9b7);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(255, 255, 255, .35);
+}
+
+.trump-mini:first-child { margin-left: 0; }
+.trump-mini b { color: #2b1d12; font: 700 clamp(7px, 1vw, 9px)/1 var(--font-ui); }
+.trump-mini i { color: #2b1d12; font: 700 clamp(8px, 1.1vw, 10px)/1 var(--font-ui); font-style: normal; }
+.trump-mini.red b, .trump-mini.red i { color: #a23e4e; }
+.trump-no-cards { color: var(--arc-mute); font: 500 9px/1.2 var(--font-ui); padding: 8px 0; }
+.trump-btn.is-empty { background: rgba(0, 0, 0, .12); border-style: dashed; }
+
+.trump-btn.is-picked,
+.trump-btn[aria-pressed="true"] {
+    border-color: var(--gold-bright);
+    box-shadow: 0 0 0 2px rgba(201, 163, 92, .4), 0 12px 26px rgba(0, 0, 0, .44);
+}
+
+.trump-btn.is-picked .suit-name { color: var(--gold-bright); }
+.trump-footnote { margin-top: 12px; color: var(--arc-mute); font: 500 10.5px/1.45 var(--font-ui); }
+
+/* A fixed speech lane. The bubble is taken out of flow, so showing or hiding
+   a line can never move the card rows above or below it. */
+.anne-speech-lane {
+    position: relative;
+    display: flex;
+    grid-area: say;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+    min-height: 64px;
+    z-index: 6;
+    pointer-events: none;
+}
+
+.game-board.is-setup .anne-speech-lane { display: none; }
+
+.anne-speech-lane .anne-reaction {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: max-content;
+    max-width: min(100%, 520px);
+    margin: 0;
+    padding: 9px 13px 10px;
+    border: 1px solid rgba(201, 163, 92, .55);
+    border-radius: 8px;
+    background: #f1e5d0;
+    color: #2c2118;
+    font: 500 13px/1.45 var(--font-ui);
+    text-align: center;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, .32);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(-3px);
+    transition: opacity .18s ease, transform .18s ease, visibility .18s;
+}
+
+.anne-speech-lane .anne-reaction.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.anne-speech-lane .anne-reaction::before {
+    left: 50%;
+    margin-left: -4px;
+}
+
+.anne-speech-lane .anne-reaction::after { display: none; }
+
+@media (max-width: 640px) {
+    .trump-modal { padding: 10px; }
+    .trump-modal .modal-content { width: min(96vw, 500px); padding: 13px 11px 12px; }
+    .trump-anne-line { gap: 5px; margin-bottom: 10px; padding: 7px 10px 8px; }
+    .trump-anne-line .anne-line-avatar { --aa-size: 38px; width: 38px; height: 38px; }
+    .trump-anne-line p { font-size: 11.5px; }
+    .trump-hint { font-size: 11.5px; line-height: 1.45; margin-bottom: 10px; }
+    .trump-options { gap: 6px; }
+    .trump-btn { min-height: 132px; gap: 4px; padding: 8px 3px 7px; }
+    .trump-btn .suit-symbol { font-size: 24px; }
+    .suit-name { font-size: 9.5px; }
+    .suit-count { font-size: 9px; }
+    .trump-cards { --tm-w: 18px; min-height: 30px; }
+    .trump-mini b, .trump-mini i { font-size: 7px; }
+    .trump-footnote { margin-top: 9px; font-size: 10px; }
+    .anne-speech-lane { min-height: 58px; }
+    .anne-speech-lane .anne-reaction { max-width: calc(100vw - 28px); font-size: 12px; padding: 8px 11px 9px; }
+}
+
+@media (max-width: 380px) {
+    .trump-modal .modal-content { padding: 10px 9px 11px; }
+    .trump-anne-line .anne-line-avatar { --aa-size: 34px; width: 34px; height: 34px; }
+    .trump-btn { min-height: 124px; }
+    .trump-btn .suit-symbol { font-size: 21px; }
+    .anne-speech-lane { min-height: 64px; }
+    .anne-speech-lane .anne-reaction { font-size: 11.5px; padding: 7px 10px 8px; }
+}
+
+@media (max-height: 620px) and (min-width: 641px) {
+    .trump-modal { padding: 6px 12px; }
+    .trump-modal .modal-content { width: min(92vw, 620px); max-height: calc(100dvh - 12px); padding: 9px 14px; overflow-y: auto; }
+    .trump-modal .modal-header { margin-bottom: 5px; padding-bottom: 4px; }
+    .trump-modal .modal-kicker, .trump-hint, .trump-footnote { display: none; }
+    .trump-anne-line { flex-direction: row; gap: 8px; margin-bottom: 6px; padding: 4px 8px; text-align: left; }
+    .trump-anne-line .anne-line-avatar { --aa-size: 32px; width: 32px; height: 32px; }
+    .trump-anne-line p { max-width: 50ch; font-size: 10.5px; line-height: 1.3; text-align: left; }
+    .trump-anne-line b { display: inline; margin: 0; }
+    .trump-options { gap: 6px; }
+    .trump-btn { min-height: 104px; gap: 3px; padding: 5px 3px; }
+    .trump-btn .suit-symbol { font-size: 18px; }
+    .suit-name { font-size: 9px; }
+    .suit-count { font-size: 8.5px; }
+    .trump-cards { --tm-w: 15px; min-height: 24px; }
+    .anne-speech-lane { min-height: 42px; }
+    .anne-speech-lane .anne-reaction { max-width: min(88vw, 480px); padding: 5px 9px; font-size: 11px; }
+}
+
+/* The celebration canvas is only live while a user-enabled result is showing. */
+.fireworks-canvas:not(.is-live) { visibility: hidden; }
+
+/* =====================================================================
+   SHORT-VIEWPORT FIT - 320x568 portrait and short landscape
+   These screens are fixed instruments, not scrollable pages. Reclaim
+   height from chrome, empty felt and the old scroll-era min-heights; the
+   card dimensions themselves are deliberately untouched.
+   ===================================================================== */
+@media (max-width: 380px) and (max-height: 620px) {
+    html, body { height: 100%; min-height: 0; overflow: hidden; }
+    .game-container { height: 100dvh; min-height: 0; padding: 2px 4px 3px; gap: 2px; overflow: hidden; }
+
+    .hud { grid-template-areas: "brand actions" "score score"; row-gap: 2px; padding: 0 1px 1px; }
+    .brand-mark { width: 28px; height: 28px; font-size: 11px; border-radius: 7px; }
+    .hud-right { gap: 4px; }
+    .hud-btn { height: 28px; padding: 0 7px; font-size: 10px; border-width: 1px; }
+    .hud-icon { width: 28px; }
+    .score-board { padding: 2px 8px; min-height: 28px; }
+    .score-name { font-size: 10px; }
+    .score-num { font-size: 18px; }
+    .round-info { min-width: 50px; padding: 0 5px; }
+    .round-info small, .round-info em { font-size: 8.5px; }
+    .round-info b { font-size: 14px; }
+
+    .game-board { flex: 1 1 auto; min-height: 0; margin: 0; padding: 4px 5px 5px; gap: 3px; border-radius: 12px; }
+    .game-board::before { inset: 3px; border-radius: 9px; }
+
+    .computer-area { row-gap: 2px; padding: 0; }
+    .computer-area .seat-bar { padding: 2px 4px; gap: 6px; }
+    .computer-area .anne-avatar { --aa-size: 34px; width: 34px; height: 42px; }
+    .computer-area .anne-ident { gap: 1px; }
+    .computer-area .anne-role-row { display: none; }
+    .computer-area .anne-difficulty { font-size: 8px; }
+    .computer-area .won-tricks { gap: 4px; }
+    .anne-speech-lane { min-height: 54px; }
+    .anne-speech-lane .anne-reaction { font-size: 11px; line-height: 1.35; padding: 7px 9px 8px; }
+
+    .center-area { min-height: 0; padding: 0; }
+    .trick-stage { gap: 0; }
+    .trick-cards { padding: 0 8px; border-radius: 8px; }
+    .center-info { gap: 0; padding: 0; }
+    .game-status { font-size: 11px; line-height: 1.2; }
+    .game-status span { font-size: 11px; line-height: 1.2; }
+
+    .player-area { flex: 0 0 auto; row-gap: 2px; padding: 0; }
+    .player-area .seat-cards { gap: 3px; }
+    .player-area .card-area { gap: 2px; }
+    .player-area .seat-bar { min-height: 18px; padding: 1px 4px; gap: 6px; }
+    .player-area .won-tricks { gap: 5px; }
+    .cards-label, .cards-label b { font-size: 10px; }
+}
+
+/* =====================================================================
+   MOBILE PLAYABILITY PASS
+   The phone is a table, not a shrunken desktop. Use the spare height for
+   larger cards, lift labels above the squint line, and keep every control
+   clear of the browser's zoom gesture. The page itself never scrolls.
+   ===================================================================== */
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+@media (max-width: 640px) {
+    html, body {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+    .game-container {
+        height: 100svh;
+        height: 100dvh;
+        min-height: 0;
+        padding:
+            max(3px, env(safe-area-inset-top))
+            max(6px, env(safe-area-inset-right))
+            max(4px, env(safe-area-inset-bottom))
+            max(6px, env(safe-area-inset-left));
+        gap: 2px;
+        overflow: hidden;
+    }
+    .hud { row-gap: 3px; }
+    .brand-mark { width: 38px; height: 38px; font-size: 12.5px; border-radius: 8px; }
+    .hud-right { gap: 4px; }
+    .hud-btn {
+        height: 38px;
+        min-height: 38px;
+        padding: 0 10px;
+        font-size: 11px;
+        letter-spacing: .06em;
+        border-width: 1.5px;
+    }
+    .hud-icon { width: 40px; min-width: 40px; font-size: 15px; }
+    .score-board { min-height: 38px; padding: 4px 10px; }
+    .score-name { font-size: 11px; }
+    .score-num { font-size: 24px; }
+    .round-info { min-width: 60px; padding: 1px 6px; }
+    .round-info small, .round-info em { font-size: 10.5px; letter-spacing: .02em; }
+    .round-info b { font-size: 16px; }
+
+    /* Card size: 54px at 320x568, up to 69px at 390x844. The height term
+       only guards unusually short portrait phones. */
+    :root { --cw-base: clamp(50px, calc((100vw - 30px) / 5.35), 58px); }
+    .face-up-cards { --cw-seat: calc(var(--cw-base) * .84); }
+    .computer-area .face-up-cards { --cw-seat: calc(var(--cw-base) * .78); }
+    .center-area { --cw-seat: calc(var(--cw-base) * 1.14); }
+
+    .games-board, .game-board { min-height: 0; }
+    .player-area .seat-cards { gap: 4px; }
+    .player-area .card-area { gap: 3px; }
+    .player-area .seat-bar { min-height: 26px; }
+    .anne-speech-lane { min-height: 54px; }
+    .anne-speech-lane .anne-reaction {
+        max-width: calc(100vw - 18px);
+        font-size: 12px;
+        line-height: 1.35;
+        padding: 8px 10px 9px;
+    }
+    .cards-label, .cards-label b { font-size: 11px; letter-spacing: .08em; }
+    .player-area .cards-label, .player-area .cards-label b { font-size: 11px; }
+    .tricks-label { font-size: 11px; }
+    .tricks-label .trick-count { font-size: 18px; }
+    .anne-difficulty, .anne-mood { font-size: 10.5px; }
+    .game-status { min-height: 18px; }
+    .game-status span { font-size: 13px; line-height: 1.25; }
+    .trick-caption { font-size: 10.5px; }
+    .live-coach { width: 100%; padding: 7px 9px; gap: 7px; }
+    .live-coach-copy { font-size: 12px; line-height: 1.35; }
+    .live-coach-mark { font-size: 8px; padding: 3px 6px; }
+    .live-coach-close { min-height: 32px; font-size: 9.5px; }
+
+    /* A first tap raises the card. Say what to do next, in place, so touch
+       play is discoverable without a manual or a transient toast. */
+    .player-area .card-area:has(.card.selected) > .cards-label::after {
+        content: " · tap again";
+        color: var(--gold-bright);
+        letter-spacing: .04em;
+    }
+
+    .control-btn { min-height: 44px; padding: 11px 16px; font-size: 11.5px; }
+    .text-btn { min-height: 36px; font-size: 11.5px; }
+    .mini-btn { min-height: 34px; font-size: 11px; }
+    #start-game { min-height: 46px; font-size: 12px; }
+    .start-tagline { font-size: 12.5px; }
+    .tutorial-invite p { font-size: 11.5px; line-height: 1.4; }
+    .start-chips li { font-size: 10.5px; }
+    .close-modal { width: 44px; height: 44px; font-size: 22px; }
+    .target-btn, .difficulty-btn, .motion-btn { min-height: 44px; font-size: 12px; }
+    .switch-btn { height: 44px; min-height: 44px; }
+    .settings-action-btn { min-height: 48px; font-size: 13px; }
+    .setting-label { font-size: 13.5px; }
+    .setting-label small { font-size: 11.5px; }
+    .settings-note, .difficulty-description p { font-size: 13px; }
+    .volume-row input { height: 32px; }
+    .volume-row input::-webkit-slider-thumb { width: 24px; height: 24px; }
+}
+
+/* Tall portrait phones have more vertical room than the card row needs.
+   Spend it on the cards rather than leaving a green gulf in the centre. */
+@media (max-width: 640px) and (min-height: 600px) {
+    :root { --cw-base: clamp(56px, calc((100vw - 20px) / 5.35), 72px); }
+    .face-up-cards { --cw-seat: calc(var(--cw-base) * .88); }
+    .computer-area .face-up-cards { --cw-seat: calc(var(--cw-base) * .84); }
+    .center-area { --cw-seat: calc(var(--cw-base) * 1.13); }
+    .center-info { padding-top: 3px; }
+    .anne-speech-lane { min-height: 58px; }
+    .live-coach-copy { font-size: 12.5px; }
+}
+
+@media (max-width: 380px) and (max-height: 620px) {
+    /* The computer face-up label is redundant beside Anne's plate. Removing
+       it is what buys the larger hand and the coach room on a 568px screen. */
+    .computer-area .cards-label { display: none; }
+    .anne-speech-lane { min-height: 50px; }
+    .anne-speech-lane .anne-reaction { font-size: 11.5px; padding: 6px 9px 7px; }
+    .live-coach { padding: 6px 8px; }
+    .live-coach-copy { font-size: 11.5px; }
+}
+
+/* The old short-screen coach was pinned to the viewport and covered the
+   player's hand. It belongs in the centre stack, above the rail. */
+@media (max-height: 700px) and (min-width: 641px) {
+    .live-coach {
+        position: static;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        width: min(100%, 640px);
+        margin: 0 auto;
+        animation: coach-in .24s var(--ease);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(201, 163, 92, .4);
+    }
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+    :root { --cw-base: clamp(44px, min(6.5vw, 13.8vh), 58px); }
+    .face-up-cards { --cw-seat: calc(var(--cw-base) * .84); }
+    .computer-area .face-up-cards { --cw-seat: calc(var(--cw-base) * .78); }
+    .center-area { --cw-seat: calc(var(--cw-base) * 1.12); }
+    .live-coach { width: min(100%, 680px); padding: 5px 8px; }
+    .live-coach-copy { font-size: 11.5px; line-height: 1.3; }
+    .live-coach-mark { padding: 2px 5px; font-size: 7.5px; }
+    .live-coach-close { min-height: 28px; font-size: 9px; }
+    .hud-btn { height: 36px; min-height: 36px; padding: 0 9px; font-size: 11px; }
+    .hud-icon { width: 36px; min-width: 36px; }
+    .brand-mark { width: 34px; height: 34px; font-size: 12px; }
+    .score-board { min-height: 34px; padding: 2px 8px; }
+    .score-name { font-size: 10.5px; }
+    .score-num { font-size: 22px; }
+    .round-info small, .round-info em { font-size: 10.5px; }
+    .round-info b { font-size: 15px; }
+    .anne-difficulty, .anne-mood { font-size: 10.5px; }
+    .game-status { min-height: 16px; }
+    .game-status span { font-size: 12px; }
+    .cards-label, .cards-label b { font-size: 10.5px; }
+    .tricks-label { font-size: 10.5px; }
+}
+
+/* These are last so they win over the standalone landscape block above. */
+@media (orientation: landscape) and (max-height: 560px) {
+    .hud-btn { height: 36px; min-height: 36px; padding: 0 9px; font-size: 11px; }
+    .hud-icon { width: 36px; min-width: 36px; }
+    .score-name { font-size: 10.5px; }
+    .score-num { font-size: 22px; }
+    .round-info small, .round-info em { font-size: 10.5px; }
+    .round-info b { font-size: 15px; }
+    .anne-difficulty, .anne-mood { font-size: 10.5px; }
+    .cards-label, .cards-label b { font-size: 10.5px; }
+    .tricks-label { font-size: 10.5px; }
+    .game-status span { font-size: 12px; }
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+    html, body { height: 100%; min-height: 0; overflow: hidden; }
+    .game-container { height: 100dvh; min-height: 0; padding: 2px 8px 3px; gap: 2px; overflow: hidden; }
+
+    .hud { padding: 0; gap: 6px; }
+    .brand-mark { width: 28px; height: 28px; font-size: 11px; border-radius: 6px; }
+    .hud-btn { height: 28px; padding: 0 8px; font-size: 10px; }
+    .hud-icon { width: 28px; }
+    .score-board { padding: 1px 7px; }
+    .score-name { font-size: 9px; }
+    .score-num { font-size: 18px; }
+    .round-info { min-width: 46px; padding: 0 4px; }
+    .round-info small, .round-info em { font-size: 8px; }
+    .round-info b { font-size: 13px; }
+
+    .game-board { flex: 1 1 auto; min-height: 0; margin: 0; padding: 4px 10px; gap: 3px; border-radius: 12px; }
+    .game-board::before { inset: 3px; border-radius: 9px; }
+
+    /* Anne's rail and cards share one row; her line sits under the rail, not
+       under the whole hand. */
+    .computer-area {
+        grid-template-columns: minmax(150px, 210px) minmax(0, 1fr);
+        grid-template-areas: "rail cards" "say say";
+        align-items: start; column-gap: 10px; row-gap: 2px; padding: 0;
+    }
+    .computer-area .seat-bar { grid-area: rail; flex-direction: row; align-items: center; padding: 2px 4px; gap: 7px; }
+    .computer-area .anne-avatar { --aa-size: 34px; width: 34px; height: 42px; }
+    .computer-area .anne-ident { gap: 1px; }
+    .computer-area .anne-name-row { gap: 6px; }
+    .computer-area .anne-role-row { display: none; }
+    .computer-area .won-tricks { gap: 5px; }
+    .computer-area .seat-cards { grid-area: cards; align-self: end; justify-content: flex-start; gap: 10px; }
+    .anne-speech-lane { grid-area: say; min-height: 38px; }
+    .anne-speech-lane .anne-reaction { font-size: 10.5px; line-height: 1.3; padding: 4px 8px; }
+
+    .center-area { min-height: 0; padding: 0; }
+    .trick-stage { gap: 0; }
+    .trick-cards { padding: 0 9px; border-radius: 8px; }
+    .center-info { gap: 0; padding: 0; }
+    .game-status { font-size: 11px; line-height: 1.2; }
+    .game-status span { font-size: 11px; line-height: 1.2; }
+
+    /* Your two five-card rows already sit side by side on a wide screen;
+       the trick meter joins them on the right instead of taking a new row. */
+    .player-area {
+        grid-template-columns: minmax(0, 1fr) minmax(150px, 210px);
+        grid-template-areas: "cards rail";
+        align-items: center; column-gap: 10px; row-gap: 0; padding: 0;
+    }
+    .player-area .seat-cards { grid-area: cards; flex-direction: row; gap: 10px; }
+    .player-area .seat-bar { grid-area: rail; flex-direction: row; padding: 2px 4px; gap: 8px; }
+    .player-area .card-area { gap: 2px; }
+    .player-area .won-tricks { gap: 5px; }
+    .cards-label, .cards-label b { font-size: 10px; }
+}
+
+/* Final landscape readability floor. This is intentionally the last block so
+   it wins over the compact layout above: 844x390 is the tightest wide screen
+   and it must not inherit 8px labels from the old scroll-era rules. */
+@media (orientation: landscape) and (max-height: 560px) {
+    .hud-btn { height: 36px; min-height: 36px; padding: 0 9px; font-size: 11px; }
+    .hud-icon { width: 36px; min-width: 36px; }
+    .score-name { font-size: 10.5px; }
+    .score-num { font-size: 22px; }
+    .round-info small, .round-info em { font-size: 10.5px; letter-spacing: 0; }
+    .round-info b { font-size: 15px; }
+    .anne-difficulty, .anne-mood { font-size: 10.5px; }
+    .cards-label, .cards-label b { font-size: 10.5px; }
+    .tricks-label { font-size: 10.5px; }
+    .game-status span { font-size: 12px; line-height: 1.2; }
+}
+
+/* 320x568 is the tightest portrait screen. Keep the 36px controls and the
+   readable labels, but step the cards back to their proven 52x73 table size
+   and reclaim the old empty gaps so the turn status never sits on a trick. */
+@media (max-width: 380px) and (max-height: 620px) {
+    .game-container { padding: 2px 4px 3px; }
+    .hud { row-gap: 2px; padding: 0 1px 1px; }
+    .brand-mark { width: 32px; height: 32px; font-size: 11.5px; border-radius: 7px; }
+    .hud-btn { height: 36px; min-height: 36px; padding: 0 8px; font-size: 10.5px; }
+    .hud-icon { width: 36px; min-width: 36px; }
+    .score-board { min-height: 32px; padding: 2px 8px; }
+    .score-name { font-size: 10.5px; }
+    .score-num { font-size: 22px; }
+    .round-info { min-width: 54px; padding: 0 5px; }
+    .round-info small, .round-info em { font-size: 10.5px; }
+    .round-info b { font-size: 15px; }
+
+    .game-board { padding: 3px 5px 4px; gap: 2px; }
+    :root { --cw-base: 52px; }
+    .center-area { --cw-seat: calc(var(--cw-base) * 1.06); }
+    .anne-speech-lane { min-height: 48px; }
+    .anne-speech-lane .anne-reaction { font-size: 11.5px; line-height: 1.3; padding: 6px 8px 7px; }
+    .computer-area .seat-bar { padding: 2px 4px; }
+    .computer-area .anne-avatar { width: 32px; height: 40px; }
+    .player-area .seat-bar { min-height: 24px; }
+    .game-status { min-height: 16px; }
+    .game-status span { font-size: 12.5px; line-height: 1.15; }
+}

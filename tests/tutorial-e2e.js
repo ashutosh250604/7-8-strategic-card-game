@@ -80,6 +80,7 @@ function browserExecutable() {
     const debugPort = 9400 + Math.floor(Math.random() * 300);
     const proc = cp.spawn(executable, [
         '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+        '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
         `--remote-debugging-port=${debugPort}`, `--user-data-dir=${profile}`, 'about:blank'
     ], { stdio: 'ignore' });
 
@@ -543,25 +544,46 @@ function browserExecutable() {
     await page.waitForFunction(() => GameEngine.state.gamePhase === 'setup', { timeout: 5000 });
     await page.evaluate(() => {
         window.__coachTexts = [];
+        window.__flowLog = [];
         const coach = document.getElementById('live-coach');
         new MutationObserver(() => window.__coachTexts.push(coach.innerText)).observe(coach, { childList: true, subtree: true });
+        setInterval(() => {
+            window.__flowLog.push(`${Math.round(performance.now() / 1000)}s ${GameEngine.state.gamePhase} pending=${GameView.pendingCount()} ${JSON.stringify(GameView.pendingLabels().slice(0, 3))}`);
+            if (window.__flowLog.length > 60) window.__flowLog.shift();
+        }, 1000);
         LiveCoach.arm();
         Math.random = () => 0.9;
     });
     await page.click('#start-game');
     await page.waitForSelector('#coin-toss-modal', { visible: true, timeout: 5000 });
     await page.click('.coin-btn[data-choice="heads"]');
-    await page.waitForFunction(() => GameEngine.state.gamePhase === 'playing', { timeout: 25000 });
+    await page.waitForFunction(() => GameEngine.state.gamePhase === 'playing', { timeout: 25000 }).catch(async (e) => {
+        console.log('STALL after computer toss:', JSON.stringify(await page.evaluate(() => ({
+            phase: GameEngine.state.gamePhase,
+            selector: GameEngine.state.lastTrumpSelector,
+            coin: GameEngine.state.coinTossWinner,
+            trump: GameEngine.state.trumpSuit,
+            pending: GameView.pendingCount(),
+            labels: GameView.pendingLabels(),
+            rig: !!document.querySelector('.shuffle-rig'),
+            status: document.getElementById('game-status').textContent.trim(),
+            modals: [...document.querySelectorAll('.modal')].filter((m) => getComputedStyle(m).display !== 'none').map((m) => m.id),
+            coach: document.getElementById('live-coach').innerText.replace(/\s+/g, ' ').slice(0, 90),
+            flow: window.__flowLog || []
+        })), null, 1));
+        throw e;
+    });
     const computerToss = await page.evaluate(() => (window.__coachTexts || []).find((t) => /Anne called/.test(t)) || '');
     console.log('computer-called trump:', JSON.stringify(computerToss));
     if (!/Anne called/.test(computerToss)) bad('coach did not explain the computer-called trump');
     if (!/You need 7/.test(computerToss) || !/needs 8/.test(computerToss)) bad('coach did not give the player the 7-trick target after losing the toss');
 
     // -------------------------------------------------------- match result
+    await page.evaluate(() => TableSettings.update({ fireworks: true }));
     await page.evaluate(() => {
-        GameEngine.state.player.score = 5;
-        GameEngine.state.computer.score = 3;
-        GameEngine.state.matchTarget = 5;
+        GameEngine.state.player.score = 3;
+        GameEngine.state.computer.score = 1;
+        GameEngine.state.matchTarget = 3;
         checkGameEnd();
     });
     await page.waitForSelector('#game-over-modal', { visible: true, timeout: 3000 });
@@ -575,8 +597,9 @@ function browserExecutable() {
     }));
     console.log('win result:', JSON.stringify(winResult));
     if (!/You win the match/i.test(winResult.title)) bad('player victory copy is missing');
-    if (!/First to 5/i.test(winResult.context)) bad('result does not state the match target');
-    if (!/5/.test(winResult.scores) || !/3/.test(winResult.scores) || !/Anne/i.test(winResult.scores)) bad('final scoreline is wrong');
+    if (!/First to 3/i.test(winResult.context)) bad('result does not state the match target');
+    if (!/3/.test(winResult.scores) || !/1/.test(winResult.scores) || !/Anne/i.test(winResult.scores)) bad('final scoreline is wrong');
+    if (!/is-live/.test(await page.$eval('#fireworks-canvas', (el) => el.className))) bad('victory fireworks did not start');
     if (!winResult.anne) bad('Anne did not react to the result');
     if (!winResult.avatar) bad('Anne portrait is missing from the result');
     if (!winResult.buttons.some((b) => /Play another match/i.test(b))) bad('result has no rematch action');
@@ -592,7 +615,7 @@ function browserExecutable() {
         score: `${GameEngine.state.player.score}-${GameEngine.state.computer.score}`
     }));
     if (!rematch.started || rematch.modal !== 'none' || rematch.score !== '0-0') bad('Play another match did not start a clean rematch');
-    if (rematch.target !== 5) bad('rematch lost the five-point target');
+    if (rematch.target !== 3) bad('rematch lost the three-point target');
     await page.evaluate(() => GameEngine.restartGame());
     await page.waitForFunction(() => !GameEngine.state.gameStarted && GameEngine.state.gamePhase === 'setup', { timeout: 5000 });
 
@@ -600,8 +623,8 @@ function browserExecutable() {
     await page.evaluate(() => {
         GameEngine.state.gameStarted = true;
         GameEngine.state.gameOver = false;
-        GameEngine.state.player.score = 2;
-        GameEngine.state.computer.score = 5;
+        GameEngine.state.player.score = 1;
+        GameEngine.state.computer.score = 3;
         checkGameEnd();
     });
     await page.waitForSelector('#game-over-modal', { visible: true, timeout: 3000 });
@@ -629,7 +652,7 @@ function browserExecutable() {
         input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     const stored = await page.evaluate(() => ({
-        raw: localStorage.getItem('78-settings-v2'),
+        raw: localStorage.getItem('78-settings-v3'),
         target: GameEngine.state.pendingMatchTarget,
         difficulty: GameEngine.state.difficulty,
         note: document.getElementById('target-note').textContent.trim(),
@@ -655,7 +678,7 @@ function browserExecutable() {
     if (persisted.target !== 3 || persisted.difficulty !== 'hard') bad('settings did not persist across reload');
     if (persisted.hard !== 'true' || persisted.volume !== '20%' || persisted.muted !== 'true') bad('settings UI did not restore');
 
-    await page.evaluate(() => localStorage.setItem('78-settings-v2', '{"difficulty":"nightmare","matchTarget":"lots","volume":"loud","motion":"warp","sound":"yes","haptics":5}'));
+    await page.evaluate(() => localStorage.setItem('78-settings-v3', '{"difficulty":"nightmare","matchTarget":"lots","volume":"loud","motion":"warp","sound":"yes","haptics":5}'));
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitGame();
     const sanitised = await page.evaluate(() => ({
@@ -666,9 +689,9 @@ function browserExecutable() {
         sound: document.getElementById('settings-sound').getAttribute('aria-checked')
     }));
     console.log('settings sanitised:', JSON.stringify(sanitised));
-    if (sanitised.target !== 5 || sanitised.difficulty !== 'medium') bad('invalid stored settings were not reset');
+    if (sanitised.target !== 3 || sanitised.difficulty !== 'medium') bad('invalid stored settings were not reset');
     if (sanitised.volume !== '55%' || sanitised.motion !== 'full' || sanitised.sound !== 'true') bad('invalid settings UI is not at defaults');
-    await page.evaluate(() => localStorage.removeItem('78-settings-v2'));
+    await page.evaluate(() => localStorage.removeItem('78-settings-v3'));
 
     console.log('\nPROBLEMS:', problems.length ? '\n  ' + problems.join('\n  ') : 'none');
     await shutdown();

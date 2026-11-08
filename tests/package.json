@@ -9,9 +9,13 @@
     "test:e2e": "node tutorial-e2e.js",
     "test:settings": "node settings-e2e.js",
     "test:layout": "node layout-e2e.js",
+    "test:mobile": "node mobile-pass.js",
     "test:smoke": "node browser-smoke.js",
+    "test:motion": "node motion-check.js",
+    "test:file": "node file-url.js",
     "test:full": "node browser-smoke.js --full",
     "test:target": "node match-target.js",
+    "test:ui": "node ui-polish.js",
     "test:ai:rules": "node sim/ai-rules.js",
     "test:ai": "node sim/ai-match.js"
   },

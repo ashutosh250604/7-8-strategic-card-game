@@ -35,11 +35,48 @@ function initializeUI() {
     const targetBtns = document.querySelectorAll('.target-btn');
     const targetNote = $('target-note');
     const soundBtn = $('settings-sound');
+    const soundTestBtn = $('sound-test');
     const volumeInput = $('settings-volume');
     const volumeValue = $('volume-value');
     const hapticsBtn = $('settings-haptics');
+    const voiceBtn = $('settings-voice');
+    const voiceTestBtn = $('voice-test');
     const hapticsNote = $('haptics-note');
+    const fireworksBtn = $('settings-fireworks');
     const motionBtns = document.querySelectorAll('.motion-btn');
+    const segmentGroups = [...document.querySelectorAll('.difficulty-options, .target-options, .motion-options')];
+
+    function ensureSegmentThumb(group) {
+        let thumb = group.querySelector(':scope > .seg-thumb');
+        if (!thumb) {
+            thumb = document.createElement('span');
+            thumb.className = 'seg-thumb';
+            thumb.setAttribute('aria-hidden', 'true');
+            group.prepend(thumb);
+            group.classList.add('has-seg-thumb');
+        }
+        return thumb;
+    }
+
+    // One shared thumb travels between equal-width choices. Measuring the
+    // active button keeps the highlight aligned with real text and borders,
+    // including when the settings sheet changes width at a breakpoint.
+    function positionSegments() {
+        segmentGroups.forEach((group) => {
+            const thumb = ensureSegmentThumb(group);
+            const active = group.querySelector('button.active');
+            if (!active || !group.clientWidth) {
+                thumb.style.opacity = '0';
+                return;
+            }
+            // offsetLeft/offsetTop are layout coordinates inside the group;
+            // they stay stable while the sheet is scaled or animated.
+            thumb.style.opacity = '1';
+            thumb.style.width = `${active.offsetWidth}px`;
+            thumb.style.height = `${active.offsetHeight}px`;
+            thumb.style.transform = `translate3d(${active.offsetLeft}px, ${active.offsetTop}px, 0)`;
+        });
+    }
 
     const difficultyDescriptions = {
         easy: 'Anne plays fast and loose. A good table for learning the shape of a round.',
@@ -53,6 +90,7 @@ function initializeUI() {
             btn.classList.toggle('active', active);
             btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
+        positionSegments();
     }
 
     function targetNoteText(value) {
@@ -79,6 +117,16 @@ function initializeUI() {
             const label = soundBtn.querySelector('span');
             if (label) label.textContent = p.sound ? 'On' : 'Off';
         }
+        if (voiceBtn) {
+            const voiceOn = p.voice !== false && p.sound !== false;
+            voiceBtn.setAttribute('aria-checked', voiceOn ? 'true' : 'false');
+            voiceBtn.classList.toggle('is-on', voiceOn);
+            voiceBtn.disabled = p.sound === false;
+            const voiceLabel = voiceBtn.querySelector('span');
+            if (voiceLabel) voiceLabel.textContent = p.voice !== false ? (voiceOn ? 'On' : 'Sound off') : 'Off';
+        }
+        if (voiceTestBtn) voiceTestBtn.disabled = p.voice === false || p.sound === false;
+
         if (volumeInput) {
             volumeInput.value = String(Math.round(p.volume * 100));
             volumeInput.disabled = !p.sound;
@@ -95,6 +143,12 @@ function initializeUI() {
         }
         if (hapticsNote) {
             hapticsNote.textContent = supported ? 'On supported phones' : 'This device has no vibration';
+        }
+        if (fireworksBtn) {
+            fireworksBtn.setAttribute('aria-checked', p.fireworks ? 'true' : 'false');
+            fireworksBtn.classList.toggle('is-on', !!p.fireworks);
+            const label = fireworksBtn.querySelector('span');
+            if (label) label.textContent = p.fireworks ? 'On' : 'Off';
         }
         setPressed(motionBtns, p.motion, 'motion');
         syncMute(p);
@@ -122,6 +176,17 @@ function initializeUI() {
         syncSettingsUI(stored);
     }
 
+    // A setting toggled over a finished result should affect the celebration
+    // immediately, without making the player start another match to see it.
+    function syncFireworksForResult(p) {
+        const modal = $('game-over-modal');
+        if (!modal || modal.style.display !== 'flex' || !window.TableFireworks) return;
+        if (!p.fireworks) { window.TableFireworks.stop(); return; }
+        if (modal.classList.contains('is-win') && !window.TableFireworks.active()) {
+            window.TableFireworks.start();
+        }
+    }
+
     if (window.TableSettings) {
         syncSettingsUI(prefs());
         // The store is the single source of truth; a UI control only requests a
@@ -130,7 +195,20 @@ function initializeUI() {
             const p = ev.detail || prefs();
             applySettingsToEngine(p);
             syncSettingsUI(p);
+            syncFireworksForResult(p);
         });
+    }
+
+    window.addEventListener('resize', () => requestAnimationFrame(positionSegments));
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(positionSegments).catch(() => {});
+    }
+    // Watch the groups themselves, not just the window. A settings sheet that
+    // changes width at a breakpoint can resize after the window event, and the
+    // thumb must not keep the desktop width on a phone.
+    if (window.ResizeObserver) {
+        const segmentObserver = new ResizeObserver(() => requestAnimationFrame(positionSegments));
+        segmentGroups.forEach((group) => segmentObserver.observe(group));
     }
 
     difficultyBtns.forEach((btn) => {
@@ -160,6 +238,24 @@ function initializeUI() {
         };
     }
 
+    // Turning her voice on greets the player, which also proves the chosen
+    // system voice is audible; turning it off stops a line already in flight.
+    if (voiceBtn) {
+        voiceBtn.onclick = () => {
+            const p = prefs();
+            if (!p || !window.TableSettings) return;
+            window.TableSettings.update({ voice: !p.voice });
+            if (!p.voice) { if (window.AnneVoice) window.AnneVoice.greet(); }
+            else if (window.AnneVoice) window.AnneVoice.stop();
+        };
+    }
+
+    if (voiceTestBtn) {
+        voiceTestBtn.onclick = () => {
+            if (window.AnneVoice) window.AnneVoice.greet();
+        };
+    }
+
     if (volumeInput) {
         volumeInput.oninput = () => {
             const volume = Math.max(0, Math.min(1, Number(volumeInput.value) / 100));
@@ -174,6 +270,14 @@ function initializeUI() {
             if (!p || !window.TableSettings) return;
             window.TableSettings.update({ haptics: !p.haptics });
             if (p.haptics && window.GameHaptics) GameHaptics.vibrate('select');
+        };
+    }
+
+    if (fireworksBtn) {
+        fireworksBtn.onclick = () => {
+            const p = prefs();
+            if (!p || !window.TableSettings) return;
+            window.TableSettings.update({ fireworks: !p.fireworks });
         };
     }
 
@@ -192,16 +296,36 @@ function initializeUI() {
         };
     }
 
+    if (soundTestBtn) {
+        soundTestBtn.onclick = () => {
+            if (!window.GameAudio) return;
+            GameAudio.unlock();
+            GameAudio.test();
+        };
+    }
+
+    // A soft tick makes the whole interface feel connected. Individual controls
+    // still play their own, more specific sound where that helps.
+    document.addEventListener('click', (ev) => {
+        const btn = ev.target.closest && ev.target.closest('button');
+        if (!btn || btn.disabled || !window.GameAudio) return;
+        if (btn.matches('.coin-btn, .trump-btn, .card')) return;
+        GameAudio.play('select');
+    });
+
     // -------------------------------------------------------------- modals
     function openSettings() {
         if (!settingsModal) return;
         settingsReturnFocus = document.activeElement;
         const p = prefs();
+        settingsModal.style.display = 'flex';
+        // Geometry is zero while the dialog is display:none. Sync after showing
+        // it, then position the thumbs on the next frame when layout is settled.
         if (p) {
             applySettingsToEngine(p);
             syncSettingsUI(p);
         }
-        settingsModal.style.display = 'flex';
+        requestAnimationFrame(positionSegments);
         focusSoon(settingsModal.querySelector('.target-btn.active') || settingsModal.querySelector('.difficulty-btn.active') || closeSettingsBtn);
     }
 
@@ -229,6 +353,9 @@ function initializeUI() {
             settingsModal.style.display = 'flex';
             focusSoon($('settings-rules'));
         } else if (rulesOrigin && rulesOrigin.isConnected) {
+            // Restore immediately, then once more after the dialog is gone; a
+            // suspended tab can delay the timer past a keyboard user's next key.
+            try { rulesOrigin.focus({ preventScroll: true }); } catch (e) { /* detached */ }
             focusSoon(rulesOrigin);
         }
         rulesOrigin = null;

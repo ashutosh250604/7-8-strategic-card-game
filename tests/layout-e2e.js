@@ -37,7 +37,9 @@ const server = http.createServer((req, res) => {
     await new Promise((r) => server.listen(8102, '127.0.0.1', r));
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'edge-layout-'));
     const port = 9600 + (process.pid % 300);
-    const proc = spawn(EDGE, ['--headless=new', '--disable-gpu', '--no-first-run', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
+    const proc = spawn(EDGE, ['--headless=new', '--disable-gpu', '--no-first-run',
+        '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
+        `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
     let browser = null;
     for (let i = 0; i < 60 && !browser; i++) {
         await sleep(500);
@@ -60,7 +62,7 @@ const server = http.createServer((req, res) => {
 
     await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
     await page.setViewport({ width: 1440, height: 900 });
-    await page.evaluateOnNewDocument(() => localStorage.setItem('78-settings-v2', JSON.stringify({ motion: 'reduced', sound: false })));
+    await page.evaluateOnNewDocument(() => localStorage.setItem('78-settings-v3', JSON.stringify({ motion: 'reduced', sound: false })));
 
     // The collection homepage is the first thing a new player sees. Anne's
     // host line and the 7-8 live tile must both fit at phone sizes.
@@ -72,13 +74,13 @@ const server = http.createServer((req, res) => {
         await page.evaluate(() => document.querySelector('.hero-host').scrollIntoView({ block: 'center' }));
         const home = await page.evaluate(() => {
             const host = document.querySelector('.hero-host');
-            const img = document.querySelector('.hero-host-avatar img');
+            const drawn = document.querySelector('.hero-host-avatar .aa-photo');
             const tile = document.querySelector('.game-tile.is-live');
             const r = host.getBoundingClientRect();
             return {
                 docW: document.documentElement.scrollWidth,
                 host: r.toJSON(),
-                avatar: img ? img.naturalWidth : 0,
+                avatar: drawn ? Math.round(drawn.getBoundingClientRect().width) : 0,
                 tileHref: tile ? tile.getAttribute('href') : null
             };
         });
@@ -100,6 +102,7 @@ const server = http.createServer((req, res) => {
             view: { w: innerWidth, h: innerHeight },
             docW: document.documentElement.scrollWidth,
             docH: document.documentElement.scrollHeight,
+            scrollY: window.scrollY || window.pageYOffset || 0,
             board: rect('.game-board'),
             hud: rect('.game-header'),
             pHand: rect('#player-hand'),
@@ -108,7 +111,9 @@ const server = http.createServer((req, res) => {
             cUp: rect('#computer-faceup'),
             trick: rect('#current-trick'),
             avatar: rect('#anne-portrait'),
-            avatarLoaded: (document.querySelector('#anne-portrait') || {}).naturalWidth || 0,
+            // The seat portrait is an inline animated SVG now, so "loaded" means
+            // the photograph actually loaded into the seat.
+            avatarLoaded: (() => { const img = document.querySelector('#anne-portrait .aa-photo'); return img && img.complete && img.naturalWidth > 0 ? 1 : 0; })(),
             start: rect('#start-game'),
             settings: rect('#settings-btn'),
             controls: [...document.querySelectorAll('#player-hand .card, #player-faceup .card')].map((c) => {
@@ -121,11 +126,18 @@ const server = http.createServer((req, res) => {
     const checkTable = async (label) => {
         const m = await measure();
         expect(`${label}: no horizontal document overflow`, m.docW <= m.view.w, { docW: m.docW, width: m.view.w });
+        // Every target viewport is a fixed table now. If this grows, the CSS
+        // compact-fit rules have regressed and cards are being pushed below
+        // the fold rather than fitting the screen.
+        expect(`${label}: table fits without vertical page scrolling`, m.docH <= m.view.h + 1, { docH: m.docH, viewH: m.view.h });
         const inside = (r) => r && r.left >= -1 && r.right <= m.view.w + 1 && r.top >= -1 && r.bottom <= m.view.h + 1;
         expect(`${label}: player hand and table cards stay on screen`, [m.pHand, m.pUp, m.cHand, m.cUp, m.trick].every(inside), m);
-        expect(`${label}: human cards have a usable tap box`, m.controls.every((r) => r.right - r.left >= 30 && r.bottom - r.top >= 40), m.controls.slice(0, 3));
+        // Keep the cards at their real size: the compact layout may reclaim
+        // chrome and felt, but it must not shrink the hand or face-up rows to
+        // force a fit. Face-up cards are deliberately 0.86x the hand size.
+        expect(`${label}: human cards keep a readable tap box`, m.controls.every((r) => r.right - r.left >= 40 && r.bottom - r.top >= 56), m.controls.slice(0, 3));
         expect(`${label}: Anne portrait loaded`, m.avatarLoaded > 0 && m.avatar && m.avatar.w >= 24, { loaded: m.avatarLoaded, avatar: m.avatar });
-        const overlaps = m.controls.filter((r) => r.bottom > m.view.h + 1 || r.top < -1);
+        const overlaps = m.controls.filter((r) => r.left < -1 || r.right > m.view.w + 1 || r.bottom > m.view.h + 1);
         expect(`${label}: no clipped player cards`, overlaps.length === 0, overlaps.slice(0, 2));
     };
 
@@ -133,27 +145,33 @@ const server = http.createServer((req, res) => {
         await page.click('#start-game');
         await page.waitForSelector('#coin-toss-modal', { visible: true });
         await page.click('.coin-btn[data-choice="heads"]');
-        await page.waitForFunction(() => ['trump-selection', 'dealing-remaining', 'playing'].includes(GameEngine.state.gamePhase) && GameEngine.state.lastTrumpSelector, { timeout: 10000 });
+        // Do not require lastTrumpSelector here: when the human wins the toss
+        // it is null until they choose, so waiting on it deadlocks before the
+        // modal click below can happen.
+        await page.waitForFunction(() => ['trump-selection', 'dealing-remaining', 'playing'].includes(GameEngine.state.gamePhase), { timeout: 10000 });
         if (await page.$eval('#trump-selection-modal', (el) => getComputedStyle(el).display !== 'none').catch(() => false)) {
             await page.click('.trump-btn[data-suit="spades"]');
         }
         await page.waitForFunction(() => GameEngine.state.gamePhase === 'playing' && document.querySelector('#player-hand .card, #player-faceup .card'), { timeout: 10000 });
+        // Wait for the last dealt card to land before measuring the table.
+        await page.waitForFunction(() => GameView.pendingCount() === 0, { timeout: 20000 }).catch(() => {});
     };
 
     const showResult = () => page.evaluate(() => {
-        GameEngine.state.player.score = 5;
-        GameEngine.state.computer.score = 2;
-        GameEngine.state.matchTarget = 5;
+        GameEngine.state.player.score = 3;
+        GameEngine.state.computer.score = 1;
+        GameEngine.state.matchTarget = 3;
         GameEngine.state.gameStarted = true;
         GameEngine.state.gameOver = false;
         checkGameEnd();
     });
 
-    for (const view of [{ w: 1440, h: 900 }, { w: 390, h: 844 }, { w: 320, h: 568 }]) {
+    for (const view of [{ w: 1440, h: 900 }, { w: 390, h: 844 }, { w: 320, h: 568 }, { w: 844, h: 390 }]) {
         await page.setViewport({ width: view.w, height: view.h });
         await page.reload({ waitUntil: 'load' });
         const setup = await measure();
         expect(`${view.w}x${view.h}: setup fits without horizontal overflow`, setup.docW <= view.w, setup.docW);
+        expect(`${view.w}x${view.h}: setup fits without vertical page scrolling`, setup.docH <= view.h + 1, { docH: setup.docH, viewH: view.h });
         expect(`${view.w}x${view.h}: start action is visible`, setup.start && setup.start.bottom <= view.h, setup.start);
         await page.screenshot({ path: path.join(outDir, `layout-setup-${view.w}x${view.h}.png`) });
     }
@@ -162,16 +180,50 @@ const server = http.createServer((req, res) => {
     await page.reload({ waitUntil: 'load' });
     await settleGame();
     await checkTable('390x844 live');
+    await sleep(1600);
     await page.screenshot({ path: path.join(outDir, 'layout-playing-390x844.png') });
 
-    const targetLine = await page.evaluate(() => {
+    const goal = await page.evaluate(() => (document.getElementById('round-info').textContent || '').replace(/\s+/g, ' ').trim());
+    expect('390x844: the HUD states the point target, not a round count',
+        /first to/i.test(goal) && /points/i.test(goal) && !/round/i.test(goal), goal);
+
+    await page.evaluate(() => {
         const target = GameEngine.getTrickTarget('computer');
         GameEngine.state.computer.tricksWon = target;
         GameView.render();
-        const bubble = document.getElementById('anne-reaction');
-        return { target, text: bubble.textContent.trim(), visible: !bubble.hidden };
     });
-    expect('390x844: Anne reacts once when she reaches her trick target', targetLine.target > 0 && targetLine.visible && /target/i.test(targetLine.text), targetLine);
+    // Her reaction is scheduled after the render beat; wait for the live
+    // bubble instead of sampling it in the same frame it is requested.
+    const targetLine = await page.waitForFunction(() => {
+        const bubble = document.getElementById('anne-reaction');
+        return bubble && !bubble.hidden && bubble.textContent.trim().length > 8
+            ? { text: bubble.textContent.trim(), visible: true }
+            : false;
+    }, { timeout: 5000 }).then((handle) => handle.jsonValue()).catch(() => null);
+    const target = await page.evaluate(() => GameEngine.getTrickTarget('computer'));
+    // The wording is hers and changes between rounds; the behaviour is that she
+    // says something the moment her target is reached.
+    expect('390x844: Anne reacts once when she reaches her trick target', target > 0 && targetLine && targetLine.visible, { target, targetLine });
+
+    // She has to read as a person saying the line: the living portrait present,
+    // and the bubble attached to her plate rather than pinned under her cards.
+    const face = await page.evaluate(() => {
+        const avatar = document.getElementById('anne-portrait');
+        const img = avatar.querySelector('.aa-photo');
+        const bubble = document.getElementById('anne-reaction');
+        TableCharacters.showReaction('Right beside you, like a person.', 4000);
+        const ar = avatar.getBoundingClientRect();
+        const br = bubble.getBoundingClientRect();
+        return {
+            drawn: !!(img && img.complete && img.naturalWidth > 0),
+            size: Math.round(ar.width),
+            gapY: Math.round(br.top - ar.bottom),
+            aligned: Math.abs(br.left - ar.left) <= 28,
+            onScreen: br.left >= 0 && br.right <= innerWidth && br.top >= 0 && br.bottom <= innerHeight
+        };
+    });
+    expect('390x844: Anne is the living portrait with her line attached to her plate',
+        face.drawn && face.size >= 60 && face.gapY >= 0 && face.gapY <= 120 && face.onScreen, face);
 
     await page.click('#settings-btn');
     await page.waitForSelector('#settings-modal', { visible: true });
@@ -203,11 +255,16 @@ const server = http.createServer((req, res) => {
 
     // The result screen is checked with full motion so the victory celebration
     // is exercised, not just the layout of a still panel.
-    await page.evaluate(() => TableSettings.update({ motion: 'full' }));
+    await page.evaluate(() => TableSettings.update({ motion: 'full', fireworks: true }));
     await showResult();
     await page.waitForSelector('#game-over-modal', { visible: true });
-    const sparkCount = await page.evaluate(() => document.querySelectorAll('.spark').length);
-    expect('390x844: victory produces restrained sparks', sparkCount > 0, sparkCount);
+    await sleep(1450);
+    const fireworks = await page.evaluate(() => ({
+        active: !!(window.TableFireworks && TableFireworks.active()),
+        live: document.getElementById('fireworks-canvas')?.classList.contains('is-live'),
+        particles: window.TableFireworks ? TableFireworks.particleCount() : 0
+    }));
+    expect('390x844: victory produces premium fireworks', fireworks.active && fireworks.live && fireworks.particles > 0, fireworks);
     const resultFit = await page.evaluate(() => {
         const modal = document.querySelector('.gameover-modal');
         const play = document.getElementById('play-again');

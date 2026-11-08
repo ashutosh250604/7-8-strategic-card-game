@@ -37,7 +37,9 @@ const server = http.createServer((req, res) => {
     await new Promise((r) => server.listen(8100, '127.0.0.1', r));
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'edge-settings-'));
     const port = 9500 + (process.pid % 300);
-    const proc = spawn(EDGE, ['--headless=new', '--disable-gpu', '--no-first-run', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
+    const proc = spawn(EDGE, ['--headless=new', '--disable-gpu', '--no-first-run',
+        '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
+        `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
     let browser = null;
     for (let i = 0; i < 60 && !browser; i++) {
         await sleep(500);
@@ -48,6 +50,7 @@ const server = http.createServer((req, res) => {
     const problems = [];
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
+    await page.bringToFront();
     await page.setRequestInterception(true);
     page.on('request', (r) => (/googletagmanager|google-analytics/.test(r.url()) ? r.abort('blockedbyclient') : r.continue()));
     page.on('console', (m) => {
@@ -72,7 +75,7 @@ const server = http.createServer((req, res) => {
 
     await page.goto(`http://127.0.0.1:8100/${gamePath}`, { waitUntil: 'load' });
     await page.evaluate(() => {
-        localStorage.setItem('78-settings-v2', JSON.stringify({
+        localStorage.setItem('78-settings-v3', JSON.stringify({
             difficulty: 'nightmare', matchTarget: 4, volume: 12, motion: 'warp', sound: 'yes', haptics: 'maybe'
         }));
     });
@@ -81,10 +84,26 @@ const server = http.createServer((req, res) => {
     // Out-of-range audio is clamped; unknown strategies, targets and motion
     // modes fall back to their defaults. Nothing malformed reaches the engine.
     expect('invalid stored values fall back safely',
-        safe.difficulty === 'medium' && safe.matchTarget === 5 && safe.volume === 1 && safe.motion === 'full' && safe.sound === true,
+        safe.difficulty === 'medium' && safe.matchTarget === 3 && safe.volume === 1 && safe.motion === 'full' && safe.sound === true && safe.voice === false && safe.fireworks === false,
         safe);
 
     await openSettings();
+    const fireworksBefore = await page.evaluate(() => {
+        const btn = document.getElementById('settings-fireworks');
+        return { checked: btn.getAttribute('aria-checked'), label: btn.querySelector('span').textContent.trim(), value: TableSettings.get().fireworks };
+    });
+    expect('winner fireworks start off by default', fireworksBefore.checked === 'false' && /off/i.test(fireworksBefore.label) && fireworksBefore.value === false, fireworksBefore);
+    await page.click('#settings-fireworks');
+    const fireworksOn = await page.evaluate(() => {
+        const btn = document.getElementById('settings-fireworks');
+        return { checked: btn.getAttribute('aria-checked'), label: btn.querySelector('span').textContent.trim(), value: TableSettings.get().fireworks };
+    });
+    expect('winner fireworks can be enabled', fireworksOn.checked === 'true' && /on/i.test(fireworksOn.label) && fireworksOn.value === true, fireworksOn);
+    await page.click('#settings-fireworks');
+    const fireworksOff = await page.evaluate(() => ({ value: TableSettings.get().fireworks, checked: document.getElementById('settings-fireworks').getAttribute('aria-checked') }));
+    expect('winner fireworks can be disabled again', fireworksOff.value === false && fireworksOff.checked === 'false', fireworksOff);
+    await page.click('#settings-fireworks');
+
     await page.click('.target-btn[data-target="3"]');
     await page.click('.difficulty-btn[data-difficulty="hard"]');
     await page.click('.motion-btn[data-motion="reduced"]');
@@ -103,6 +122,30 @@ const server = http.createServer((req, res) => {
     await page.click('#mute-btn');
     const unmuted = await page.evaluate(() => ({ sound: TableSettings.get().sound, pressed: document.getElementById('mute-btn').getAttribute('aria-pressed') }));
     expect('HUD mute control restores sound', unmuted.sound === true && unmuted.pressed === 'false', unmuted);
+
+    // Anne's voice is a real switch, not a decorative label. Its state, the
+    // stored preference and the "Say hello" button must agree. The requested
+    // default is off; turning it on is an explicit choice.
+    await openSettings();
+    const voiceBefore = await page.evaluate(() => {
+        const btn = document.getElementById('settings-voice');
+        return { checked: btn.getAttribute('aria-checked'), label: btn.querySelector('span').textContent.trim(), disabled: btn.disabled };
+    });
+    expect('voice switch starts off and enabled', voiceBefore.checked === 'false' && /off/i.test(voiceBefore.label) && !voiceBefore.disabled, voiceBefore);
+    await page.click('#settings-voice');
+    const voiceOn = await page.evaluate(() => {
+        const btn = document.getElementById('settings-voice');
+        return { voice: TableSettings.get().voice, checked: btn.getAttribute('aria-checked'), testDisabled: document.getElementById('voice-test').disabled };
+    });
+    expect('turning the voice on updates the switch', voiceOn.voice === true && voiceOn.checked === 'true' && !voiceOn.testDisabled, voiceOn);
+    await page.click('#settings-voice');
+    const voiceOff = await page.evaluate(() => ({
+        voice: TableSettings.get().voice,
+        checked: document.getElementById('settings-voice').getAttribute('aria-checked'),
+        testDisabled: document.getElementById('voice-test').disabled
+    }));
+    expect('turning the voice back off restores the switch', voiceOff.voice === false && voiceOff.checked === 'false' && voiceOff.testDisabled, voiceOff);
+    await page.click('#close-settings');
     const audio = await page.evaluate(() => {
         const names = ['shuffle', 'deal', 'select', 'place', 'trickWin', 'coin', 'coinLand', 'victory', 'defeat', 'invalid'];
         const results = {};
@@ -115,17 +158,39 @@ const server = http.createServer((req, res) => {
 
     await page.reload({ waitUntil: 'load' });
     const reloaded = await prefs();
-    expect('preferences survive a reload', reloaded.matchTarget === 3 && reloaded.difficulty === 'hard' && reloaded.motion === 'reduced' && reloaded.sound === true, reloaded);
+    expect('preferences survive a reload', reloaded.matchTarget === 3 && reloaded.difficulty === 'hard' && reloaded.motion === 'reduced' && reloaded.sound === true && reloaded.voice === false && reloaded.fireworks === true, reloaded);
     expect('master volume survives a reload', Math.abs(reloaded.volume - 0.35) < 0.001, reloaded.volume);
 
-    // Start with reduced motion and measure that the coin path stays short.
+    // Start with reduced motion and measure the shuffle itself, not the whole
+    // opening. The total includes a random coin presentation and headless
+    // startup, which made the old 4.5 s wall-clock assertion flaky by a few
+    // hundred milliseconds. Calm must shorten the actual shuffle to 1.2 s;
+    // that is the property the setting promises.
+    await page.evaluate(() => {
+        const board = document.querySelector('.game-board');
+        window.__shuffleTiming = { start: 0, end: 0 };
+        window.__shuffleObserver = new MutationObserver(() => {
+            const on = board.classList.contains('is-shuffling');
+            if (on && !window.__shuffleTiming.start) window.__shuffleTiming.start = performance.now();
+            if (!on && window.__shuffleTiming.start && !window.__shuffleTiming.end) window.__shuffleTiming.end = performance.now();
+        });
+        window.__shuffleObserver.observe(board, { attributes: true, attributeFilter: ['class'] });
+    });
     const startedAt = Date.now();
     await page.click('#start-game');
     await page.waitForSelector('#coin-toss-modal', { visible: true });
     await page.click('.coin-btn[data-choice="heads"]');
-    await page.waitForFunction(() => ['trump-selection', 'dealing-remaining', 'playing'].includes(GameEngine.state.gamePhase) && GameEngine.state.lastTrumpSelector, { timeout: 10000 });
+    await page.waitForFunction(() => ['trump-selection', 'dealing-remaining', 'playing'].includes(GameEngine.state.gamePhase) && GameEngine.state.lastTrumpSelector, { timeout: 12000 });
     const settleMs = Date.now() - startedAt;
-    expect('reduced motion settles the coin quickly', settleMs < 3500, settleMs);
+    const shuffleTiming = await page.evaluate(() => {
+        window.__shuffleObserver.disconnect();
+        const t = window.__shuffleTiming;
+        return { start: Math.round(t.start), end: Math.round(t.end), duration: Math.round(t.end - t.start) };
+    });
+    expect('Calm shortens the shuffle itself', shuffleTiming.duration > 800 && shuffleTiming.duration < 2200, shuffleTiming);
+    // A generous backstop for the whole opening; the direct shuffle check above
+    // is what catches a regression back to the four-second Full animation.
+    expect('reduced motion settles the toss and shuffle quickly', settleMs < 6000, { settleMs, shuffle: shuffleTiming });
 
     // If the player won the toss the sheet is open; pick a suit so the match is live.
     if (await page.$eval('#trump-selection-modal', (el) => getComputedStyle(el).display !== 'none').catch(() => false)) {

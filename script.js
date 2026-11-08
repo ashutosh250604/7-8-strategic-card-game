@@ -33,9 +33,11 @@ const gameState = {
     computerThinking: false,
     roundNumber: 1,
     difficulty: 'medium', // 'easy', 'medium', 'hard'
-    matchTarget: 5, // Match points needed to win; settings change this for the next match
-    pendingMatchTarget: 5, // Applied by startGame/restartGame, never mid-match
+    matchTarget: 3, // Match points needed to win; settings change this for the next match
+    pendingMatchTarget: 3, // Applied by startGame/restartGame, never mid-match
     playedCards: [], // Track all played cards for Hard mode
+    voids: { player: [], computer: [] }, // Suits a side has publicly shown out of
+    lastTrick: null, // Public summary of the trick that just finished
     coinTossWinner: null, // Who won the coin toss
     isFirstRound: true // Track if this is the first round (for coin toss)
 };
@@ -51,6 +53,7 @@ const gameState = {
 // flowSession is bumped by restartGame() so continuations that belong to the old
 // game are dropped instead of firing into the new one.
 let flowSession = 0;
+let computerWatchdog = null;
 
 function runBeat(beat, payload, next) {
     const session = flowSession;
@@ -276,15 +279,25 @@ function playCard(cardIndex, source) {
         revealFaceDownCard(currentPlayerData, cardIndex);
     }
     
-    // Log the play
+    // Log the play. Naming a ruff or a discard makes Anne's decisions legible
+    // instead of looking as if she ignored the trump suit.
     const cardDisplay = `${getCardRank(card)}${getSuitSymbol(getCardSuit(card))}`;
-    addToLog(`You played ${cardDisplay}`);
+    const ledSuit = gameState.trick.leadSuit;
+    const playedSuit = getCardSuit(card);
+    if (ledSuit && playedSuit !== ledSuit) {
+        addToLog(playedSuit === gameState.trumpSuit
+            ? `You ruffed with ${cardDisplay}`
+            : `You discarded ${cardDisplay}`);
+    } else {
+        addToLog(`You played ${cardDisplay}`);
+    }
     
     // Add card to current trick
     gameState.trick.cards.push({
         card: card,
         player: gameState.currentPlayer
     });
+    if (GameView.event) GameView.event('play', { side: 'player', card });
     
     // Set lead suit if this is the first card
     if (gameState.trick.cards.length === 1) {
@@ -369,10 +382,12 @@ function isHighestRemaining(card) {
     const suit = getCardSuit(card);
     const value = getCardValue(card);
     const remaining = getRemainingCardsInSuit(suit);
-    
-    // Check if any remaining card (not played) has higher value
+    // Anne's own cards cannot beat her, and a card she can see on the table is
+    // already accounted for. Ignoring her own hand here made almost nothing
+    // count as a master, so she never cashed the winners she was holding.
+    const mine = new Set([...gameState.computer.hand, ...gameState.computer.faceUp].filter(Boolean));
     for (const c of remaining) {
-        if (getCardValue(c) > value && c !== card) {
+        if (c !== card && getCardValue(c) > value && !mine.has(c)) {
             return false;
         }
     }
@@ -389,6 +404,35 @@ function getAllRemainingCards() {
     });
     
     return remaining;
+}
+
+// A ruff cannot be over-ruffed: when the opponent has already played a side
+// suit, a trump on the table wins the trick outright. So if Anne is void in the
+// led suit and holds a trump, discarding is not a style choice, it is a lost
+// trick. This guard runs after every AI (easy, medium and hard) so no heuristic
+// or sampler can ever hand a trick over like that again.
+function enforceRuffRule(play) {
+    const lead = gameState.trick.leadSuit;
+    const trump = gameState.trumpSuit;
+    if (!play || !lead || !trump || lead === trump) return play;
+    const cards = getValidCards(gameState.computer);
+    if (cards.some((entry) => getCardSuit(entry.card) === lead)) return play;
+    const trumps = cards.filter((entry) => getCardSuit(entry.card) === trump);
+    if (!trumps.length) return play;
+    const current = gameState.trick.cards[0] && gameState.trick.cards[0].card;
+    // If the player has already ruffed, only an over-ruff can win. Spending a
+    // lower trump here would be a free discard, not a ruff.
+    if (current && getCardSuit(current) === trump) {
+        const winning = trumps.filter((entry) => getCardValue(entry.card) > getCardValue(current));
+        if (!winning.length) return play;
+        return winning.reduce((low, entry) =>
+            getCardValue(entry.card) < getCardValue(low.card) ? entry : low
+        );
+    }
+    if (getCardSuit(play.card) === trump) return play;
+    return trumps.reduce((low, entry) =>
+        getCardValue(entry.card) < getCardValue(low.card) ? entry : low
+    );
 }
 
 function getComputerPlay() {
@@ -453,54 +497,12 @@ function mediumIsMaster(card) {
 }
 
 function getMediumAIPlay(validCards) {
-    const trump = gameState.trumpSuit;
-    const playerFaceUp = gameState.player.faceUp.filter(Boolean);
-    const nonTrump = validCards.filter((entry) => getCardSuit(entry.card) !== trump);
-    const low = mediumLowest(validCards);
-
-    // Leading: cash a master, otherwise lead low from a side suit. Leading a low
-    // trump with no information is how the old medium lost winnable tricks.
-    if (!gameState.trick.leadSuit) {
-        const masters = validCards.filter((entry) => mediumIsMaster(entry.card));
-        if (masters.length) {
-            const safe = masters.filter((entry) => {
-                const suit = getCardSuit(entry.card);
-                if (suit === trump) return true;
-                // Do not cash into a possible ruff when the player shows void.
-                return playerFaceUp.some((c) => getCardSuit(c) === suit);
-            });
-            return mediumHighest(safe.length ? safe : masters);
-        }
-        return mediumLowest(nonTrump.length ? nonTrump : validCards);
-    }
-
-    const leadSuit = gameState.trick.leadSuit;
-    const playerCard = gameState.trick.cards[0].card;
-    const playerValue = getCardValue(playerCard);
-    const follow = validCards.filter((entry) => getCardSuit(entry.card) === leadSuit);
-    const trumps = validCards.filter((entry) => getCardSuit(entry.card) === trump && trump !== leadSuit);
-
-    if (follow.length) {
-        const winners = follow.filter((entry) => getCardValue(entry.card) > playerValue);
-        if (winners.length) return mediumLowest(winners);
-        return mediumLowest(follow);
-    }
-
-    // Void in the lead suit. Ruff when the trick is worth it; otherwise keep the
-    // trump and discard the cheapest card.
-    if (trumps.length && leadSuit !== trump) {
-        const lowestTrump = mediumLowest(trumps);
-        const cardsLeft = gameState.player.hand.filter(Boolean).length +
-            gameState.player.faceUp.filter(Boolean).length;
-        const worthRuffing = playerValue >= 12 || cardsLeft <= 4 || getCardValue(lowestTrump.card) <= 9;
-        const playerTrump = playerFaceUp
-            .filter((c) => getCardSuit(c) === trump)
-            .sort((a, b) => getCardValue(b) - getCardValue(a))[0];
-        if (worthRuffing && (!playerTrump || getCardValue(lowestTrump.card) > getCardValue(playerTrump))) {
-            return lowestTrump;
-        }
-    }
-    return mediumLowest(nonTrump.length ? nonTrump : validCards);
+    // Medium uses the same public-information expert rules as Hard, but without
+    // the determinised search. It tracks played cards, known voids, the visible
+    // row and the trump count; it never peeks at a hidden card. This is a real
+    // step up from the old heuristic, which could cash a master into a known
+    // ruff and did not draw trumps before cashing side winners.
+    return getHardHeuristicPlay(validCards);
 }
 
 // HARD AI - determinised Monte Carlo using only information a player can see.
@@ -526,6 +528,28 @@ function hardSuit(card) {
 function hardValue(card) {
     hardSuit(card);
     return HARD_META[card].value;
+}
+
+// A ruff cannot be over-ruffed in a two-player trick: the opponent's card is
+// already on the table. So when Anne is void in the led side suit and holds a
+// trump, this is not a preference, it is the only play that wins the trick.
+// Skipping it to "save" the trump gives away a guaranteed trick.
+function hardRuff(validCards) {
+    const lead = gameState.trick.leadSuit;
+    const trump = gameState.trumpSuit;
+    if (!lead || !trump || lead === trump) return null;
+    if (validCards.some((entry) => hardSuit(entry.card) === lead)) return null;
+    const trumps = validCards.filter((entry) => hardSuit(entry.card) === trump);
+    if (!trumps.length) return null;
+    const current = gameState.trick.cards[0] && gameState.trick.cards[0].card;
+    // The player's card may already be a ruff. In that case a lower trump is
+    // not a winning ruff at all; keep it and discard something else.
+    if (current && hardSuit(current) === trump) {
+        const winning = trumps.filter((entry) => hardValue(entry.card) > hardValue(current));
+        if (!winning.length) return null;
+        return winning.reduce((low, entry) => hardValue(entry.card) < hardValue(low.card) ? entry : low);
+    }
+    return trumps.reduce((low, entry) => hardValue(entry.card) < hardValue(low.card) ? entry : low);
 }
 
 function hardAllCards() {
@@ -577,6 +601,11 @@ function simLegalPlays(sim, side) {
 
 function simApplyPlay(sim, side, play) {
     const data = sim.sides[side];
+    // Remember public voids during the playout. Without this the sampled line
+    // happily leads back into a suit the opponent just showed out of, which
+    // understates how punishing a ruff is and makes Anne's leads look random.
+    const followedLead = sim.trick.cards.length !== 1 || hardSuit(play.card) === sim.trick.leadSuit;
+    const ledSuit = sim.trick.cards.length === 1 ? sim.trick.leadSuit : null;
     if (play.source === 'hand') {
         data.hand[play.index] = null;
     } else {
@@ -586,9 +615,32 @@ function simApplyPlay(sim, side, play) {
             data.faceDown[play.index] = null;
         }
     }
+    if (ledSuit && !followedLead) {
+        if (!sim.voids) sim.voids = { player: [], computer: [] };
+        if (!sim.voids[side].includes(ledSuit)) sim.voids[side].push(ledSuit);
+    }
     sim.trick.cards.push({ card: play.card, player: side });
     if (sim.trick.cards.length === 1) sim.trick.leadSuit = hardSuit(play.card);
     sim.currentPlayer = HARD_OTHER[side];
+}
+
+// Shedding is not just "lowest card". An expert throws away from the suit they
+// are shortest in: that opens a void, and a void in a two-player trick game is a
+// free ruff later on. Trump is only shed when there is nothing else.
+function simDiscard(sim, side, legal) {
+    const trump = sim.trump;
+    const side_ = legal.filter((play) => hardSuit(play.card) !== trump);
+    const pool = side_.length ? side_ : legal;
+    const lengths = {};
+    sim.sides[side].hand.concat(sim.sides[side].faceUp).forEach((card) => {
+        if (card) lengths[hardSuit(card)] = (lengths[hardSuit(card)] || 0) + 1;
+    });
+    return pool.reduce((best, play) => {
+        const a = lengths[hardSuit(play.card)] || 0;
+        const b = lengths[hardSuit(best.card)] || 0;
+        if (a !== b) return a < b ? play : best;
+        return hardValue(play.card) < hardValue(best.card) ? play : best;
+    });
 }
 
 function simBeats(card, best, trump, lead) {
@@ -630,10 +682,25 @@ function simPolicy(sim, side, legal) {
     const byValue = (a, b) => hardValue(a.card) - hardValue(b.card);
 
     if (!lead) {
-        const masters = legal.filter((play) => simMasterCard(sim, side, play.card));
+        // Leading into a suit the opponent has publicly run out of is a gift:
+        // they ruff it. Keep those suits for when there is no alternative.
+        const oppVoids = (sim.voids && sim.voids[HARD_OTHER[side]]) || [];
+        const safe = legal.filter((play) => !oppVoids.includes(hardSuit(play.card)));
+        const pool = safe.length ? safe : legal;
+        const masters = pool.filter((play) => simMasterCard(sim, side, play.card));
         if (masters.length) return masters.reduce((low, play) => byValue(play, low) < 0 ? play : low);
-        const nonTrump = legal.filter((play) => hardSuit(play.card) !== trump);
-        return (nonTrump.length ? nonTrump : legal).reduce((low, play) => byValue(play, low) < 0 ? play : low);
+        // With a top trump and trumps still out, draw them before they ruff a
+        // side-suit trick. This is the move the old policy kept missing.
+        const trumps = pool.filter((play) => hardSuit(play.card) === trump);
+        const opponent = sim.sides[HARD_OTHER[side]];
+        const opponentTrumps = [...opponent.hand, ...opponent.faceUp]
+            .filter((card) => card && hardSuit(card) === trump).length;
+        const masterTrumps = trumps.filter((play) => simMasterCard(sim, side, play.card));
+        if (opponentTrumps && masterTrumps.length) {
+            return masterTrumps.reduce((low, play) => byValue(play, low) < 0 ? play : low);
+        }
+        const nonTrump = pool.filter((play) => hardSuit(play.card) !== trump);
+        return (nonTrump.length ? nonTrump : pool).reduce((low, play) => byValue(play, low) < 0 ? play : low);
     }
 
     const current = sim.trick.cards[0] && sim.trick.cards[0].card;
@@ -646,7 +713,7 @@ function simPolicy(sim, side, legal) {
             return at - bt || byValue(a, b);
         })[0];
     }
-    return legal.reduce((low, play) => byValue(play, low) < 0 ? play : low);
+    return simDiscard(sim, side, legal);
 }
 
 function simPlayOut(sim) {
@@ -667,19 +734,34 @@ function simPlayOut(sim) {
 function simObjective(sim, ownTarget, opponentTarget) {
     const own = Math.max(0, sim.computerTricks - ownTarget);
     const opponent = Math.max(0, sim.playerTricks - opponentTarget);
-    // Match points matter most; tricks and denying the opponent are tie-breakers.
-    return own - opponent * 0.75 + sim.computerTricks * 0.02;
+    // Match points decide the game. Denying the player a point is worth more
+    // than taking a risky extra point, and reaching the contract still matters
+    // because it is the platform for every later point. The small trick term
+    // keeps the scorer from shrugging at the early tricks.
+    const madeTarget = sim.computerTricks >= ownTarget ? 0.4 : 0;
+    const deniedTarget = sim.playerTricks < opponentTarget ? 0.22 : 0;
+    return own - opponent * 1.4 + madeTarget + deniedTarget +
+        (sim.computerTricks - sim.playerTricks) * 0.06;
 }
 
 function hardPlaySample() {
     const gs = gameState;
-    const unknown = hardShuffle(hardUnknownCards());
+    const unknownAll = hardShuffle(hardUnknownCards());
     const playerHandCount = gs.player.hand.filter(Boolean).length;
     const playerDownCount = gs.player.faceDown.filter(Boolean).length;
     const computerDownCount = gs.computer.faceDown.filter(Boolean).length;
-    if (unknown.length !== playerHandCount + playerDownCount + computerDownCount) return null;
+    if (unknownAll.length !== playerHandCount + playerDownCount + computerDownCount) return null;
 
-    const playerHand = unknown.splice(0, playerHandCount);
+    // A side that has publicly discarded on a suit and has no hidden row left
+    // cannot still hold that suit. Filter those cards out of the sampled hand;
+    // if a hidden row does remain, the void is not certain, so leave the sample
+    // unconstrained (the hidden cards can still be that suit).
+    const certainVoids = playerDownCount === 0 ? gs.voids.player : [];
+    const handPool = unknownAll.filter((card) => !certainVoids.includes(hardSuit(card)));
+    if (handPool.length < playerHandCount) return null;
+    const playerHand = hardShuffle(handPool).slice(0, playerHandCount);
+    const unknown = hardShuffle(unknownAll.filter((card) => !playerHand.includes(card)));
+
     const playerDown = [null, null, null, null, null];
     gs.player.faceDown.forEach((card, index) => { if (card) playerDown[index] = unknown.pop(); });
     const computerDown = [null, null, null, null, null];
@@ -690,6 +772,7 @@ function hardPlaySample() {
         trump: gs.trumpSuit,
         currentPlayer: gs.currentPlayer,
         trick: { cards: gs.trick.cards.map((play) => ({ card: play.card, player: play.player })), leadSuit: gs.trick.leadSuit },
+        voids: { player: gs.voids.player.slice(), computer: gs.voids.computer.slice() },
         trickCount: gs.trickCount,
         playerTricks: gs.player.tricksWon,
         computerTricks: gs.computer.tricksWon,
@@ -705,6 +788,7 @@ function cloneSim(sim) {
         trump: sim.trump,
         currentPlayer: sim.currentPlayer,
         trick: { cards: sim.trick.cards.slice(), leadSuit: sim.trick.leadSuit },
+        voids: { player: (sim.voids ? sim.voids.player : []).slice(), computer: (sim.voids ? sim.voids.computer : []).slice() },
         trickCount: sim.trickCount,
         playerTricks: sim.playerTricks,
         computerTricks: sim.computerTricks,
@@ -716,28 +800,50 @@ function cloneSim(sim) {
 }
 
 function hardSamples() {
-    return Math.max(6, Math.min(24, Number(gameState.aiSamples) || 9));
+    const base = Math.max(10, Math.min(160, Number(gameState.aiSamples) || 56));
+    // The last few tricks decide the round and the tree is tiny there, so Anne
+    // spends more samples exactly where the points are.
+    const left = gameState.computer.hand.filter(Boolean).length + gameState.computer.faceUp.filter(Boolean).length;
+    return left <= 4 ? base + 10 : base;
 }
 
+// Choosing trump is the single highest-leverage decision in a round. Anne only
+// sees her first five cards here, so a suit she holds nothing in can never be a
+// sensible call. The simulation is a tie-breaker between suits she actually has.
 function chooseHardTrump() {
     const gs = gameState;
-    if (gs.computer.hand.filter(Boolean).length !== 5) return null;
-    const unknownBase = hardShuffle(hardAllCards().filter((card) => !gs.computer.hand.includes(card)));
+    const hand = gs.computer.hand.filter(Boolean);
+    if (hand.length !== 5) return null;
+
+    const counts = { hearts: 0, diamonds: 0, clubs: 0, spades: 0 };
+    const honours = { hearts: 0, diamonds: 0, clubs: 0, spades: 0 };
+    hand.forEach((card) => {
+        const suit = hardSuit(card);
+        counts[suit]++;
+        if (hardValue(card) >= 11) honours[suit]++;
+    });
+
+    let candidates = HARD_ALL_SUITS.filter((suit) => counts[suit] >= 2 ||
+        (counts[suit] >= 1 && hand.some((card) => hardSuit(card) === suit && hardValue(card) >= 13)));
+    if (!candidates.length) candidates = HARD_ALL_SUITS.filter((suit) => counts[suit] >= 1);
+    if (!candidates.length) return null;
+
+    const unknownBase = hardShuffle(hardAllCards().filter((card) => !hand.includes(card)));
     if (unknownBase.length !== 25) return null;
 
-    const samples = hardSamples();
+    const samples = Math.max(18, hardSamples());
     const deals = [];
     for (let i = 0; i < samples; i++) {
         const cards = unknownBase.slice();
         deals.push({
             player: { hand: cards.splice(0, 5), faceUp: cards.splice(0, 5), faceDown: cards.splice(0, 5) },
-            computer: { hand: gs.computer.hand.slice(), faceUp: cards.splice(0, 5), faceDown: cards.splice(0, 5) }
+            computer: { hand: hand.slice(), faceUp: cards.splice(0, 5), faceDown: cards.splice(0, 5) }
         });
     }
 
-    let bestSuit = null;
+    let bestSuit = candidates[0];
     let bestScore = -Infinity;
-    HARD_ALL_SUITS.forEach((suit) => {
+    candidates.forEach((suit) => {
         let total = 0;
         deals.forEach((deal) => {
             const sim = {
@@ -752,7 +858,10 @@ function chooseHardTrump() {
             simPlayOut(sim);
             total += simObjective(sim, 8, 7);
         });
-        const average = total / samples;
+        // A small prior stops a lucky simulation from choosing a one-card suit
+        // over a strong one. Length and top honours both matter in 7-8.
+        const prior = (counts[suit] - 1) * 0.55 + honours[suit] * 0.28;
+        const average = total / deals.length + prior;
         if (average > bestScore) { bestScore = average; bestSuit = suit; }
     });
     return bestSuit;
@@ -761,166 +870,117 @@ function chooseHardTrump() {
 // The old heuristic remains as a fast fallback for unusual states (for example
 // a replay or a test that has deliberately removed cards).
 function getHardHeuristicPlay(validCards) {
-    const playerFaceUp = gameState.player.faceUp.filter(c => c);
-    const trumpSuit = gameState.trumpSuit;
-    
-    // Calculate trick targets
-    const computerTarget = gameState.lastTrumpSelector === 'computer' ? 8 : 7;
-    const tricksNeeded = computerTarget - gameState.computer.tricksWon;
-    const tricksRemaining = 15 - gameState.trickCount;
-    
-    // Computer is leading the trick
-    if (!gameState.trick.leadSuit) {
-        // Find cards that are now the highest remaining (master cards)
-        const masterCards = validCards.filter(cardObj => isHighestRemaining(cardObj.card));
-        
-        // If we have master cards, play them to secure tricks
-        if (masterCards.length > 0 && tricksNeeded > 0) {
-            // Prefer non-trump masters first to save trumps
-            const nonTrumpMasters = masterCards.filter(c => getCardSuit(c.card) !== trumpSuit);
-            if (nonTrumpMasters.length > 0) {
-                return nonTrumpMasters[0];
-            }
-            return masterCards[0];
+    const trump = gameState.trumpSuit;
+    const lead = gameState.trick.leadSuit;
+    const lowest = (list) => list.reduce((a, b) => hardValue(b.card) < hardValue(a.card) ? b : a);
+    const mine = new Set([...gameState.computer.hand, ...gameState.computer.faceUp].filter(Boolean));
+
+    // A card is a master when no higher card of that suit is still unseen, and
+    // (for a side suit) the player is not known to be void and able to ruff it.
+    const master = (card) => {
+        const suit = hardSuit(card);
+        const value = hardValue(card);
+        const higher = getRemainingCardsInSuit(suit)
+            .filter((c) => c !== card && getCardValue(c) > value && !mine.has(c));
+        return higher.length === 0;
+    };
+
+    // ---- Leading -------------------------------------------------------
+    if (!lead) {
+        // Never lead into a suit the player has publicly run out of: that is a
+        // free ruff for them.
+        const playerVoids = gameState.voids.player || [];
+        const safe = validCards.filter((entry) => !playerVoids.includes(hardSuit(entry.card)));
+        const pool = safe.length ? safe : validCards;
+
+        // Cash a side-suit master first, but not one the player can ruff.
+        const sideMasters = pool.filter((entry) => hardSuit(entry.card) !== trump && master(entry.card));
+        if (sideMasters.length) return lowest(sideMasters);
+
+        // With the top trump and trumps still out, draw them: each round of
+        // trumps turns a later side-suit winner into cash.
+        const trumps = pool.filter((entry) => hardSuit(entry.card) === trump);
+        if (trumps.length) {
+            const unseenTrumps = getRemainingCardsInSuit(trump).filter((c) => !mine.has(c)).length;
+            const masterTrumps = trumps.filter((entry) => master(entry.card));
+            if (masterTrumps.length && unseenTrumps > 0) return lowest(masterTrumps);
         }
-        
-        // If we need tricks and have high trumps, consider leading trump
-        if (tricksNeeded > tricksRemaining / 2) {
-            const trumpCards = validCards.filter(c => getCardSuit(c.card) === trumpSuit);
-            const highTrumps = trumpCards.filter(c => isHighestRemaining(c.card));
-            if (highTrumps.length > 0) {
-                return highTrumps.reduce((highest, card) =>
-                    getCardValue(card.card) > getCardValue(highest.card) ? card : highest
-                );
-            }
-        }
-        
-        // Otherwise, lead low in a suit where we might force player to trump
-        const nonTrumpCards = validCards.filter(c => getCardSuit(c.card) !== trumpSuit);
-        if (nonTrumpCards.length > 0) {
-            // Find suits where player might be void (based on what's been played)
-            return nonTrumpCards.reduce((lowest, card) =>
-                getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-            );
-        }
-        
-        return validCards.reduce((lowest, card) =>
-            getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-        );
+
+        const trumpMasters = trumps.filter((entry) => master(entry.card));
+        if (trumpMasters.length) return lowest(trumpMasters);
+
+        // Otherwise lead low from a suit the player still has to follow.
+        const side = pool.filter((entry) => hardSuit(entry.card) !== trump);
+        return lowest(side.length ? side : pool);
     }
 
-    // Computer is following the trick
-    const leadSuit = gameState.trick.leadSuit;
-    const humanCard = gameState.trick.cards[0].card;
-    const humanCardValue = getCardValue(humanCard);
-    const humanCardSuit = getCardSuit(humanCard);
-
-    const leadSuitCards = validCards.filter(card => getCardSuit(card.card) === leadSuit);
-    const trumpCards = validCards.filter(card => getCardSuit(card.card) === trumpSuit);
-
-    if (leadSuitCards.length > 0) {
-        // Check what cards remain in this suit
-        const remainingInSuit = getRemainingCardsInSuit(leadSuit);
-        
-        // Can computer win the trick?
-        const winningCards = leadSuitCards.filter(cardObj =>
-            getCardValue(cardObj.card) > humanCardValue
-        );
-        
-        if (winningCards.length) {
-            // Check if our winning card will be the highest remaining
-            const safeWinners = winningCards.filter(cardObj => {
-                const cardValue = getCardValue(cardObj.card);
-                // Check if any remaining unplayed card can beat this
-                return !remainingInSuit.some(c => 
-                    getCardValue(c) > cardValue && 
-                    c !== cardObj.card &&
-                    !gameState.playedCards.includes(c)
-                );
-            });
-            
-            if (safeWinners.length > 0) {
-                // Play the lowest safe winner
-                return safeWinners.reduce((lowest, card) =>
-                    getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-                );
-            }
-            
-            // If we need tricks badly, take the risk
-            if (tricksNeeded > tricksRemaining - 2) {
-                return winningCards.reduce((lowest, card) =>
-                    getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-                );
-            }
-            
-            // Otherwise play lowest to minimize loss
-            return leadSuitCards.reduce((lowest, card) =>
-                getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-            );
-        } else {
-            // Cannot beat, play lowest
-            return leadSuitCards.reduce((lowest, card) =>
-                getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-            );
+    // ---- Following -----------------------------------------------------
+    // This half of the decision is provable rather than speculative:
+    //   * if a legal card beats the card on the table, the cheapest one wins a
+    //     trick for the least value (a non-trump beats a trump at equal cost);
+    //   * if nothing beats it, the trick is already lost, so shed the lowest
+    //     card and keep the winners.
+    // Simulating here only ever added noise on top of that.
+    const current = gameState.trick.cards[0] && gameState.trick.cards[0].card;
+    if (current) {
+        const winners = validCards.filter((entry) => simBeats(entry.card, current, trump, lead));
+        if (winners.length) {
+            return winners.slice().sort((a, b) => {
+                const at = hardSuit(a.card) === trump ? 1 : 0;
+                const bt = hardSuit(b.card) === trump ? 1 : 0;
+                return at - bt || hardValue(a.card) - hardValue(b.card);
+            })[0];
         }
-    } else if (trumpCards.length > 0 && humanCardSuit !== trumpSuit) {
-        // We can trump! In Hard mode, we should almost always trump to win tricks
-        
-        // Always trump if we need tricks
-        if (tricksNeeded > 0) {
-            // Find our highest trump that's also the highest remaining (guaranteed win)
-            const masterTrumps = trumpCards.filter(c => isHighestRemaining(c.card));
-            
-            if (masterTrumps.length > 0) {
-                // Use the lowest master trump to win efficiently
-                return masterTrumps.reduce((lowest, card) =>
-                    getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-                );
-            }
-            
-            // No master trump, but still trump with lowest to try to win
-            // Check if player has higher trumps visible
-            const playerTrumps = gameState.player.faceUp.filter(c => c && getCardSuit(c) === trumpSuit);
-            const ourLowestTrump = trumpCards.reduce((lowest, card) =>
-                getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-            );
-            
-            // If player has no visible trumps, or our trump might win, use it
-            if (playerTrumps.length === 0) {
-                return ourLowestTrump;
-            }
-            
-            // Even if player has trumps, if we need tricks badly, trump anyway
-            if (tricksNeeded >= tricksRemaining / 2) {
-                return ourLowestTrump;
-            }
-        }
-        
-        // If we don't need tricks, dump lowest non-trump
-        const nonTrumps = validCards.filter(c => getCardSuit(c.card) !== trumpSuit);
-        if (nonTrumps.length > 0) {
-            return nonTrumps.reduce((lowest, card) =>
-                getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-            );
-        }
-        
-        // Only trumps left, play lowest
-        return trumpCards.reduce((lowest, card) =>
-            getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-        );
-    } else {
-        // Can't follow suit or trump, throw lowest card
-        return validCards.reduce((lowest, card) =>
-            getCardValue(card.card) < getCardValue(lowest.card) ? card : lowest
-        );
     }
+    // The trick is lost. Preserve a trump for a later trick when the rules
+    // allow a discard; if every legal card is a trump, the lowest still goes.
+    const nonTrump = validCards.filter((entry) => hardSuit(entry.card) !== trump);
+    return lowest(nonTrump.length ? nonTrump : validCards);
+}
+
+// Only the plausible lines are searched. On a 6-7 card turn that is every
+// legal card; with a bigger choice the extremes, the lead suit, the trumps, the
+// cheapest winner and the expert heuristic are enough to cover the real options.
+function hardCandidatePlays(validCards) {
+    if (validCards.length <= 6) return validCards.slice();
+    const lead = gameState.trick.leadSuit;
+    const trump = gameState.trumpSuit;
+    const sorted = validCards.slice().sort((a, b) => hardValue(a.card) - hardValue(b.card));
+    const picks = [];
+    const add = (play) => {
+        if (play && !picks.some((entry) => entry.card === play.card)) picks.push(play);
+    };
+    add(sorted[0]);
+    add(sorted[sorted.length - 1]);
+    if (lead) {
+        const follow = sorted.filter((entry) => hardSuit(entry.card) === lead);
+        if (follow.length) add(follow[0]);
+        const current = gameState.trick.cards[0] && gameState.trick.cards[0].card;
+        if (current) {
+            const winners = validCards.filter((entry) => simBeats(entry.card, current, trump, lead));
+            if (winners.length) add(winners.reduce((low, entry) => hardValue(entry.card) < hardValue(low.card) ? entry : low));
+        }
+    }
+    const trumps = sorted.filter((entry) => hardSuit(entry.card) === trump);
+    if (trumps.length) { add(trumps[0]); add(trumps[trumps.length - 1]); }
+    add(getHardHeuristicPlay(validCards));
+    return picks.slice(0, 7);
 }
 
 function getHardAIPlay(validCards) {
     if (!validCards.length) return null;
     // Forced cards need no simulation at all.
     if (validCards.length === 1) return validCards[0];
-    if (!gameState.trumpSuit) return getHardHeuristicPlay(validCards);
+    // A guaranteed trick is worth more than any speculative line the sampler
+    // could prefer, and skipping the ruff was the visible hard-mode blunder.
+    const ruff = hardRuff(validCards);
+    if (ruff) return ruff;
+    const expert = getHardHeuristicPlay(validCards);
+    if (!gameState.trumpSuit) return expert;
+    // Following a trick is solved by the exact rules in getHardHeuristicPlay.
+    // Only the lead is a whole-round plan, so only the lead is simulated. This
+    // also keeps Anne's answers instant instead of randomly "creative".
+    if (gameState.trick.leadSuit) return expert;
 
     const ownTarget = GameEngine.getTrickTarget('computer') || 7;
     const opponentTarget = GameEngine.getTrickTarget('player') || 8;
@@ -928,14 +988,14 @@ function getHardAIPlay(validCards) {
     const deals = [];
     for (let i = 0; i < samples; i++) {
         const deal = hardPlaySample();
-        if (!deal) break;
-        deals.push(deal);
+        if (deal) deals.push(deal);
     }
-    if (!deals.length) return getHardHeuristicPlay(validCards);
+    if (!deals.length) return expert;
 
-    let best = null;
+    const candidates = hardCandidatePlays(validCards);
+    let best = expert;
     let bestScore = -Infinity;
-    validCards.forEach((candidate) => {
+    candidates.forEach((candidate) => {
         let total = 0;
         deals.forEach((deal) => {
             const sim = cloneSim(deal);
@@ -944,13 +1004,12 @@ function getHardAIPlay(validCards) {
             total += simObjective(sim, ownTarget, opponentTarget);
         });
         const average = total / deals.length;
-        const tie = best ? getCardValue(candidate.card) - getCardValue(best.card) : -1;
-        if (average > bestScore + 1e-9 || (Math.abs(average - bestScore) < 1e-9 && tie < 0)) {
-            bestScore = average;
-            best = candidate;
-        }
+        // A hair of preference for the expert line breaks near-ties without
+        // overriding a line the simulation clearly prefers.
+        const score = average + (candidate.card === (expert && expert.card) ? 0.01 : 0);
+        if (score > bestScore + 1e-9) { bestScore = score; best = candidate; }
     });
-    return best || getHardHeuristicPlay(validCards);
+    return best || expert;
 }
 
 function selectLeadingCard(validCards) {
@@ -1023,6 +1082,18 @@ function computerPlay() {
     gameState.computerThinking = true;
     
     showThinking(true);
+
+    // Watchdog: a cancelled beat must never leave the table waiting on Anne.
+    // If her turn is still open after the beat window, release the flag and try
+    // once more. The guard conditions in computerPlay stop a double play.
+    if (computerWatchdog) clearTimeout(computerWatchdog);
+    computerWatchdog = setTimeout(() => {
+        computerWatchdog = null;
+        if (gameState.currentPlayer !== 'computer' || gameState.gamePhase !== 'playing' || gameState.trick.cards.length >= 2) return;
+        gameState.computerThinking = false;
+        showThinking(false);
+        computerPlay();
+    }, 7000);
     
     runBeat('computer-think', {}, () => {
         // Double-check conditions again after the thinking delay
@@ -1035,15 +1106,24 @@ function computerPlay() {
             return;
         }
         
-        const play = getComputerPlay();
+        if (computerWatchdog) { clearTimeout(computerWatchdog); computerWatchdog = null; }
+        const play = enforceRuffRule(getComputerPlay());
         if (play) {
             // Play the selected card
             const currentPlayerData = gameState.computer;
             let card = play.card;
             
-            // Log the computer play
+            // Log the computer play, including a ruff or a discard.
             const cardDisplay = `${getCardRank(card)}${getSuitSymbol(getCardSuit(card))}`;
-            addToLog(`Anne played ${cardDisplay}`, 'computer-action');
+            const ledSuit = gameState.trick.leadSuit;
+            const playedSuit = getCardSuit(card);
+            if (ledSuit && playedSuit !== ledSuit) {
+                addToLog(playedSuit === gameState.trumpSuit
+                    ? `Anne ruffed with ${cardDisplay}`
+                    : `Anne discarded ${cardDisplay}`, 'computer-action');
+            } else {
+                addToLog(`Anne played ${cardDisplay}`, 'computer-action');
+            }
             
             if (play.source === 'hand') {
                 const index = currentPlayerData.hand.findIndex(c => c === card);
@@ -1063,6 +1143,7 @@ function computerPlay() {
                 card: card,
                 player: gameState.currentPlayer
             });
+            if (GameView.event) GameView.event('play', { side: 'computer', card });
             
             // Set lead suit if this is the first card
             if (gameState.trick.cards.length === 1) {
@@ -1119,6 +1200,37 @@ function resolveTrick() {
         addToLog(`Anne won the trick with ${winningCard}.`, 'trick-lost');
     }
     
+    // Remember the public shape of the trick for Anne's reactions and for the
+    // hard AI's card reading. A discard on an off-suit is only proof of a void
+    // when that side has no hidden row left, so record nothing it could still
+    // legally hold in a face-down card.
+    const leadSuit = gameState.trick.leadSuit;
+    gameState.trick.cards.forEach((play) => {
+        if (leadSuit && getCardSuit(play.card) !== leadSuit) {
+            const data = gameState[play.player];
+            const hiddenLeft = data.faceDown.some(Boolean);
+            if (!hiddenLeft && !gameState.voids[play.player].includes(leadSuit)) {
+                gameState.voids[play.player].push(leadSuit);
+            }
+        }
+    });
+    const playerCard = gameState.trick.cards.find((play) => play.player === 'player').card;
+    const computerCard = gameState.trick.cards.find((play) => play.player === 'computer').card;
+    const trumpSuit = gameState.trumpSuit;
+    gameState.lastTrick = {
+        winner,
+        leadSuit,
+        playerCard,
+        computerCard,
+        trumpSuit,
+        trickNumber: gameState.trickCount + 1,
+        playerTricks: gameState.player.tricksWon,
+        computerTricks: gameState.computer.tricksWon,
+        playerRuffed: getCardSuit(playerCard) !== leadSuit && getCardSuit(playerCard) === trumpSuit,
+        anneRuffed: getCardSuit(computerCard) !== leadSuit && getCardSuit(computerCard) === trumpSuit
+    };
+    if (GameView.event) GameView.event('trick', gameState.lastTrick);
+
     // Update display with winner highlight
     highlightTrickWinner(winner);
     
@@ -1182,6 +1294,15 @@ function endRound() {
     const scores = calculateRoundScore();
     
     const message = `Round ${gameState.roundNumber} complete. You: +${scores.playerRoundScore} points, Anne: +${scores.computerRoundScore} points`;
+    if (GameView.event) GameView.event('round', {
+        ...scores,
+        roundNumber: gameState.roundNumber,
+        playerTricks: gameState.player.tricksWon,
+        computerTricks: gameState.computer.tricksWon,
+        playerScore: gameState.player.score,
+        computerScore: gameState.computer.score,
+        target: gameState.matchTarget
+    });
     showStatus(message);
     addToLog(message);
     updateDisplay(); // refresh the scoreboard with the round's points (view only, no state change)
@@ -1236,6 +1357,7 @@ function checkGameEnd() {
         const winner = playerWon ? 'Player' : 'Computer';
         gameState.gameOver = true;
         addToLog(`Match complete. ${winner === 'Player' ? 'You win' : 'Anne wins'} ${playerWon ? gameState.player.score : gameState.computer.score} to ${playerWon ? gameState.computer.score : gameState.player.score} (first to ${target}).`, 'trick-won');
+        if (GameView.event) GameView.event('match', { winner, playerScore: gameState.player.score, computerScore: gameState.computer.score, target });
         showGameOver(winner);
         return true;
     }
@@ -1252,21 +1374,40 @@ function startNewRound() {
     gameState.trickCount = 0;
     gameState.trumpSuit = null;
     gameState.playedCards = []; // Reset played cards tracking
-    
-    // Deal initial hand cards only. Render them before the toss so the table is
-    // already alive behind the coin instead of showing an empty felt.
-    dealInitialCards();
-    
-    // First round - do coin toss
+    gameState.voids = { player: [], computer: [] };
+    gameState.lastTrick = null;
+    gameState.remainingCards = [];
+    GameView.setNewRoundButton(false);
+    updateDisplay();
+
+    // The first round of a match opens with the toss, which decides who calls
+    // trump. Every round - including this first one - is then riffled before it
+    // is dealt: the shuffle is the start of a round, not a decoration on the
+    // start button.
     if (gameState.isFirstRound) {
         gameState.gamePhase = 'coin-toss';
         updateDisplay();
         showCoinToss();
         return;
     }
-    
-    // Not first round - alternate trump selector
-    continueAfterCoinToss();
+
+    shuffleThenDeal(continueAfterCoinToss);
+}
+
+// Riffle the pack, then deal the opening five. The shuffle is a presentation
+// beat: it never touches the deck, and a restart drops the continuation.
+function shuffleThenDeal(next) {
+    gameState.gamePhase = 'shuffling';
+    updateDisplay();
+    showStatus('Shuffling the deck...');
+    runBeat('shuffle', {}, () => {
+        // runBeat already drops a continuation from a superseded session (a
+        // restart), so only a finished match needs its own guard here.
+        if (gameState.gameOver) return;
+        dealInitialCards();
+        if (GameView.event) GameView.event('deal', { roundNumber: gameState.roundNumber });
+        next();
+    });
 }
 
 function continueAfterCoinToss() {
@@ -1323,10 +1464,12 @@ function performCoinToss(playerChoice) {
             addToLog(`Coin toss: ${result.toUpperCase()}! Computer won and will choose trump first.`);
         }
 
-        // Close modal and continue game once the result has been shown
+        // Close modal and continue once the result has been shown: the match
+        // opens with the toss, then the pack is riffled for the first deal.
         runBeat('coin-result', { result, playerWins }, () => {
             GameView.hideCoinToss();
-            continueAfterCoinToss();
+            if (GameView.event) GameView.event('coin', { result, playerWins });
+            shuffleThenDeal(continueAfterCoinToss);
         });
     });
 }
@@ -1367,6 +1510,8 @@ function setTrump(suit) {
         showStatus("You selected trump. Dealing the remaining cards...");
     }
     
+    if (GameView.event) GameView.event('trump', { suit, selector: gameState.lastTrumpSelector });
+
     // Face-down row first, then the face-up row, then play may begin.
     dealRemainingFaceDown();
     updateDisplay();
@@ -1389,22 +1534,19 @@ function startGame() {
     gameState.gameStarted = true;
     gameState.gameOver = false;
     gameState.matchTarget = gameState.pendingMatchTarget;
+    // startNewRound resets the table and, for the first round of a match, opens
+    // with the toss. The shuffle that follows the toss is its own beat.
     gameState.gamePhase = 'setup';
     GameView.setStartButton(false);
-    showStatus('Shuffling the deck...');
-    // The shuffle is a presentation beat. The deal itself is still decided by
-    // startNewRound, so animation timing can never change the cards.
-    runBeat('shuffle', {}, () => {
-        if (!gameState.gameStarted || gameState.gamePhase !== 'setup') return;
-        startNewRound();
-        showStatus('Deal the first five cards');
-    });
+    showStatus('Toss for the deal...');
+    startNewRound();
 }
 
 function restartGame() {
     // Cancel everything the previous game still has pending, and clear the flags
     // that those cancelled continuations would have cleared themselves.
     flowSession++;
+    if (computerWatchdog) { clearTimeout(computerWatchdog); computerWatchdog = null; }
     gameState.computerThinking = false;
     gameState.resolvingTrick = false;
 
@@ -1419,6 +1561,8 @@ function restartGame() {
     gameState.gamePhase = 'setup';
     gameState.trumpSuit = null;
     gameState.playedCards = [];
+    gameState.voids = { player: [], computer: [] };
+    gameState.lastTrick = null;
     gameState.isFirstRound = true;  // Reset for coin toss
     gameState.coinTossWinner = null;
 

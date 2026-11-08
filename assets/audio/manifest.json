@@ -1,0 +1,132 @@
+{
+    "version": 2,
+    "note": "Every slot below has a synthesised fallback, so the game is complete with no files. To use a recorded sound, drop the file in this folder and put its filename in \"file\". gain / offset / maxSeconds are the mix details measured from the recording: gain lifts a quiet file, offset skips the dead air before the sound starts, maxSeconds cuts a long tail with a short fade.",
+    "slots": {
+        "shuffle": {
+            "file": "shuffle.mp3",
+            "gain": 1.0,
+            "offset": 0,
+            "maxSeconds": 4.3,
+            "when": "The deck is riffled before every deal",
+            "seconds": 4.3,
+            "style": "A real riffle: cards cascade for about 1.4 s, then the pack is squared and tapped twice on the felt. The shuffle animation is timed to this file."
+        },
+        "deal": {
+            "file": "deal.mp3",
+            "gain": 0.5,
+            "offset": 0.1,
+            "maxSeconds": 0.34,
+            "when": "Each card leaves the deck into a hand (played in a run)",
+            "seconds": 0.34,
+            "style": "A short, dry card slide. It is played dozens of times in a row, so it is held back in the mix."
+        },
+        "flip": {
+            "file": "flip.mp3",
+            "gain": 0.45,
+            "offset": 0.17,
+            "maxSeconds": 0.3,
+            "when": "A card turns from face-down to face-up",
+            "seconds": 0.3,
+            "style": "A tiny snap of card stock. Quieter than deal."
+        },
+        "place": {
+            "file": "place.mp3",
+            "gain": 0.62,
+            "offset": 0.04,
+            "maxSeconds": 0.3,
+            "when": "A card lands on the trick tray",
+            "seconds": 0.3,
+            "style": "Card on felt, with a soft low body. The most repeated sound in the game, so it sits just under the events."
+        },
+        "select": {
+            "file": "select.mp3",
+            "gain": 0.55,
+            "offset": 0.09,
+            "maxSeconds": 0.26,
+            "when": "Tapping a card, a trump suit, a settings control",
+            "seconds": 0.26,
+            "style": "A soft wooden tick, not a digital click."
+        },
+        "invalid": {
+            "file": "invalid.mp3",
+            "gain": 1.9,
+            "offset": 0.12,
+            "maxSeconds": 0.8,
+            "when": "Trying to play a card you are not allowed to play",
+            "seconds": 0.8,
+            "style": "A gentle two-note nudge down. Never a buzzer."
+        },
+        "trickWin": {
+            "file": "trickWin.mp3",
+            "gain": 4.6,
+            "offset": 0.02,
+            "maxSeconds": 0.95,
+            "when": "You take a trick",
+            "seconds": 0.95,
+            "style": "A warm rising chime over the cards. Frequent, so the tail is trimmed to keep it from smearing."
+        },
+        "trickLose": {
+            "file": "trickLose.mp3",
+            "gain": 0.7,
+            "offset": 0.02,
+            "maxSeconds": 0.9,
+            "when": "Anne takes a trick",
+            "seconds": 0.9,
+            "style": "The same family as trickWin but settling downward. Quiet - the player loses often."
+        },
+        "trump": {
+            "file": "trump.mp3",
+            "gain": 1.6,
+            "offset": 0,
+            "maxSeconds": 0.5,
+            "when": "The trump suit is announced",
+            "seconds": 0.5,
+            "style": "A short bright flourish, like a card being turned over with intent."
+        },
+        "coin": {
+            "file": "coin.mp3",
+            "gain": 1.7,
+            "offset": 0,
+            "maxSeconds": 1.0,
+            "when": "The coin is tossed and spins in the air",
+            "seconds": 1.0,
+            "style": "Metallic ring plus air, long enough to cover the whole flight."
+        },
+        "coinLand": {
+            "file": "coinLand.mp3",
+            "gain": 0.95,
+            "offset": 0.7,
+            "maxSeconds": 0.95,
+            "when": "The coin lands and the toss result is shown",
+            "seconds": 0.95,
+            "style": "A coin bouncing on the table, brighter than a card. The recording has 0.7 s of silence first; offset starts at the clink."
+        },
+        "matchPoint": {
+            "file": "matchPoint.wav",
+            "gain": 3.5,
+            "offset": 0,
+            "maxSeconds": 0.5,
+            "when": "Either player reaches one point from the match win",
+            "seconds": 0.5,
+            "style": "A rising two-note bell with a soft shimmer over a low body: \"almost there\", without celebrating yet. Generated from the game's own synth by tests/render-sound.js, so this file and the synth fallback are the same cue. Replace it with a recording and the slot keeps working."
+        },
+        "victory": {
+            "file": "victory.mp3",
+            "gain": 5.0,
+            "offset": 0.06,
+            "maxSeconds": 2.2,
+            "when": "You win the match",
+            "seconds": 2.2,
+            "style": "A short warm fanfare. The recording is quiet and has a long silent tail; gain lifts it and maxSeconds trims the tail."
+        },
+        "defeat": {
+            "file": "defeat.mp3",
+            "gain": 0.85,
+            "offset": 0.02,
+            "maxSeconds": 0.36,
+            "when": "Anne wins the match",
+            "seconds": 0.36,
+            "style": "A graceful three-note descent. Sympathetic, never mocking. The supplied recording is 0.36 s, so the whole file is the cue; there is no tail to trim."
+        }
+    }
+}

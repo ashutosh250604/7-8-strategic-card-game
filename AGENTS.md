@@ -18,7 +18,7 @@ Build a premium, professional, highly replayable browser game based on the India
 ## Game Integrity
 
 - Preserve the identity and fundamental rules of 7–8.
-- The player-approved match target is now configurable (3, 5 or 7 points) and defaults to 5. The old `>= 1` test shortcut is removed from the production path; tests must set their own target explicitly.
+- The player-approved match target is configurable (3, 5 or 7 points) and defaults to 3. The old `>= 1` test shortcut is removed from the production path; tests must set their own target explicitly.
 - Never change fundamental rules, scoring, or core game behavior without first explaining the proposed change and obtaining approval.
 - AI improvements are encouraged when they respect the approved rules.
 - Preserve existing behavior unless a change is intentional, justified, and tested.
@@ -31,8 +31,11 @@ The current architecture separates:
 - `script.js`: GameEngine, state, rules, AI, and gameplay flow.
 - `presentation.js`: GameView, DOM rendering, animation beats, and visual effects.
 - `ui.js`: UI wiring, buttons, settings, and modals.
-- `settings.js`: the defensive `TableSettings` preference store (difficulty, match target, sound, volume, motion, haptics) with local persistence.
-- `audio.js`: local Web Audio effects, master volume and Vibration API haptics. No network or audio file requests; failures stay silent.
+- `settings.js`: the defensive `TableSettings` preference store (difficulty, match target, sound, volume, motion, haptics, voice, fireworks) with local persistence.
+- `audio.js`: local Web Audio effects, master volume and Vibration API haptics. Over HTTP the recorded files are decoded into Web Audio; from a folder (`file://`) the same recordings play through media elements because fetching sibling files is blocked. The synth remains the final fallback, and failures stay silent. The slot list and file spec live in `assets/audio/README.md`.
+- `anne-avatar.js`: the supplied reference photograph, mounted once per host and used by every screen. A slow living-portrait breath, mood grade, speaking ring and voice bars animate it. Presentation-only; `character.js` drives it through `window.TableAvatar`.
+- `anne-voice.js`: browser speech synthesis only: female English selection with en-IN priority, calm per-mood delivery, one utterance at a time, and utterance callbacks for the portrait ring.
+- `fireworks.js`: the opt-in result celebration canvas. It is off by default, caps DPR and particle count, and stops when the result closes or a new match starts.
 - `character.js`: Anne's local dialogue and avatar registry. Presentation-only, with two empty slots reserved for future tables.
 - `tutorial.js`: the opt-in, sample-card tutorial. UI-only; it never changes `gameState` or the rules. Finishing the tour arms the live coach for the next real game.
 - `coach.js`: the first-round live coach. UI-only and read-only: it reads the real hand/trick to recommend a trump and explain the first follow-suit turn, then retires. It never chooses a card or changes the deal, scoring, or rules.
@@ -75,6 +78,7 @@ Treat this as the established architecture. Inspect the current implementation b
 - Test browser behavior, restart, complete rounds, invalid plays, responsive layouts, and console errors as relevant.
 - Keep the launcher/tutorial/live-coach browser coverage in `tests/tutorial-e2e.js` (`npm run test:e2e`); it fails on console errors and checks first-run state, keyboard flow and the first live round.
 - Keep `tests/browser-smoke.js --full` for the complete animated match and rematch, and `tests/settings-e2e.js` (`npm run test:settings`) for preference persistence, target deferral, reduced motion and haptic fallbacks.
+- Keep `tests/mobile-pass.js` (`npm run test:mobile`) for the emulated touch path, audio unlock, haptics call path and the "tap again" selection cue. Layout changes must keep 320×568, 360×800, 390×844 and 844×390 free of page scrolling, with HUD controls at least 36px and labels at least 10.5px; do not solve fit by shrinking the 320 hand below 52×73.
 - Measure AI changes with `tests/sim/ai-match.js` and `tests/sim/ai-rules.js`; do not describe a difficulty change as stronger without a repeatable sample.
 - Do not spend time repeatedly running expensive or redundant tests when a focused test is sufficient; run comprehensive verification at major milestones.
 

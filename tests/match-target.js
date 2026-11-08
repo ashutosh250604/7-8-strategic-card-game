@@ -1,7 +1,7 @@
 'use strict';
 /*
  * Match-target regression check. Loads the real engine with a no-op view and
- * verifies the first-to-N finish, the five-point default, and the rule that a
+ * verifies the first-to-N finish, the three-point default, and the rule that a
  * settings change cannot move the goal line inside a live match.
  *
  *   node match-target.js
@@ -39,29 +39,29 @@ const check = (label, condition, detail) => {
 const eng = createEngine();
 const gs = eng.gs;
 
-check('production default target is five', gs.matchTarget === 5 && gs.pendingMatchTarget === 5, { match: gs.matchTarget, pending: gs.pendingMatchTarget });
+check('production default target is three', gs.matchTarget === 3 && gs.pendingMatchTarget === 3, { match: gs.matchTarget, pending: gs.pendingMatchTarget });
 
-gs.player.score = 4;
-gs.computer.score = 3;
+gs.player.score = 2;
+gs.computer.score = 2;
 vm.runInContext('checkGameEnd()', eng.ctx);
-check('four points does not end a five-point match', eng.h.ended === 0 && gs.gameOver === false, eng.h);
+check('two points does not end a three-point match', eng.h.ended === 0 && gs.gameOver === false, eng.h);
 
-gs.player.score = 5;
+gs.player.score = 3;
 vm.runInContext('checkGameEnd()', eng.ctx);
-check('five points ends the match', eng.h.ended === 1 && eng.h.winner === 'Player' && eng.h.target === 5, eng.h);
+check('three points ends the match', eng.h.ended === 1 && eng.h.winner === 'Player' && eng.h.target === 3, eng.h);
 
 // A new target waits for a new match.
 const eng3 = createEngine();
 eng3.gs.player.score = 2;
 eng3.gs.computer.score = 2;
-const applied = vm.runInContext('GameEngine.setMatchTarget(3)', eng3.ctx);
-check('setMatchTarget accepts 3', applied === true);
-check('the live match still uses its old target', eng3.gs.matchTarget === 5 && eng3.gs.pendingMatchTarget === 3, { active: eng3.gs.matchTarget, pending: eng3.gs.pendingMatchTarget });
+const applied = vm.runInContext('GameEngine.setMatchTarget(5)', eng3.ctx);
+check('setMatchTarget accepts 5', applied === true);
+check('the live match still uses its old target', eng3.gs.matchTarget === 3 && eng3.gs.pendingMatchTarget === 5, { active: eng3.gs.matchTarget, pending: eng3.gs.pendingMatchTarget });
 vm.runInContext('restartGame()', eng3.ctx);
-check('restart applies the pending three-point target', eng3.gs.matchTarget === 3 && eng3.gs.player.score === 0, { target: eng3.gs.matchTarget, score: eng3.gs.player.score });
-eng3.gs.player.score = 3;
+check('restart applies the pending five-point target', eng3.gs.matchTarget === 5 && eng3.gs.player.score === 0, { target: eng3.gs.matchTarget, score: eng3.gs.player.score });
+eng3.gs.player.score = 5;
 vm.runInContext('checkGameEnd()', eng3.ctx);
-check('three points ends a three-point match', eng3.h.ended === 1 && eng3.h.target === 3, eng3.h);
+check('five points ends a five-point match', eng3.h.ended === 1 && eng3.h.target === 5, eng3.h);
 
 // Seven-point target and a computer win.
 const eng7 = createEngine();

@@ -23,8 +23,10 @@
     --ruby: #b3261e;
     --ruby-soft: #e0685f;
     --text: #f1e8d6;
-    --text-dim: #bfb096;
-    --text-mute: #9d8f78;
+    /* Small caps labels sit directly on the felt, so they need real contrast:
+       the old #9d8f78 measured about 2.8:1 on the table green. */
+    --text-dim: #d8cbae;
+    --text-mute: #c2b393;
     --line: rgba(208, 170, 94, .24);
     --line-strong: rgba(208, 170, 94, .48);
     --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
@@ -114,7 +116,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
         0 5px 16px rgba(0,0,0,.45);
 }
 .score-side { display: flex; align-items: baseline; gap: 7px; min-width: clamp(56px, 7vw, 92px); justify-content: center; }
-.score-name { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-mute); white-space: nowrap; }
+.score-name { font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-mute); white-space: nowrap; }
 .score-num {
     font: 700 clamp(21px, 2vw, 27px)/1 var(--serif);
     color: var(--gold-bright); min-width: .7em; text-align: center;
@@ -126,9 +128,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
     min-width: 48px; padding: 1px 14px;
     border-inline: 1px solid rgba(208,170,94,.2);
 }
-.round-info small { font-size: 8px; line-height: 1; letter-spacing: .2em; text-transform: uppercase; color: var(--text-mute); }
+.round-info small { font-size: 9px; line-height: 1; letter-spacing: .1em; text-transform: uppercase; color: var(--text-mute); }
 .round-info b { font: 600 12px/1 var(--sans); letter-spacing: .1em; color: var(--text); font-variant-numeric: tabular-nums; }
-.round-info em { font: 500 7px/1 var(--sans); letter-spacing: .08em; color: var(--text-mute); font-style: normal; white-space: nowrap; }
+.round-info em { font: 600 8.5px/1 var(--sans); letter-spacing: .06em; color: var(--text-mute); font-style: normal; white-space: nowrap; }
 
 .hud-right { display: flex; justify-content: flex-end; align-items: center; gap: 7px; min-width: 0; }
 .hud-divider { width: 1px; height: 20px; background: rgba(208,170,94,.2); margin: 0 2px; }
@@ -234,7 +236,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .game-board:not(.is-setup) .start-panel { display: none; }
 
 /* ---------------------------------------------------------------- seats */
-.seat { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.seat { position: relative; z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .computer-area { --cw-seat: calc(var(--cw-base) * .58); }
 .player-area { --cw-seat: var(--cw-base); }
 .face-up-cards { --cw-seat: calc(var(--cw-base) * .88); }
@@ -259,31 +261,89 @@ button { font: inherit; color: inherit; cursor: pointer; }
     transition: color .25s, box-shadow .25s;
 }
 .seat.is-turn .seat-avatar { color: var(--gold-bright); box-shadow: inset 0 0 0 1px var(--gold-bright), 0 0 10px rgba(241,217,154,.3); }
+/* Anne's face is a small chair, not a passport photo: the live avatar below
+   draws her at a size where an eye or a brow is actually readable. */
+.anne-portrait-wrap { position: relative; display: inline-flex; flex: none; align-items: center; }
 .anne-avatar {
-    width: clamp(32px, 3.2vw, 42px); height: clamp(32px, 3.2vw, 42px);
-    padding: 0; overflow: hidden; border-radius: 50%;
+    position: relative;
+    width: clamp(56px, 5.9vw, 82px); height: clamp(56px, 5.9vw, 82px);
+    padding: 0; overflow: visible; border-radius: 50%;
     background: radial-gradient(circle at 38% 25%, #245f49, #0b2a21 76%);
-    box-shadow: inset 0 0 0 1px rgba(208,170,94,.6), 0 3px 10px rgba(0,0,0,.4);
+    box-shadow: inset 0 0 0 2px rgba(208,170,94,.55), 0 6px 16px rgba(0,0,0,.45);
+    transition: box-shadow .3s, transform .3s var(--ease);
 }
-.anne-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
-.seat.is-turn .anne-avatar { box-shadow: inset 0 0 0 1px var(--gold-bright), 0 0 16px rgba(241,217,154,.3); }
-.anne-ident { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.anne-role { font-size: 7.5px; line-height: 1; letter-spacing: .12em; text-transform: uppercase; color: var(--text-mute); white-space: nowrap; }
+.has-live-avatar { animation: anne-breathe 5.2s ease-in-out infinite; }
+@keyframes anne-breathe {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-1px) scale(1.012); }
+}
+/* The old "online" dot sat on top of her chin at the new size. The face is the
+   status now: her ring and expression say everything the dot used to. */
+.anne-avatar::after { display: none; }
+.seat.is-turn .anne-avatar { box-shadow: inset 0 0 0 2px var(--gold-bright), 0 0 20px rgba(241,217,154,.32); }
+.anne-ident { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.anne-name-row { display: flex; align-items: center; gap: 8px; }
+.anne-role-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.anne-role { font-size: 10px; line-height: 1.1; letter-spacing: .06em; color: var(--text-dim); white-space: nowrap; }
+.anne-mood {
+    padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+    font-size: 9.5px; line-height: 1.35; letter-spacing: .04em;
+    color: var(--gold-bright); background: rgba(208,170,94,.1);
+    box-shadow: inset 0 0 0 1px rgba(208,170,94,.22);
+}
 .anne-difficulty {
-    padding: 3px 7px; border-radius: 999px; white-space: nowrap;
-    font-size: 7.5px; line-height: 1; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--gold); box-shadow: inset 0 0 0 1px rgba(208,170,94,.25);
+    padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+    font-size: 9px; line-height: 1; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--gold); box-shadow: inset 0 0 0 1px rgba(208,170,94,.28);
 }
+.rival-bar { position: relative; z-index: 14; gap: 14px; padding: 5px 14px 5px 8px; }
+.rival-bar .seat-who { gap: 11px; }
 .anne-reaction {
-    position: absolute; top: calc(100% + 3px); left: 50%; z-index: 8;
-    transform: translate(-50%, -4px); max-width: min(92vw, 390px);
-    padding: 6px 11px; border-radius: 10px;
-    font: 500 10.5px/1.4 var(--sans); color: var(--text); text-align: center;
-    background: linear-gradient(180deg, #2d1d10, #1a1009);
-    box-shadow: inset 0 0 0 1px rgba(208,170,94,.3), 0 8px 18px rgba(0,0,0,.45);
-    opacity: 0; pointer-events: none; transition: opacity .22s, transform .22s;
+    /* Pinned to Anne's cheek, not to the bottom of her seat. The old bubble
+       hung under her cards, a long way from the face that was supposed to be
+       saying it; a host reads as present when the words come out of her mouth.
+       It floats over her own name/tricks strip and is gone before the cards. */
+    position: absolute; z-index: 60;
+    left: calc(100% + 13px); top: 50%; right: auto;
+    width: max-content; max-width: min(340px, calc(100vw - 140px));
+    padding: 10px 14px 11px; border-radius: 6px 16px 16px 16px;
+    font: 600 clamp(12.5px, 1.02vw, 14.5px)/1.42 var(--sans);
+    letter-spacing: .002em; text-align: left; color: #241a10;
+    background: linear-gradient(180deg, #fffdf6, #f6e8cd);
+    box-shadow: 0 14px 30px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,255,255,.7), 0 1px 0 rgba(0,0,0,.22);
+    opacity: 0; pointer-events: none;
+    transform: translate(-7px, -50%) scale(.9); transform-origin: 0 50%;
+    transition: opacity .16s, transform .22s var(--ease);
 }
-.anne-reaction.is-visible { opacity: 1; transform: translate(-50%, 0); }
+.anne-reaction.is-visible { opacity: 1; transform: translate(0, -50%) scale(1); }
+/* The line arrives a character at a time. The text is all in the DOM, only its
+   opacity is staggered, so nothing reflows and a screen reader reads it whole. */
+.anne-reaction .aa-char { opacity: 0; transition: opacity .18s linear; }
+.anne-reaction .aa-char.is-in { opacity: 1; }
+.anne-reaction::before {
+    content: ""; position: absolute; left: -5px; top: 50%; width: 12px; height: 12px;
+    margin-top: -6px; background: #fffdf6; border-radius: 2px; transform: rotate(45deg);
+    box-shadow: -1px 1px 0 rgba(0,0,0,.06);
+}
+.computer-area.is-speaking .anne-avatar { animation: anne-pop .5s var(--ease); }
+/* Her line covers the nameplate, so yield the name and trick meter while she
+   talks. Otherwise a fragment ("...tricks") peeks out from behind the bubble. */
+.anne-ident, .won-tricks { transition: opacity .22s var(--ease); }
+.computer-area.is-speaking .anne-ident,
+.computer-area.is-speaking .won-tricks,
+.computer-area.is-speaking .thinking-indicator { opacity: 0; }
+@keyframes anne-pop {
+    0% { transform: translateY(0) scale(1) rotate(0); }
+    35% { transform: translateY(-3px) scale(1.06) rotate(-2deg); }
+    70% { transform: translateY(0) scale(1.02) rotate(1deg); }
+    100% { transform: translateY(0) scale(1) rotate(0); }
+}
+.computer-area[data-mood="tease"] .anne-avatar { box-shadow: inset 0 0 0 2px #f1d99a, 0 0 22px rgba(241,217,154,.38); }
+.computer-area[data-mood="happy"] .anne-avatar { box-shadow: inset 0 0 0 2px #a8e6bf, 0 0 20px rgba(127,224,168,.3); }
+.computer-area[data-mood="impressed"] .anne-avatar { box-shadow: inset 0 0 0 2px #f6c98a, 0 0 24px rgba(246,201,138,.4); }
+.computer-area[data-mood="thinking"] .anne-avatar { box-shadow: inset 0 0 0 2px rgba(208,170,94,.5), 0 0 18px rgba(208,170,94,.18); }
+.computer-area[data-mood="sorry"] .anne-avatar { box-shadow: inset 0 0 0 2px #d9b9a3, 0 0 18px rgba(217,185,163,.24); }
+
 .seat.is-turn .anne-ident { color: var(--gold-bright); }
 .player-label {
     font: 600 10px/1 var(--serif); letter-spacing: .22em; text-transform: uppercase;
@@ -292,7 +352,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .seat.is-turn .player-label { color: var(--gold-bright); }
 
 .won-tricks { display: flex; align-items: center; gap: 9px; }
-.tricks-label { font-size: 10px; letter-spacing: .06em; color: var(--text-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tricks-label { font-size: 10.5px; letter-spacing: .05em; color: var(--text-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tricks-label .trick-count { font: 700 14px/1 var(--serif); color: var(--gold-bright); }
 .tricks-label .trick-target { color: var(--text-dim); }
 .tricks-word { letter-spacing: .05em; }
@@ -311,13 +371,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .computer-area .seat-cards { align-items: flex-end; }
 .player-area .seat-cards { flex-direction: column; align-items: center; gap: clamp(3px, .8vh, 8px); }
 
-.card-area { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.card-area { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.cards-label { flex: none; min-height: 1em; }
 .cards-label {
     display: flex; align-items: baseline; gap: 5px;
-    font-size: 9px; line-height: 1; letter-spacing: .2em; text-transform: uppercase;
+    font-size: 10px; line-height: 1; letter-spacing: .14em; text-transform: uppercase;
     color: var(--text-mute); white-space: nowrap;
 }
-.cards-label b { font: 600 9px/1 var(--sans); letter-spacing: .08em; color: var(--gold); font-variant-numeric: tabular-nums; }
+.cards-label b { font: 700 10px/1 var(--sans); letter-spacing: .06em; color: var(--gold-bright); font-variant-numeric: tabular-nums; }
+/* One soft shadow keeps tiny felt labels crisp without outlining them. */
+.cards-label, .tricks-label, .trick-caption, .score-name, .player-label,
+.round-info small, .round-info em, .anne-role, .brand-sub {
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .38);
+}
 .cards-container { display: flex; justify-content: center; gap: clamp(3px, .55vw, 7px); min-height: calc(var(--cw-seat) * 1.4); }
 .player-hand .cards-container { gap: clamp(3px, .62vw, 8px); }
 .computer-hand .cards-container { gap: 0; min-height: calc(var(--cw-seat) * 1.4); }
@@ -336,7 +402,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---------------------------------------------------------------- centre */
 .center-area {
-    position: relative; z-index: 3;
+    position: relative; z-index: 10;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
@@ -379,9 +445,40 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .deck i:nth-child(8) { transform: translate(2px, 1px); }
 .game-board[data-phase="playing"] .deck,
 .game-board[data-phase="round-over"] .deck { opacity: 0; visibility: hidden; }
-.game-board.is-shuffling .deck { opacity: 1; visibility: visible; z-index: 12; filter: drop-shadow(0 18px 22px rgba(0,0,0,.42)); }
+.game-board.is-shuffling .deck {
+    /* The shuffle happens in the middle of the table, at a size you cannot
+       miss. Animating the little corner deck was invisible in practice. */
+    left: 50%; right: auto; top: 53%;
+    transform: translate(-50%, -50%) rotate(-2deg) scale(var(--deck-lift, 1.55));
+    opacity: 1; visibility: visible; z-index: 12;
+    filter: drop-shadow(0 26px 30px rgba(0,0,0,.55));
+    transition: none;
+}
 .game-board.is-shuffling .start-panel { opacity: 0; visibility: hidden; }
 .game-board.is-shuffling .deck i { will-change: transform; }
+/* The animated riffle pack. Thirty card backs built for the shuffle beat: two
+   packets of fifteen that cascade into one pile, then square up with a tap. */
+.deck .shuffle-rig {
+    position: absolute; inset: 0;
+    transform-origin: 50% 88%;
+    will-change: transform;
+}
+.deck .shuffle-card {
+    position: absolute; inset: 0;
+    will-change: transform;
+    backface-visibility: hidden;
+}
+.game-board.is-shuffling .deck::before {
+    content: "Shuffling";
+    position: absolute; left: 50%; bottom: -46px; transform: translateX(-50%);
+    font: 600 5.6px/1 var(--sans); letter-spacing: .3em; text-transform: uppercase;
+    color: var(--text-dim, #cbb98f); white-space: nowrap; pointer-events: none;
+}
+.game-board.is-shuffling .deck::after {
+    content: ""; position: absolute; inset: -6px; border-radius: 8px;
+    box-shadow: inset 0 0 0 1px rgba(255,240,200,.16);
+    pointer-events: none;
+}
 
 /* start hero */
 .start-panel {
@@ -508,7 +605,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     transition: opacity .35s, visibility .35s;
 }
 .trick-meta { display: flex; align-items: center; gap: 9px; min-height: 18px; }
-.trick-caption { font-size: 10px; line-height: 1; letter-spacing: .22em; text-transform: uppercase; color: var(--text-mute); }
+.trick-caption { font-size: 10.5px; line-height: 1; letter-spacing: .16em; text-transform: uppercase; color: var(--text-mute); }
 .lead-chip {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 3px 9px; border-radius: 999px;
@@ -537,12 +634,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .trick-slot::before {
     content: ""; position: absolute; inset: 0; z-index: 0;
     border-radius: calc(var(--cw-seat) * .072);
-    border: 1px dashed rgba(208,170,94,.26);
-    background: linear-gradient(180deg, rgba(0,0,0,.14), rgba(0,0,0,.04));
-    box-shadow: inset 0 0 16px rgba(0,0,0,.18);
+    border: 1px dashed rgba(230,198,132,.46);
+    background: linear-gradient(180deg, rgba(0,0,0,.2), rgba(255,244,215,.05));
+    box-shadow: inset 0 0 18px rgba(0,0,0,.24), 0 0 0 1px rgba(0,0,0,.18);
     transition: opacity .25s;
 }
 .trick-slot:has(.card)::before { opacity: 0; }
+/* An empty trick is a place, not a broken box: name the two seats so the felt
+   reads as a table even before the first card lands. */
+.trick-slot::after {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    display: grid; place-items: center; pointer-events: none;
+    font: 500 10.5px/1 var(--sans); letter-spacing: .16em; text-transform: uppercase;
+    color: rgba(240, 226, 200, .55);
+    transition: opacity .25s;
+}
+.trick-slot.slot-computer::after { content: "Anne"; }
+.trick-slot.slot-player::after { content: "You"; }
+.trick-slot:has(.card)::after { opacity: 0; }
 .trick-slot.slot-computer { transform: translateY(-5px); }
 .trick-slot.slot-player { transform: translateY(5px); }
 
@@ -725,8 +834,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .card-front::after { content: ""; position: absolute; inset: 0; background: rgba(8,12,10,0); transition: background .2s; border-radius: inherit; pointer-events: none; }
 
 .idx { position: absolute; display: flex; flex-direction: column; align-items: center; line-height: .95; width: 22%; }
-.idx b { font-size: 1.18em; font-weight: 700; letter-spacing: -.04em; }
-.idx i { font-style: normal; font-size: .92em; margin-top: .05em; font-family: var(--sans); }
+.idx b { font-size: 1.24em; font-weight: 700; letter-spacing: -.04em; }
+.idx i { font-style: normal; font-size: 1em; margin-top: .05em; font-family: var(--sans); }
 .idx.tl { top: 5%; left: 5%; }
 .idx.br { bottom: 5%; right: 5%; transform: rotate(180deg); }
 .center { position: absolute; inset: 9% 17%; }
@@ -748,7 +857,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .court-suit { font-size: 1.3em; line-height: 1; font-family: var(--sans); opacity: .85; }
 
 /* engraved card back, also used for the deck and the card peeking from under a face-up card */
-.card-back, .slot.has-under::before, .deck i {
+.card-back, .slot.has-under::before, .deck i, .deck .shuffle-card {
     border-radius: calc(var(--cw) * .072);
     background:
         radial-gradient(closest-side at 50% 50%, rgba(7,40,31,.96) 0 30%, transparent 32%),
@@ -763,13 +872,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
         0 calc(var(--cw) * .05) calc(var(--cw) * .1) rgba(0,0,0,.4);
 }
 .card-back { transform: rotateY(180deg); }
-.card-back::before {
+.card-back::before, .deck .shuffle-card::before {
     content: ""; position: absolute; inset: 17%;
     border: 1px solid rgba(208,170,94,.42);
     border-radius: calc(var(--cw) * .03);
     transform: rotate(45deg) scale(.72);
 }
-.card-back::after {
+.card-back::after, .deck .shuffle-card::after {
     content: "7\00B7 8"; position: absolute; inset: 0; display: grid; place-items: center;
     font: 700 calc(var(--cw) * .18)/1 var(--serif); color: var(--gold-bright); letter-spacing: .02em;
     text-shadow: 0 1px 2px rgba(0,0,0,.5);
@@ -1081,7 +1190,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* coin */
 .coin-toss-modal { text-align: center; width: min(94vw, 430px); overflow: hidden; }
 .coin-toss-info { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
-.coin-container { position: relative; perspective: 1100px; perspective-origin: 50% 36%; height: 196px; display: grid; place-items: center; margin: 4px 0 2px; }
+.coin-container { position: relative; perspective: 1100px; perspective-origin: 50% 36%; height: 218px; display: grid; place-items: center; margin: 6px 0 2px; }
 .coin-halo {
     position: absolute; width: 230px; height: 230px; border-radius: 50%;
     background: radial-gradient(closest-side, rgba(208,170,94,.22), transparent 68%);
@@ -1284,7 +1393,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @media (min-width: 820px) and (max-height: 700px) {
     .brand-sub { display: none; }
     .seat-bar { min-height: 25px; }
-    .cards-label { font-size: 8px; }
+    .cards-label { font-size: 9.5px; }
     .start-chips { display: none; }
     .hero-fan { --hw: clamp(58px, 13vh, 96px); }
 }
@@ -1305,7 +1414,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 @media (max-width: 860px) {
     .brand-sub { display: none; }
-    .deck { display: none; }
+    .game-board.is-shuffling .deck { --deck-lift: 1.45; }
     .game-board { margin: 6px; padding: 9px 8px; }
     .game-container { gap: 3px; }
 }
@@ -1322,20 +1431,20 @@ button { font: inherit; color: inherit; cursor: pointer; }
     .brand-mark { width: 36px; height: 36px; font-size: 13px; }
     .brand-name { font-size: 12px; letter-spacing: .14em; }
     .score-board { gap: 4px; padding: 3px 8px; }
-    .score-name { font-size: 8px; letter-spacing: .14em; }
+    .score-name { font-size: 9px; letter-spacing: .12em; }
     .score-num { font-size: 21px; }
     .round-info { min-width: 42px; padding: 1px 9px; }
     .seat-bar { gap: 8px; padding: 2px 6px; min-height: 26px; }
-    .seat-avatar:not(.anne-avatar) { width: 22px; height: 22px; font-size: 10px; }
-    .anne-avatar { width: 30px; height: 30px; }
+    .seat-avatar:not(.anne-avatar) { width: 22px; height: 22px; font-size: 11px; }
+    .anne-avatar { width: 44px; height: 44px; }
     .anne-role { display: none; }
     .anne-difficulty { display: none; }
-    .player-label { font-size: 9px; letter-spacing: .16em; }
-    .tricks-label { font-size: 9px; }
+    .player-label { font-size: 10px; letter-spacing: .14em; }
+    .tricks-label { font-size: 10px; }
     .meter i { width: 3px; height: 8px; }
     .meter { gap: 2px; }
-    .cards-label { font-size: 8px; letter-spacing: .14em; }
-    .cards-label b { font-size: 8px; }
+    .cards-label { font-size: 10px; letter-spacing: .1em; }
+    .cards-label b { font-size: 10px; }
     .seat-cards { gap: 5px; }
     .trick-cards { padding: 7px 18px; min-width: calc(var(--cw-seat) * 2.2); }
     .game-status span { font-size: 13px; }
@@ -1384,7 +1493,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     .hud-btn { height: 30px; padding: 0 11px; font-size: 9px; }
     .hud-rules { display: none; }
     .score-side { min-width: 50px; gap: 5px; }
-    .score-name { font-size: 7.5px; }
+    .score-name { font-size: 9px; }
     .trump-label { display: none; }
     .trump-indicator { padding: 3px 4px 3px 8px; gap: 5px; }
     .trump-suit { width: 24px; height: 24px; font-size: 15px; }
@@ -1399,7 +1508,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     .score-name { display: none; }
     .round-info { min-width: 36px; padding: 1px 7px; }
     .seat-avatar:not(.anne-avatar) { display: none; }
-    .anne-avatar { width: 26px; height: 26px; }
+    .anne-avatar { width: 42px; height: 42px; }
     .tricks-word { display: none; }
     .start-chips { display: none; }
 }
@@ -1422,18 +1531,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
     .game-board::before { display: none; }
     .seat { gap: 3px; }
     .seat-bar { min-height: 21px; padding: 0 8px; gap: 8px; }
-    .seat-avatar:not(.anne-avatar) { width: 19px; height: 19px; font-size: 9px; }
-    .anne-avatar { width: 26px; height: 26px; }
-    .player-label { font-size: 8px; }
-    .tricks-label { font-size: 8px; }
+    .seat-avatar:not(.anne-avatar) { width: 19px; height: 19px; font-size: 10.5px; }
+    .anne-avatar { width: 34px; height: 34px; }
+    .player-label { font-size: 9px; }
+    .tricks-label { font-size: 9px; }
     .tricks-word { display: none; }
     .meter i { width: 3px; height: 6px; }
-    .cards-label { font-size: 6.5px; letter-spacing: .12em; }
+    .cards-label { font-size: 9px; letter-spacing: .1em; }
     .player-area .seat-cards { flex-direction: row; align-items: flex-end; gap: 14px; }
     .computer-area .seat-cards { flex-direction: row; gap: 14px; }
     .seat-divider { display: block; height: calc(var(--cw-base) * .9); }
     .computer-hand .cards-container { min-height: calc(var(--cw-seat) * 1.4); }
-    .deck { display: none; }
+    .game-board.is-shuffling .deck { --deck-lift: 1.4; }
     .trick-cards { padding: 4px 16px; min-height: calc(var(--cw-seat) * 1.4 + 10px); }
     .trick-meta { min-height: 12px; }
     .trick-caption { font-size: 8px; }
@@ -1510,11 +1619,347 @@ button { font: inherit; color: inherit; cursor: pointer; }
     .game-board.is-round-end #new-round { padding: 8px 22px; font-size: 11px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: .01ms !important;
-        scroll-behavior: auto !important;
+/* Motion is an explicit in-app choice. A system reduced-motion flag must not
+   silently turn the table into a still image; only the Calm setting does that
+   (and it still keeps the card sounds). */
+html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-motion="reduced"] *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+}
+
+/* ==================================================================
+   Readability and composition pass
+   The table uses a lot of micro-labels. They were sized for a poster, not
+   for a laptop or a phone; raise the floor, warm the dim ink and keep the
+   hierarchy so nothing looks cramped.
+   ================================================================== */
+:root {
+    --text-dim: #ded0b7;
+    --text-mute: #c1b197;
+}
+
+.brand-sub { font-size: 9.5px; letter-spacing: .2em; }
+.brand-name { font-size: 14px; }
+.score-name { font-size: 10.5px; letter-spacing: .14em; }
+.round-info small, .round-info em { font-size: 9.5px; }
+.round-info b { font-size: 17px; }
+.trump-label { font-size: 10px; letter-spacing: .12em; }
+.difficulty-indicator span { font-size: 10px; }
+.hud-btn { font-size: 11px; letter-spacing: .08em; }
+.hud-icon { font-size: 15px; }
+.player-label { font-size: 12px; letter-spacing: .16em; }
+.anne-role { font-size: 10.5px; }
+.anne-mood { font-size: 10px; }
+.anne-difficulty { font-size: 9.5px; }
+.tricks-label { font-size: 11px; letter-spacing: .03em; }
+.tricks-label .trick-count { font-size: 16px; }
+.cards-label { font-size: 10.5px; letter-spacing: .1em; }
+.cards-label b { font-size: 10.5px; }
+.trick-caption { font-size: 11px; letter-spacing: .16em; }
+.lead-chip { font-size: 10px; }
+.game-status span { font-size: 14px; }
+.modal-kicker { font-size: 9.5px; letter-spacing: .18em; }
+.modal-header h3 { font-size: 20px; }
+.setting-label { font-size: 12.5px; }
+.settings-note { font-size: 11.5px; line-height: 1.5; }
+.suit-name { font-size: 10px; }
+.coin-word { font-size: 9px; }
+.match-context { font-size: 10px; }
+.final-line span { font-size: 10px; }
+.result-actions .control-btn, .result-actions .settings-action-btn { font-size: 10.5px; }
+.gameover-modal { scrollbar-width: thin; }
+
+/* The result card should never show a scrollbar for two pixels of padding. */
+@media (max-height: 900px) {
+    .gameover-modal { padding-bottom: 18px; }
+    .gameover-modal .result-actions { margin-top: 2px; }
+    .anne-result { margin-bottom: 14px; }
+}
+
+/* Mobile header: one row, no second-line orphan buttons. */
+@media (max-width: 860px) {
+    /* Keep the three-column grid on a phone: the score chip belongs in the
+       middle of the screen, not in the middle of whatever space is left over
+       between the brand and the buttons. */
+    .hud {
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        gap: 6px; padding: 2px 0;
     }
+    .hud-brand { min-width: 0; }
+    .score-board { justify-self: center; min-width: 0; }
+    .hud-right { justify-self: end; margin-left: 0; gap: 5px; }
+    .hud-right .hud-divider { display: none; }
+    .difficulty-indicator { display: none; }
+    .score-side { min-width: 0; flex: 0 1 auto; gap: 5px; }
+    .round-info { min-width: 40px; }
+}
+
+@media (max-width: 700px) {
+    .hud-rules { display: none; }
+    .brand-text { display: none; }
+    .brand-mark { width: 36px; height: 36px; }
+    .hud-btn { height: 32px; padding: 0 10px; font-size: 10px; }
+    .hud-icon { padding: 0 8px; }
+    .score-name { font-size: 10px; }
+    .score-num { font-size: 22px; }
+}
+
+@media (max-width: 520px) {
+    .mute-btn { display: none; }
+    #restart-game { font-size: 9.5px; padding: 0 9px; }
+    .hud { gap: 5px; }
+    .score-board { padding: 3px 7px; gap: 5px; }
+    .round-info { min-width: 34px; padding: 1px 7px; }
+    .score-num { font-size: 20px; }
+    .brand-mark { width: 32px; height: 32px; font-size: 12px; }
+    .trump-indicator { padding: 3px 3px 3px 7px; }
+    .trump-suit { width: 22px; height: 22px; font-size: 14px; }
+    .anne-avatar { width: 44px; height: 44px; }
+    .anne-role { display: none; }
+    .anne-mood { font-size: 9.5px; }
+    .anne-reaction { font-size: 12.5px; padding: 9px 13px 10px; border-radius: 13px; }
+    .player-label { font-size: 11px; }
+    .tricks-label { font-size: 10px; }
+    .cards-label { font-size: 9.5px; }
+    .cards-label b { font-size: 9.5px; }
+    .trick-caption { font-size: 10px; }
+}
+
+@media (max-width: 380px) {
+    .anne-avatar { width: 42px; height: 42px; }
+    .hud-btn { height: 30px; padding: 0 8px; }
+    #restart-game { font-size: 9px; padding: 0 7px; }
+    .score-side { gap: 3px; }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+    .anne-avatar { width: 34px; height: 34px; }
+    .anne-role { display: none; }
+    .anne-mood { display: none; }
+    .anne-reaction { font-size: 12px; padding: 7px 12px; max-width: min(300px, calc(100vw - 120px)); }
+    .hud-btn { height: 28px; }
+    .brand-sub { display: none; }
+}
+
+/* Final composition details */
+
+/* Readable, unobtrusive scrollbars in tall panels. */
+.modal-content::-webkit-scrollbar { width: 7px; }
+.modal-content::-webkit-scrollbar-track { background: transparent; }
+.modal-content::-webkit-scrollbar-thumb { background: rgba(208,170,94,.32); border-radius: 999px; }
+.modal-content::-webkit-scrollbar-thumb:hover { background: rgba(208,170,94,.5); }
+
+/* Action copy should read as a choice, not a caption. */
+.game-over-actions .control-btn { font-size: 12px; letter-spacing: .1em; padding: 12px 20px; }
+.result-actions .control-btn, .result-actions .settings-action-btn { font-size: 11.5px; }
+.setting-label small {
+    display: block; margin-top: 2px; font-size: 10px; letter-spacing: 0;
+    text-transform: none; color: var(--text-mute);
+}
+.sound-test { min-height: 32px; padding: 7px 13px; font-size: 10px; }
+
+/* A warm pool of light in the middle of the felt, so the table reads as a
+   room rather than a flat green rectangle. */
+.game-board {
+    background:
+        radial-gradient(58% 48% at 50% 44%, rgba(255, 226, 167, .07) 0%, rgba(255, 226, 167, 0) 66%),
+        radial-gradient(62% 56% at 50% 47%, rgba(35, 126, 94, .48) 0%, rgba(15, 74, 55, 0) 72%),
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 .1  0 0 0 0 0  0 0 0 .45 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.55'/></svg>"),
+        linear-gradient(180deg, var(--felt-2), var(--felt-1) 45%, var(--felt-3));
+}
+
+/* 320px phones: keep both scores legible; the round number lives in the
+   status line and round summary. */
+@media (max-width: 380px) {
+    .round-info { display: none; }
+    .score-board { justify-content: space-between; flex: 1 1 auto; padding: 3px 10px; }
+    .score-side { min-width: 0; }
+    .score-num { font-size: 19px; }
+    .brand-mark { width: 30px; height: 30px; }
+    .hud { gap: 4px; }
+}
+
+@media (max-width: 520px) {
+    .game-over-actions { gap: 8px; }
+    .game-over-actions .control-btn { font-size: 11px; padding: 11px 14px; }
+    .winner-text { font-size: clamp(26px, 8vw, 34px); }
+}
+
+/* Short landscape: keep the line beside her face, just narrower. */
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 780px) {
+    .anne-reaction { max-width: 34vw; }
+}
+
+/* Anne's line inside the trump sheet keeps the choice personal. */
+.trump-anne-line {
+    display: flex; align-items: center; gap: 10px;
+    margin: 2px 0 12px; padding: 8px 12px 8px 8px;
+    text-align: left; border-radius: 14px;
+    background: linear-gradient(180deg, #fffdf6, #f2e4c9);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.7), 0 8px 18px rgba(0,0,0,.28);
+}
+.trump-anne-line img {
+    flex: none; width: 34px; height: 34px; border-radius: 50%;
+    object-fit: cover; object-position: 50% 16%;
+    box-shadow: inset 0 0 0 2px rgba(208,170,94,.6);
+}
+.trump-anne-line p {
+    margin: 0; font-size: 12.5px; line-height: 1.4; color: #2b2015;
+}
+.trump-anne-line b { color: #7a3f16; letter-spacing: .02em; }
+
+/* A suit you hold none of is still legal, but it should never look inviting. */
+.trump-btn.is-empty { opacity: .6; }
+.trump-btn.is-empty .suit-count { color: #ffb4a8; }
+.trump-btn.is-empty:hover { opacity: .85; }
+
+/* ---------------------------------------------------------------- legibility
+   The table is played at arm's length: small caps over emerald felt were the
+   hardest thing in the whole interface to read. These overrides keep the same
+   visual language but raise contrast and put a floor under the label sizes.
+   They come last on purpose so they settle every earlier tune-up. */
+:root {
+    --text-mute: #c6b79b;
+    --text-dim: #e0d3ba;
+}
+.cards-label { font-size: 12px; font-weight: 500; letter-spacing: .06em; color: var(--text-dim); }
+.cards-label b { font-size: 12px; color: var(--gold-bright); }
+.tricks-label { font-size: 12.5px; font-weight: 500; letter-spacing: .02em; color: var(--text-dim); }
+.tricks-label .trick-count { font-size: 18px; color: var(--gold-bright); }
+.score-name { font-size: 11px; letter-spacing: .12em; color: var(--text-dim); }
+.round-info small { font-size: 10px; letter-spacing: .1em; color: var(--text-dim); }
+.round-info em { font-size: 9.5px; color: var(--text-dim); }
+.trump-label { font-size: 10.5px; letter-spacing: .1em; color: var(--text-dim); }
+.difficulty-indicator { font-size: 11.5px; font-weight: 500; color: var(--text-dim); }
+.brand-sub { font-size: 10px; letter-spacing: .12em; color: var(--text-dim); }
+.anne-role { font-size: 11.5px; color: var(--text-dim); }
+.anne-mood { font-size: 11px; }
+.anne-difficulty { font-size: 10.5px; }
+.trick-caption { font-size: 12.5px; font-weight: 500; letter-spacing: .1em; color: var(--text-dim); }
+.game-status span { font-size: 17px; }
+.anne-reaction { font-size: 14.5px; }
+@media (max-width: 640px) {
+    .cards-label, .cards-label b { font-size: 11px; letter-spacing: .04em; }
+    .tricks-label { font-size: 11px; }
+    .tricks-label .trick-count { font-size: 15px; }
+    .round-info small { font-size: 9px; }
+    .anne-role { font-size: 10.5px; }
+    .trick-caption { font-size: 11px; }
+    .game-status span { font-size: 15px; }
+}
+
+/* ==================================================================
+   Legibility pass 2
+   The first pass raised the floor for the labels it knew about. This one
+   catches the rest and stops the small print shrinking again on a phone:
+   a small screen is a reason to keep the type, not to shrink it.
+   ================================================================== */
+.score-name { font-size: 10.5px; }
+.round-info small, .round-info em { font-size: 10px; }
+.trump-label { font-size: 10.5px; }
+.difficulty-indicator span { font-size: 10.5px; }
+.anne-role { font-size: 11px; }
+.anne-mood { font-size: 10.5px; }
+.anne-difficulty { font-size: 10.5px; }
+.cards-label, .cards-label b { font-size: 11px; }
+.tricks-label { font-size: 11px; }
+.trick-caption { font-size: 11px; }
+.lead-chip { font-size: 10.5px; }
+.suit-name { font-size: 11px; }
+.coin-word { font-size: 10.5px; }
+.modal-kicker { font-size: 10.5px; }
+.match-context { font-size: 11px; }
+.final-line span { font-size: 11px; }
+.result-actions .control-btn, .result-actions .settings-action-btn { font-size: 11.5px; }
+.start-note { font-size: 11px; line-height: 1.5; }
+.tutorial-invite p { font-size: 12px; }
+.live-coach-copy { font-size: 12px; }
+.game-status span { font-size: 14.5px; }
+
+@media (max-width: 700px) {
+    .hud-btn { font-size: 11px; }
+    #restart-game { font-size: 11px; }
+    .score-name { font-size: 10.5px; }
+    .round-info small, .round-info em { font-size: 10px; }
+    .anne-mood { font-size: 10.5px; }
+    .cards-label, .cards-label b { font-size: 11px; }
+    .tricks-label { font-size: 11px; }
+    .trick-caption { font-size: 11px; }
+}
+
+@media (max-width: 380px) {
+    .hud-btn { font-size: 10.5px; }
+    #restart-game { font-size: 10.5px; }
+    .cards-label, .cards-label b { font-size: 10.5px; }
+    .tricks-label { font-size: 10.5px; }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+    .player-label { font-size: 11px; }
+    .tricks-label { font-size: 10.5px; }
+    .cards-label, .cards-label b { font-size: 10.5px; }
+    .trick-caption { font-size: 10.5px; }
+}
+
+/* Anne's face-up row is the only place the player has to read her cards, so on
+   a phone it grows instead of shrinking. */
+@media (max-width: 700px) {
+    .computer-area .face-up-cards { --cw-seat: calc(var(--cw-base) * .84); }
+    .computer-area .face-up-cards .cards-label { font-size: 10.5px; }
+}
+
+/* ==================================================================
+   Legibility pass 3
+   Pass 1 raised the poster-sized labels, pass 2 caught the rest and
+   stopped the phone shrinking them again - but both left the HUD's
+   small caps sitting at 10-10.5px, which is still below the size this
+   table is read at (arm's length, small caps over emerald felt).
+   This pass puts a real floor under every label that carries meaning:
+   11px minimum, 11.5px for the ones a player scans mid-trick. It comes
+   last on purpose, so it settles every earlier tune-up.
+   ================================================================== */
+.brand-sub { font-size: 11px; }
+.score-name { font-size: 11px; }
+.round-info small, .round-info em { font-size: 11px; }
+.trump-label { font-size: 11px; }
+.difficulty-indicator { font-size: 11.5px; }
+.difficulty-indicator span { font-size: 11px; }
+.anne-role { font-size: 11.5px; }
+.anne-mood { font-size: 11px; }
+.anne-difficulty { font-size: 11px; }
+.seat-avatar { font-size: 11.5px; }
+.cards-label, .cards-label b { font-size: 11.5px; }
+.tricks-label { font-size: 11.5px; }
+.trick-caption { font-size: 11.5px; }
+.lead-chip { font-size: 11px; }
+.suit-name { font-size: 11.5px; }
+.suit-count { font-size: 11px; }
+.coin-word { font-size: 11px; }
+.modal-kicker { font-size: 11px; }
+.match-context { font-size: 11.5px; }
+.final-line span { font-size: 11.5px; }
+.start-note { font-size: 11.5px; }
+/* The corner suit mark is the thing people actually read on a small card. */
+.idx i { font-size: 1.1em; }
+
+/* A phone keeps the same floor instead of stepping back down: a small screen
+   is a reason to keep the type, not to shrink it. */
+@media (max-width: 700px) {
+    .score-name, .round-info small, .round-info em { font-size: 11px; }
+    .anne-mood, .anne-difficulty { font-size: 11px; }
+    .cards-label, .cards-label b, .tricks-label, .trick-caption { font-size: 11px; }
+    .hud-btn, #restart-game { font-size: 11px; }
+    .computer-area .face-up-cards .cards-label { font-size: 11px; }
+}
+
+@media (max-width: 380px) {
+    .hud-btn, #restart-game { font-size: 11px; }
+    .cards-label, .cards-label b, .tricks-label, .trick-caption { font-size: 11px; }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+    .player-label { font-size: 11.5px; }
+    .tricks-label, .cards-label, .cards-label b, .trick-caption { font-size: 11px; }
 }

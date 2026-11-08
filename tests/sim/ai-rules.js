@@ -25,7 +25,7 @@ function mulberry32(seed) {
 const settle = () => new Promise((r) => setImmediate(r));
 
 function createEngine(rng) {
-    const box = { console, __rng: rng, __h: { illegal: [], selections: 0, rounds: 0 } };
+    const box = { console, __rng: rng, setTimeout, clearTimeout, __h: { illegal: [], selections: 0, rounds: 0 } };
     const ctx = vm.createContext(box);
     vm.runInContext(`
       const GameView = { beat: () => Promise.resolve(), log(){}, clearLog(){}, status(){}, thinking(){}, render(){},
@@ -103,8 +103,10 @@ async function playRound(eng, difficulty) {
     for (const difficulty of ['easy', 'medium', 'hard']) {
         const rng = mulberry32(90210 + difficulty.length);
         const eng = createEngine(rng);
-        eng.gs.matchTarget = 99;
-        eng.gs.pendingMatchTarget = 99;
+        // High enough that the match can never end during the sample: a
+        // finished match deliberately refuses to deal another round.
+        eng.gs.matchTarget = 9999;
+        eng.gs.pendingMatchTarget = 9999;
         for (let i = 0; i < rounds; i++) await playRound(eng, difficulty);
         const illegal = eng.h.illegal.length;
         console.log(`${difficulty}: ${eng.h.rounds} rounds, ${eng.h.selections} AI selections, ${illegal} illegal`);

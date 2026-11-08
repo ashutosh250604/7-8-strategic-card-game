@@ -8,14 +8,16 @@
 (function () {
     'use strict';
 
-    const STORAGE_KEY = '78-settings-v2';
+    const STORAGE_KEY = '78-settings-v3';
     const DEFAULTS = Object.freeze({
         difficulty: 'medium',
-        matchTarget: 5,
+        matchTarget: 3,
         sound: true,
         volume: 0.55,
         motion: 'full',
-        haptics: true
+        haptics: true,
+        voice: false,
+        fireworks: false
     });
     const DIFFICULTIES = ['easy', 'medium', 'hard'];
     const TARGETS = [3, 5, 7];
@@ -36,6 +38,8 @@
         out.volume = clamp(raw.volume, 0, 1, DEFAULTS.volume);
         out.motion = oneOf(raw.motion, MOTIONS, DEFAULTS.motion);
         out.haptics = typeof raw.haptics === 'boolean' ? raw.haptics : DEFAULTS.haptics;
+        out.voice = typeof raw.voice === 'boolean' ? raw.voice : DEFAULTS.voice;
+        out.fireworks = typeof raw.fireworks === 'boolean' ? raw.fireworks : DEFAULTS.fireworks;
         return out;
     }
 
@@ -49,6 +53,11 @@
     }
 
     let current = read();
+
+    function applyMotion() {
+        document.documentElement.dataset.motion = current.motion;
+    }
+    applyMotion();
 
     function persist() {
         try {
@@ -67,6 +76,7 @@
     function update(patch) {
         if (!patch || typeof patch !== 'object') return get();
         current = normalise({ ...current, ...patch });
+        applyMotion();
         persist();
         document.dispatchEvent(new CustomEvent('tablesettings:change', { detail: get() }));
         return get();
@@ -74,6 +84,7 @@
 
     function reset() {
         current = { ...DEFAULTS };
+        applyMotion();
         persist();
         document.dispatchEvent(new CustomEvent('tablesettings:change', { detail: get() }));
         return get();

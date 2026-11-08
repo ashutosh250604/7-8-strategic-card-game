@@ -1,7 +1,7 @@
 'use strict';
 /*
  * Match-level AI evaluation. Runs the real engine, the same seeded sensible
- * human stand-in for every difficulty, and first-to-five matches.
+ * human stand-in for every difficulty, and first-to-three matches.
  *
  *   node sim/ai-match.js [matches=30] [roundsPerMatchGuard=60]
  *
@@ -30,7 +30,7 @@ function mulberry32(seed) {
 }
 
 function createEngine(rng) {
-    const box = { console, __rng: rng, __h: { trump: null, games: [], beats: [] } };
+    const box = { console, __rng: rng, setTimeout, clearTimeout, __h: { trump: null, games: [], beats: [] } };
     const ctx = vm.createContext(box);
     vm.runInContext(`
       const GameView = { beat: (name) => { __h.beats.push(name); return Promise.resolve(); }, log(){}, clearLog(){}, status(){}, thinking(){}, render(){},
@@ -129,7 +129,7 @@ async function playRound(eng, difficulty) {
     const matches = Number(process.argv[2] || 30);
     const roundsGuard = Number(process.argv[3] || 60);
     const t0 = Date.now();
-    console.log(`AI matches to 5 points, ${matches} per difficulty, sensible baseline\n`);
+    console.log(`AI matches to 3 points, ${matches} per difficulty, sensible baseline\n`);
     console.log('difficulty | player wins | Anne wins | avg player pts | avg Anne pts | avg rounds');
     let failed = 0;
 
@@ -142,13 +142,13 @@ async function playRound(eng, difficulty) {
             const gs = eng.gs;
             gs.player.score = 0;
             gs.computer.score = 0;
-            gs.matchTarget = 5;
-            gs.pendingMatchTarget = 5;
+            gs.matchTarget = 3;
+            gs.pendingMatchTarget = 3;
             gs.isFirstRound = false;
             gs.lastTrumpSelector = m % 2 ? 'computer' : 'player';
             gs.gameOver = false;
             let n = 0;
-            while (gs.player.score < 5 && gs.computer.score < 5 && n < roundsGuard) {
+            while (gs.player.score < 3 && gs.computer.score < 3 && n < roundsGuard) {
                 await playRound(eng, difficulty);
                 n++;
             }
@@ -156,7 +156,7 @@ async function playRound(eng, difficulty) {
             playerPoints += gs.player.score;
             annePoints += gs.computer.score;
             rounds += n;
-            if (gs.player.score >= 5) playerWins++;
+            if (gs.player.score >= 3) playerWins++;
             else anneWins++;
         }
 
