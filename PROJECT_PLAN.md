@@ -395,6 +395,25 @@ Do not start 3-2-5 or Coat & Shuffle until their rules and hosts are approved.
   modal portrait and the trick-over-seat layer. Physical iOS/Android and real
   iOS Safari remain browser-emulated rather than hardware-tested.
 
+## Avatar, Restart and Home Scroll Repair (November 9, 2026)
+
+- Every Anne mount now uses the same full square crop of the single 900×900
+  source. Legacy face-crop markup is normalised, desktop and phone hosts use a
+  square frame, and the photograph is never zoomed or positioned differently by
+  screen. This covers the home page, seat, trump sheet, tutorial and result.
+- Starting a new match now clears the previous deck, both hands, face-up and
+  face-down packets, won tricks and the current trick in the engine as well as
+  the table DOM. The coin toss and riffle can no longer repaint the old deal.
+- The collection page opts into normal document flow so mobile screens keep a
+  working vertical scrollbar and can reach the footer; the game table remains a
+  fixed one-screen shell.
+- Verified with `tests/layout-e2e.js` (1440×900, 390×844, 320×568, footer
+  scroll), `tests/mobile-pass.js` (320/360/390/844 touch layouts and card
+  play), `tests/ui-polish.js` (shared square avatar frame), `tests/resume-e2e.js`
+  (empty-table restart, toss, resume and trump portrait) and
+  `tests/tutorial-e2e.js` (full coached round). Physical iOS/Android and real
+  iOS Safari remain browser-emulated rather than hardware-tested.
+
 ## Definition of Done
 
 The project is done when the game is visually polished, responsive, strategically enjoyable, reliable across complete games and restarts, accessible for common interactions, and free of known critical defects. Optional experimental features are not required for completion.

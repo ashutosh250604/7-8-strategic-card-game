@@ -82,7 +82,19 @@ const server = http.createServer((req, res) => {
             fireworksLabel: document.getElementById('settings-fireworks')?.querySelector('span').textContent.trim(),
             source: TableAvatar.source,
             photos: [...document.querySelectorAll('[data-anne-avatar] .aa-photo')].map((img) => ({ src: img.getAttribute('src'), loaded: img.complete && img.naturalWidth > 0 })),
-            samePhoto: new Set([...document.querySelectorAll('[data-anne-avatar] .aa-photo')].map((img) => img.getAttribute('src'))).size
+            samePhoto: new Set([...document.querySelectorAll('[data-anne-avatar] .aa-photo')].map((img) => img.getAttribute('src'))).size,
+            frames: [...document.querySelectorAll('[data-anne-avatar]')].map((host) => {
+                const img = host.querySelector('.aa-photo');
+                const hs = getComputedStyle(host), is = getComputedStyle(img);
+                return {
+                    cropFace: host.classList.contains('aa-crop-face'),
+                    w: Math.round(parseFloat(hs.width)),
+                    h: Math.round(parseFloat(hs.height)),
+                    fit: is.objectFit,
+                    pos: is.objectPosition,
+                    transform: is.transform
+                };
+            })
         };
     });
     check('defaults are medium, first-to-3 and voice-off',
@@ -93,6 +105,11 @@ const server = http.createServer((req, res) => {
     check('every avatar mount uses the same loaded photograph',
         defaults.source === 'photo' && defaults.photos.length >= 3 && defaults.photos.every((p) => p.loaded) && defaults.samePhoto === 1,
         defaults.photos);
+    check('every avatar mount uses the same full square frame',
+        defaults.frames.length >= 3 && defaults.frames.every((f) =>
+            !f.cropFace && f.w > 0 && f.w === f.h && f.fit === 'cover' &&
+            f.pos === '50% 50%' && f.transform === 'none'),
+        defaults.frames);
 
     // The machine's real voice list on Windows includes Heera (en-IN female),
     // Ravi (en-IN male) and Zira (en-US female). The selected voice must not be

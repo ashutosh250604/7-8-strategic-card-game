@@ -75,6 +75,18 @@ const server = http.createServer((req, res) => {
     for (const view of [{ w: 1440, h: 900 }, { w: 390, h: 844 }, { w: 320, h: 568 }]) {
         await page.setViewport({ width: view.w, height: view.h });
         await page.reload({ waitUntil: 'load' });
+        const homeScroll = await page.evaluate(() => {
+            const doc = document.documentElement;
+            const prevBehavior = doc.style.scrollBehavior;
+            doc.style.scrollBehavior = 'auto';
+            window.scrollTo(0, doc.scrollHeight);
+            const reached = window.scrollY;
+            window.scrollTo(0, 0);
+            doc.style.scrollBehavior = prevBehavior;
+            return { overflowY: getComputedStyle(doc).overflowY, docH: doc.scrollHeight, reached };
+        });
+        expect(`${view.w}x${view.h}: collection page scrolls to its footer`,
+            homeScroll.overflowY !== 'hidden' && homeScroll.docH > view.h && homeScroll.reached > 20, homeScroll);
         await page.screenshot({ path: path.join(outDir, `layout-home-${view.w}x${view.h}.png`) });
         await page.evaluate(() => document.querySelector('.hero-host').scrollIntoView({ block: 'center' }));
         const home = await page.evaluate(() => {

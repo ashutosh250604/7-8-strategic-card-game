@@ -13,6 +13,17 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
+/* The game shell is fixed, but the collection is a scrolling page. theme.css
+   also carries fixed-shell rules, so make this page's intent explicit and
+   specific: the document and body stay in normal flow on every screen. */
+html.home-page,
+html.home-page body {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior-y: auto;
+}
+html.home-page body { min-height: 100dvh; }
 body {
     min-height: 100dvh;
     font-family: var(--font-ui);

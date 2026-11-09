@@ -758,7 +758,7 @@
         const won = winner === 'Player';
         previousMatchWinner = winner;
         const portrait = $('anne-result-avatar');
-        if (portrait && window.TableAvatar) window.TableAvatar.mount(portrait, { crop: 'face' });
+        if (portrait && window.TableAvatar) window.TableAvatar.mount(portrait, { crop: 'bust' });
         const text = $('anne-result-line');
         if (text) text.textContent = line(won ? 'matchWin' : 'matchLoss');
         const bubble = $('anne-reaction');

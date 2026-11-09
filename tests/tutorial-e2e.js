@@ -401,7 +401,7 @@ function browserExecutable() {
         if (fit.doc > 1) bad(`trump coach causes horizontal overflow at ${w}x${h}: ${fit.doc}`);
         if (fit.optionsBottom > fit.ih + 1) bad(`trump options are below the viewport at ${w}x${h}`);
         if (fit.coachBottom > fit.ih + 1) bad(`trump coach is off-screen at ${w}x${h}`);
-        if (!fit.bust || fit.avatarH <= fit.avatarW || fit.avatarW < 34) bad(`trump host portrait is cropped at ${w}x${h}: ${JSON.stringify(fit)}`);
+        if (!fit.bust || fit.avatarH !== fit.avatarW || fit.avatarW < 34) bad(`trump host portrait is not the shared square frame at ${w}x${h}: ${JSON.stringify(fit)}`);
         await shot(`e2e-trump-${w}x${h}.png`);
     }
     await page.setViewport({ width: 1280, height: 900 });

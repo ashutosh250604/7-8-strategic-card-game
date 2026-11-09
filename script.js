@@ -1583,6 +1583,25 @@ function restartGame() {
     gameState.isFirstRound = true;  // Reset for coin toss
     gameState.coinTossWinner = null;
 
+    // A new match has to forget the previous deal, not just the table DOM.
+    // Otherwise the first render after "Deal the cards" repaints the old hand
+    // under the coin toss until the shuffled deal replaces it.
+    gameState.deck = [];
+    gameState.remainingCards = [];
+    gameState.player.hand = [];
+    gameState.player.faceUp = [];
+    gameState.player.faceDown = [];
+    gameState.player.wonTricks = [];
+    gameState.player.tricksWon = 0;
+    gameState.computer.hand = [];
+    gameState.computer.faceUp = [];
+    gameState.computer.faceDown = [];
+    gameState.computer.wonTricks = [];
+    gameState.computer.tricksWon = 0;
+    gameState.trick = { cards: [], leadSuit: null };
+    gameState.trickCount = 0;
+    gameState.currentPlayer = null;
+
     clearSavedMatch();
 
     GameView.resetForRestart();

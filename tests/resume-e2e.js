@@ -214,6 +214,26 @@ function expect(label, ok, detail) {
     await page.waitForFunction(() => !GameEngine.state.gameStarted, { timeout: 5000 });
     const cleared = await page.evaluate(() => localStorage.getItem(GameEngine.saveKey));
     expect('starting a new match clears the saved checkpoint', cleared === null, cleared);
+    const emptyNewMatch = await page.evaluate(() => {
+        const gs = GameEngine.state;
+        return {
+            player: [...gs.player.hand, ...gs.player.faceUp, ...gs.player.faceDown].filter(Boolean).length,
+            computer: [...gs.computer.hand, ...gs.computer.faceUp, ...gs.computer.faceDown].filter(Boolean).length,
+            trick: gs.trick.cards.length,
+            deck: gs.deck.length,
+            remaining: (gs.remainingCards || []).length
+        };
+    });
+    expect('a new match clears the previous deal before it starts',
+        Object.values(emptyNewMatch).every((n) => n === 0), emptyNewMatch);
+    await page.click('#start-game');
+    await page.waitForSelector('#coin-toss-modal', { visible: true, timeout: 5000 });
+    const tossTable = await page.evaluate(() => ({
+        cards: document.querySelectorAll('#player-hand .card, #player-faceup .card, #computer-faceup .card, .trick-slot .card').length,
+        phase: GameEngine.state.gamePhase
+    }));
+    expect('the new-match toss opens on an empty table',
+        tossTable.cards === 0 && tossTable.phase === 'coin-toss', tossTable);
     await page.reload({ waitUntil: 'load' });
     await page.waitForSelector('#start-game', { visible: true, timeout: 5000 });
     const noResume = await page.evaluate(() => ({ started: GameEngine.state.gameStarted, saved: !!localStorage.getItem(GameEngine.saveKey) }));
@@ -254,8 +274,8 @@ function expect(label, ok, detail) {
             width: Math.round(r.width), height: Math.round(r.height)
         };
     });
-    expect('the trump sheet shows a full, loaded bust portrait',
-        trumpPortrait.bust && trumpPortrait.loaded && trumpPortrait.height > trumpPortrait.width * 1.1 && trumpPortrait.width >= 40,
+    expect('the trump sheet shows the same full square portrait as the table',
+        trumpPortrait.bust && trumpPortrait.loaded && trumpPortrait.height === trumpPortrait.width && trumpPortrait.width >= 40,
         trumpPortrait);
     await page.click('.trump-btn[data-suit="spades"]');
     await waitSettled();

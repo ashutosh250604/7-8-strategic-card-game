@@ -39,15 +39,22 @@
 
     function mount(host, options) {
         if (!host || host.nodeType !== 1) return null;
-        if (host.dataset.anneMounted === '1') return host.querySelector('.aa-photo');
+        if (host.dataset.anneMounted === '1') {
+            // Older markup may still ask for a face crop. The source is one
+            // square head-and-shoulders portrait, so every mount shows the
+            // same full frame and only its size changes.
+            host.classList.remove('aa-crop-face');
+            host.classList.add('aa-crop-bust');
+            return host.querySelector('.aa-photo');
+        }
         host.innerHTML = portrait();
         host.dataset.anneMounted = '1';
         host.classList.add('anne-face-host');
         const opts = options || {};
         if (opts.size) host.style.setProperty('--aa-size', opts.size);
-        const crop = opts.crop || 'bust';
-        host.classList.toggle('aa-crop-face', crop === 'face');
-        host.classList.toggle('aa-crop-bust', crop !== 'face');
+        host.classList.remove('aa-crop-face');
+        host.classList.add('aa-crop-bust');
+        host.dataset.crop = 'bust';
         host.dataset.mood = 'neutral';
         if (!host.getAttribute('role')) host.setAttribute('role', 'img');
         if (!host.getAttribute('aria-label')) host.setAttribute('aria-label', opts.label || FALLBACK_LABEL);
