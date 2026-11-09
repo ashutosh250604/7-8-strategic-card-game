@@ -244,6 +244,19 @@ function expect(label, ok, detail) {
         saved: !!localStorage.getItem(GameEngine.saveKey)
     }));
     expect('reload reopens the saved trump choice', reopened.phase === 'trump-selection' && reopened.hand === 5 && reopened.startDisplay === 'none', reopened);
+    const trumpPortrait = await page.evaluate(() => {
+        const host = document.querySelector('#trump-selection-modal .anne-line-avatar');
+        const img = host.querySelector('.aa-photo');
+        const r = host.getBoundingClientRect();
+        return {
+            bust: host.classList.contains('aa-crop-bust'),
+            loaded: !!(img && img.complete && img.naturalWidth > 0),
+            width: Math.round(r.width), height: Math.round(r.height)
+        };
+    });
+    expect('the trump sheet shows a full, loaded bust portrait',
+        trumpPortrait.bust && trumpPortrait.loaded && trumpPortrait.height > trumpPortrait.width * 1.1 && trumpPortrait.width >= 40,
+        trumpPortrait);
     await page.click('.trump-btn[data-suit="spades"]');
     await waitSettled();
     expect('choosing trump on the restored hand reaches play', await page.evaluate(() => GameEngine.state.gamePhase === 'playing' && GameEngine.state.trumpSuit === 'spades'));

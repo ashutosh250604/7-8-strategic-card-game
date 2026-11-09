@@ -755,7 +755,6 @@ body::before {
     .round-info { padding: 2px 8px; min-width: 66px; }
     .round-info small, .round-info em { font-size: 11px; letter-spacing: .02em; }
     .round-info b { font-size: 15px; }
-    .trump-indicator { display: none; }
 
     .game-board { margin-top: 4px; padding: 8px 8px 10px; border-radius: 16px; }
     .start-panel { padding: 14px 12px 12px; gap: 7px; border-radius: 14px; }
@@ -945,7 +944,7 @@ body::before {
     .hud { gap: 8px; flex-wrap: nowrap; }
     .brand-text { display: none; }
     .brand-mark { width: 34px; height: 34px; font-size: 12px; }
-    .difficulty-indicator, .trump-indicator, .hud-divider { display: none; }
+    .difficulty-indicator, .hud-divider { display: none; }
     .hud-btn { height: 28px; font-size: 10px; padding: 0 9px; }
     .hud-icon { width: 28px; }
     .score-board { padding: 3px 10px; }

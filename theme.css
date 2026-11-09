@@ -180,6 +180,9 @@ body::before {
 .hud-right { gap: 5px; }
 .hud-divider { height: 20px; background: var(--line-soft); }
 .difficulty-indicator {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
     padding: 6px 8px;
     border: 0;
     border-radius: 0;
@@ -207,6 +210,21 @@ body::before {
     font-size: 15px;
     box-shadow: none;
 }
+/* The round's trump lives beside the trick it governs, where the eye already
+   is. It stays visible on phones instead of being squeezed out of the HUD. */
+.trick-meta .trump-indicator {
+    min-height: 22px;
+    padding: 1px 3px 1px 7px;
+    gap: 5px;
+    border-radius: 5px;
+}
+.trick-meta .trump-suit {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+.trick-meta .trump-label { display: inline; font-size: 9.5px; letter-spacing: .12em; }
 .hud-btn {
     height: 32px;
     padding: 0 12px;
@@ -228,7 +246,7 @@ body::before {
     box-shadow: none;
 }
 .hud-btn:active { transform: none; box-shadow: none; }
-.hud-icon { width: 30px; padding: 0; border-color: transparent; font-size: 14px; }
+.hud-icon { width: 32px; height: 32px; padding: 0; border-color: transparent; font-size: 14px; }
 .hud-rules { color: var(--arc-mute); border-color: transparent; padding-inline: 8px; }
 .hud-rules:hover { color: var(--gold-bright); }
 .hud-label-compact { display: none; }
@@ -1495,9 +1513,9 @@ html[data-motion="reduced"] [data-anne-avatar].is-talking::after { animation: no
 }
 
 .trump-anne-line .anne-line-avatar {
-    --aa-size: 46px;
-    width: 46px;
-    height: 46px;
+    --aa-size: 54px;
+    width: 54px;
+    height: calc(54px * 1.2308);
     margin: 0 auto;
     border-radius: 8px;
     box-shadow: 0 0 0 1px rgba(201, 163, 92, .6), 0 5px 14px rgba(0, 0, 0, .35);
@@ -1685,8 +1703,8 @@ html[data-motion="reduced"] [data-anne-avatar].is-talking::after { animation: no
 @media (max-width: 640px) {
     .trump-modal { padding: 10px; }
     .trump-modal .modal-content { width: min(96vw, 500px); padding: 13px 11px 12px; }
-    .trump-anne-line { gap: 5px; margin-bottom: 10px; padding: 7px 10px 8px; }
-    .trump-anne-line .anne-line-avatar { --aa-size: 38px; width: 38px; height: 38px; }
+    .trump-anne-line { gap: 6px; margin-bottom: 10px; padding: 7px 10px 8px; }
+    .trump-anne-line .anne-line-avatar { --aa-size: 46px; width: 46px; height: calc(46px * 1.2308); }
     .trump-anne-line p { font-size: 11.5px; }
     .trump-hint { font-size: 11.5px; line-height: 1.45; margin-bottom: 10px; }
     .trump-options { gap: 6px; }
@@ -1703,7 +1721,11 @@ html[data-motion="reduced"] [data-anne-avatar].is-talking::after { animation: no
 
 @media (max-width: 380px) {
     .trump-modal .modal-content { padding: 10px 9px 11px; }
-    .trump-anne-line .anne-line-avatar { --aa-size: 34px; width: 34px; height: 34px; }
+    /* Short phones give the host a horizontal row: the bust stays whole and
+       the sheet keeps the vertical room its four suits need. */
+    .trump-anne-line { flex-direction: row; align-items: center; gap: 8px; padding: 6px 8px; text-align: left; }
+    .trump-anne-line p { text-align: left; }
+    .trump-anne-line .anne-line-avatar { --aa-size: 42px; width: 42px; height: calc(42px * 1.2308); }
     .trump-btn { min-height: 124px; }
     .trump-btn .suit-symbol { font-size: 21px; }
     .anne-speech-lane { min-height: 64px; }
@@ -1716,7 +1738,7 @@ html[data-motion="reduced"] [data-anne-avatar].is-talking::after { animation: no
     .trump-modal .modal-header { margin-bottom: 5px; padding-bottom: 4px; }
     .trump-modal .modal-kicker, .trump-hint, .trump-footnote { display: none; }
     .trump-anne-line { flex-direction: row; gap: 8px; margin-bottom: 6px; padding: 4px 8px; text-align: left; }
-    .trump-anne-line .anne-line-avatar { --aa-size: 32px; width: 32px; height: 32px; }
+    .trump-anne-line .anne-line-avatar { --aa-size: 38px; width: 38px; height: calc(38px * 1.2308); }
     .trump-anne-line p { max-width: 50ch; font-size: 10.5px; line-height: 1.3; text-align: left; }
     .trump-anne-line b { display: inline; margin: 0; }
     .trump-options { gap: 6px; }
@@ -2066,4 +2088,64 @@ html {
     .player-area .seat-bar { min-height: 24px; }
     .game-status { min-height: 16px; }
     .game-status span { font-size: 12.5px; line-height: 1.15; text-wrap: balance; }
+}
+
+/* The trick is the focal object while a hand is live: raise its layer above
+   both seat card rows, but leave the felt itself click-through so the cards
+   underneath remain playable. */
+.game-board:not(.is-setup) .center-area {
+    z-index: 30;
+    pointer-events: none;
+}
+.game-board:not(.is-setup) .center-info,
+.game-board:not(.is-setup) .start-panel { pointer-events: auto; }
+
+/* Desktop seats share the same card size and row width. The old asymmetric
+   sizes made Anne's two rows look narrower than the player's and pulled the
+   table's visual centre to the right. */
+@media (min-width: 1081px) {
+    .computer-area, .player-area { --cw-seat: calc(var(--cw-base) * .82); }
+    .computer-area .face-up-cards, .player-area .face-up-cards { --cw-seat: calc(var(--cw-base) * .82); }
+    .computer-hand .card + .card { margin-left: 0; }
+    .player-area .seat-divider { display: none; }
+    /* Same split between the two card packets on both sides of the table. */
+    .computer-area .seat-cards, .player-area .seat-cards { gap: 7px; }
+}
+
+@media (max-width: 640px) {
+    .hud-label-wide { display: none; }
+    .hud-label-compact { display: inline; }
+    .trick-stage { gap: 0; transform: translateY(-2px); }
+    .trick-meta { margin-bottom: 0; }
+}
+
+/* Short screens used to drop the trick caption entirely. Keep one compact row
+   for the round's trump instead: it is the one fact that must never leave the
+   table, and the compact chip fits in the gap above the tray. */
+@media (max-height: 680px) {
+    .game-board:not(.is-setup) .trick-meta {
+        display: flex;
+        justify-content: center;
+        min-height: 20px;
+        margin-bottom: 0;
+    }
+    .game-board:not(.is-setup) .trick-stage { gap: 0; transform: translateY(-8px); }
+    .game-board:not(.is-setup) .trick-meta .trick-caption,
+    .game-board:not(.is-setup) .trick-meta .lead-chip { display: none; }
+    .trick-meta .trump-indicator { min-height: 20px; padding: 0 3px 0 6px; gap: 4px; }
+    .trick-meta .trump-suit { width: 16px; height: 16px; font-size: 11px; }
+    .trick-meta .trump-label { font-size: 9px; }
+    .center-info { gap: 2px; }
+}
+
+/* 320px is too short for a separate trump row: the chip would cover Anne's
+   bottom card edge. Float it into the clear felt beside the trick instead, so
+   the trump stays legible without touching either card row. */
+@media (max-width: 380px) and (max-height: 620px) {
+    .game-board:not(.is-setup) .trump-indicator {
+        position: absolute;
+        right: 6px;
+        top: 48%;
+        transform: translateY(-50%);
+    }
 }

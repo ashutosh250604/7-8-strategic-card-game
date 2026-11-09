@@ -421,7 +421,6 @@
     .round-info { padding: 2px 8px; min-width: 66px; }
     .round-info small, .round-info em { font-size: 11px; letter-spacing: .02em; }
     .round-info b { font-size: 15px; }
-    .trump-indicator { display: none; }
     .anne-avatar { width: 48px; height: 48px; }
     .seat-avatar:not(.anne-avatar) { display: none; }
     .start-chips li { font-size: 10px; padding: 5px 8px; }

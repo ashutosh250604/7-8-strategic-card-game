@@ -177,6 +177,9 @@ function expect(label, ok, detail) {
             bubble: rect('#anne-reaction'),
             status: rect('.game-status'),
             trick: rect('#current-trick'),
+            trump: visible(document.getElementById('trump-display')) ? rect('#trump-display') : null,
+            trumpText: (document.getElementById('trump-display')?.textContent || '').replace(/\s+/g, ' ').trim(),
+            cpuCardsBottom: Math.max(0, ...[...document.querySelectorAll('#computer-faceup .card')].map((el) => el.getBoundingClientRect().bottom)),
             cards,
             controls: controlSelectors.map((selector) => {
                 const el = document.querySelector(selector);
@@ -208,6 +211,14 @@ function expect(label, ok, detail) {
         expect(`${label}: face-up cards keep their table size`, faceUp.length > 0 && faceUp.every((c) => c.width >= 43 && c.height >= 60), faceUp.slice(0, 2));
         expect(`${label}: HUD controls are thumb-sized`, m.controls.every((c) => c.width >= 36 && c.height >= 36), m.controls);
         expect(`${label}: phone labels are readable without zoom`, Object.values(m.fonts).every((px) => px === null || px >= 10.5), m.fonts);
+        expect(`${label}: this round's trump is visible beside the trick`,
+            m.trump && m.trump.width >= 40 && m.trump.height >= 18 &&
+            m.trump.left >= -1 && m.trump.right <= m.view.width + 1 &&
+            m.trump.top >= -1 && m.trump.bottom <= m.view.height + 1 && /trump/i.test(m.trumpText),
+            { trump: m.trump, text: m.trumpText });
+        expect(`${label}: the trump chip clears Anne's card row`,
+            m.trump && m.trump.top >= m.cpuCardsBottom - 1,
+            { trumpTop: m.trump && m.trump.top, cpuCardsBottom: m.cpuCardsBottom });
         const overlaps = (a, b) => !!(a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
         expect(`${label}: turn status is clear of the trick`, !overlaps(m.status, m.trick), { status: m.status, trick: m.trick });
         await page.evaluate(() => TableCharacters.showReaction('Tea is imaginary, the cards are real, and I am watching every trick you play.', 6000));

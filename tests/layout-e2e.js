@@ -115,6 +115,10 @@ const server = http.createServer((req, res) => {
             cHand: rect('#computer-hand'),
             cUp: rect('#computer-faceup'),
             trick: rect('#current-trick'),
+            trump: rect('#trump-display'),
+            trumpText: (document.getElementById('trump-display')?.textContent || '').replace(/\s+/g, ' ').trim(),
+            centerZ: getComputedStyle(document.querySelector('.center-area')).zIndex,
+            seatZ: getComputedStyle(document.querySelector('.computer-area')).zIndex,
             avatar: rect('#anne-portrait'),
             // The seat portrait is an inline animated SVG now, so "loaded" means
             // the photograph actually loaded into the seat.
@@ -142,6 +146,8 @@ const server = http.createServer((req, res) => {
         // force a fit. Face-up cards are deliberately 0.86x the hand size.
         expect(`${label}: human cards keep a readable tap box`, m.controls.every((r) => r.right - r.left >= 40 && r.bottom - r.top >= 56), m.controls.slice(0, 3));
         expect(`${label}: Anne portrait loaded`, m.avatarLoaded > 0 && m.avatar && m.avatar.w >= 24, { loaded: m.avatarLoaded, avatar: m.avatar });
+        expect(`${label}: this round's trump is visible`, m.trump && m.trump.display !== 'none' && inside(m.trump) && /trump/i.test(m.trumpText), { trump: m.trump, text: m.trumpText });
+        expect(`${label}: played cards layer above both seats`, Number(m.centerZ) > Number(m.seatZ), { centerZ: m.centerZ, seatZ: m.seatZ });
         const overlaps = m.controls.filter((r) => r.left < -1 || r.right > m.view.w + 1 || r.bottom > m.view.h + 1);
         expect(`${label}: no clipped player cards`, overlaps.length === 0, overlaps.slice(0, 2));
     };
@@ -180,6 +186,12 @@ const server = http.createServer((req, res) => {
         expect(`${view.w}x${view.h}: start action is visible`, setup.start && setup.start.bottom <= view.h, setup.start);
         await page.screenshot({ path: path.join(outDir, `layout-setup-${view.w}x${view.h}.png`) });
     }
+
+    await page.setViewport({ width: 1440, height: 900 });
+    await page.reload({ waitUntil: 'load' });
+    await settleGame();
+    await checkTable('1440x900 live');
+    await page.screenshot({ path: path.join(outDir, 'layout-playing-1440x900.png') });
 
     await page.setViewport({ width: 390, height: 844 });
     await page.reload({ waitUntil: 'load' });

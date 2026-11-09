@@ -375,6 +375,26 @@ vibration hardware. A phoneme-level mouth or second pose would add more than
 another CSS pass. Match history is the next product feature.
 Do not start 3-2-5 or Coat & Shuffle until their rules and hosts are approved.
 
+## Visual Symmetry and Trump Clarity (November 9, 2026)
+
+- The round's trump now lives beside the trick caption instead of the crowded
+  HUD, so it remains visible on phones and short landscape screens. On 320px
+  screens it floats in the clear felt beside the trick rather than covering
+  Anne's bottom card edge.
+- The playing felt sits above both seat card rows, so a settled trick cannot be
+  hidden under Anne's face-up cards. The felt itself stays click-through.
+- The trump sheet mounts the full bust photograph instead of the face crop. It
+  uses a centred 3:4 portrait on desktop and most phones, and a horizontal row
+  on short 320px screens so the suit choices still fit.
+- Desktop seats use equal card sizes and packet gaps; the player-only divider
+  is hidden at that width. The HUD compact `New` label now applies to every
+  phone width, and the HUD controls share a consistent height.
+- Verified with `tests/layout-e2e.js`, `tests/mobile-pass.js`,
+  `tests/resume-e2e.js` and `tests/tutorial-e2e.js`, including 1440×900 live
+  layout, trump visibility at 320/360/390/844, trump/card clearance, the full
+  modal portrait and the trick-over-seat layer. Physical iOS/Android and real
+  iOS Safari remain browser-emulated rather than hardware-tested.
+
 ## Definition of Done
 
 The project is done when the game is visually polished, responsive, strategically enjoyable, reliable across complete games and restarts, accessible for common interactions, and free of known critical defects. Optional experimental features are not required for completion.

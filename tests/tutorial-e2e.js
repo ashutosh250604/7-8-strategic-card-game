@@ -384,18 +384,24 @@ function browserExecutable() {
             const content = document.querySelector('#trump-selection-modal .modal-content');
             const options = document.querySelector('.trump-options').getBoundingClientRect();
             const coach = document.getElementById('live-coach-trump').getBoundingClientRect();
+            const host = document.querySelector('#trump-selection-modal .anne-line-avatar');
+            const avatar = host.getBoundingClientRect();
             return {
                 doc: document.documentElement.scrollWidth - innerWidth,
                 ih: innerHeight,
                 optionsBottom: options.bottom,
                 coachBottom: coach.bottom,
-                scroll: content.scrollHeight - content.clientHeight
+                scroll: content.scrollHeight - content.clientHeight,
+                bust: host.classList.contains('aa-crop-bust'),
+                avatarW: Math.round(avatar.width),
+                avatarH: Math.round(avatar.height)
             };
         });
         console.log(`TRUMP COACH ${w}x${h}:`, JSON.stringify(fit));
         if (fit.doc > 1) bad(`trump coach causes horizontal overflow at ${w}x${h}: ${fit.doc}`);
         if (fit.optionsBottom > fit.ih + 1) bad(`trump options are below the viewport at ${w}x${h}`);
         if (fit.coachBottom > fit.ih + 1) bad(`trump coach is off-screen at ${w}x${h}`);
+        if (!fit.bust || fit.avatarH <= fit.avatarW || fit.avatarW < 34) bad(`trump host portrait is cropped at ${w}x${h}: ${JSON.stringify(fit)}`);
         await shot(`e2e-trump-${w}x${h}.png`);
     }
     await page.setViewport({ width: 1280, height: 900 });
