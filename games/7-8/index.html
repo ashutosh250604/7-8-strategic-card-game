@@ -539,6 +539,10 @@
                                 <span>Game log</span>
                                 <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
                             </button>
+                            <button id="settings-match-history" class="settings-action-btn" type="button">
+                                <span>Match history</span>
+                                <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
+                            </button>
                             <button id="settings-rules" class="settings-action-btn" type="button">
                                 <span>Game rules</span>
                                 <span class="action-chevron" aria-hidden="true">&rsaquo;</span>
@@ -584,6 +588,21 @@
                 </div>
             </div>
         </div>
+
+        <!-- Match history (local only; survives new matches and reloads) -->
+        <div id="match-history-modal" class="modal" style="display: none;">
+            <div class="modal-content history-modal" role="dialog" aria-modal="true" aria-labelledby="history-title">
+                <div class="modal-header">
+                    <div>
+                        <p class="modal-kicker">On this device</p>
+                        <h3 id="history-title">Match history</h3>
+                    </div>
+                    <button class="close-modal" id="close-history" type="button" aria-label="Close match history">&times;</button>
+                </div>
+                <p class="history-note">Recent finished matches, newest first. Trump calls are listed in round order.</p>
+                <div id="match-history-list" class="match-history-list"></div>
+            </div>
+        </div>
     </div>
 
     <!-- Vendored libraries and local preferences -->
@@ -595,6 +614,7 @@
     <script src="../../anne-avatar.js"></script>
     <script src="../../anne-voice.js"></script>
     <script src="../../character.js"></script>
+    <script src="../../match-history.js"></script>
     <!-- Presentation layer (DOM, timing, animation) -> engine (state, rules, AI) -> UI wiring -->
     <script src="../../presentation.js"></script>
     <script src="../../script.js"></script>

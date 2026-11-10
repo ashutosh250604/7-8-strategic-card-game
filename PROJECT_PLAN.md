@@ -55,8 +55,9 @@ and motion plumbing.
 Remaining honest limits: Anne is a designed illustration rather than a
 photograph, so she reads as the game's host rather than a real person; her
 speaking mouth is a stylised loop, not phoneme lip-sync. The collection's other
-games are still clearly labelled placeholders; statistics and match history are
-not built. Save/resume now covers settled live turns.
+games are still clearly labelled placeholders; aggregate statistics are not
+built, while the device-local match history arrived in the November 10 pass.
+Save/resume now covers settled live turns.
 
 ## Current Pass - Portrait, AI and Riffle Polish (November 2026)
 
@@ -85,6 +86,44 @@ remaining defaults and game-feel gaps from the previous pass were closed.
 - Added `tests/ui-polish.js` for the exact defaults, the identical photograph at
   every mount, riffle card count/centering, 14 localhost recordings, staged
   fireworks, result hit-testing and 1440/390/320/844 layout overflow checks.
+
+## Mobile Safari, Match History and Trump Sheet (November 10, 2026)
+
+- **Local match history.** `match-history.js` stores the newest eight finished
+  matches in `localStorage` (`78-match-history-v1`): win/loss, both scores,
+  target, difficulty, timestamp and the per-round trump calls with who chose
+  them. It opens from Settings and renders locally; there is no account,
+  analytics payload or network request. Malformed or old entries are discarded.
+- **Trump calls survive a reload.** `gameState.roundTrumps` records each call
+  once in `setTrump()`, is included in the live snapshot and is restored only
+  after validation. A match is recorded once at `checkGameEnd()`; restarting
+  clears the round tracker without double-writing the result.
+- **Phone trump sheet.** At widths up to 640px the sheet is anchored to the top
+  of the visual viewport instead of being centred. Its height is capped to the
+  space above the hand and scrolls internally if needed. At 390×664 the sheet
+  ends at 396px and the hand occupies 520–617px, fully inside the viewport; at
+  320×568 the sheet ends at 289px and the hand occupies 461–534px.
+- **Short Safari viewport.** The old `max-height: 700px` rule left `flex: none`
+  and `min-height: 640px` on the board while the phone layout made the document
+  fixed. A narrow-screen override cancels both, so the full five-card hand is
+  visible at 390×664 as well as 320×568.
+- **WebKit card faces.** WebKit can paint the rotated rear face over the front
+  even with `backface-visibility: hidden`. The front and back now receive an
+  explicit stacking order from `data-face`, so the readable face wins in engines
+  that ignore backface culling.
+- Verified with `tests/tutorial-e2e.js` (history and trump/hand clearance),
+  `tests/resume-e2e.js` (saved trump calls), `tests/mobile-pass.js` (four
+  Chromium touch profiles), and a dev-only Playwright WebKit 18.2 probe at
+  390×664 and 320×568. The WebKit probe checks the home page, Settings, empty and
+  populated history, the full hand, first/second tap, card-face stacking and a
+  finished-match record.
+
+Remaining honest limits: no physical iPhone or Android was attached, so speaker
+output, vibration hardware, true safe-area behavior and real-device Safari input
+are still unverified. Android coverage is Chromium touch emulation; iPhone
+coverage is the WebKit engine on the desktop test host, not iOS hardware. Match
+history is local to one browser/device and intentionally capped at eight rows;
+aggregate statistics are still not built.
 
 ## Mobile Compact, Touch and Repo Audit (November 8, 2026)
 

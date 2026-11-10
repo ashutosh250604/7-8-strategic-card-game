@@ -40,7 +40,8 @@ const gameState = {
     lastTrick: null, // Public summary of the trick that just finished
     coinTossWinner: null, // Who won the coin toss
     isFirstRound: true, // Track if this is the first round (for coin toss)
-    roundOver: false // The between-rounds gap, safe to save and resume
+    roundOver: false, // The between-rounds gap, safe to save and resume
+    roundTrumps: [] // Each round's called suit and caller, for local match history
 };
 
 // ---------------------------------------------------------------------------
@@ -55,6 +56,7 @@ const gameState = {
 // game are dropped instead of firing into the new one.
 let flowSession = 0;
 let computerWatchdog = null;
+let matchHistoryRecorded = false;
 
 function runBeat(beat, payload, next) {
     const session = flowSession;
@@ -1364,6 +1366,20 @@ function checkGameEnd() {
         gameState.gameOver = true;
         gameState.roundOver = false;
         clearSavedMatch();
+        if (!matchHistoryRecorded) {
+            matchHistoryRecorded = true;
+            if (window.MatchHistory) {
+                window.MatchHistory.add({
+                    result: playerWon ? 'win' : 'loss',
+                    playerScore: gameState.player.score,
+                    computerScore: gameState.computer.score,
+                    target,
+                    difficulty: gameState.difficulty,
+                    trumps: Array.isArray(gameState.roundTrumps) ? gameState.roundTrumps.slice() : [],
+                    playedAt: Date.now()
+                });
+            }
+        }
         addToLog(`Match complete. ${winner === 'Player' ? 'You win' : 'Anne wins'} ${playerWon ? gameState.player.score : gameState.computer.score} to ${playerWon ? gameState.computer.score : gameState.player.score} (first to ${target}).`, 'trick-won');
         if (GameView.event) GameView.event('match', { winner, playerScore: gameState.player.score, computerScore: gameState.computer.score, target });
         showGameOver(winner);
@@ -1511,6 +1527,14 @@ function updateSelectTrumpButtonVisibility() {
 function setTrump(suit) {
     gameState.trumpSuit = suit;
     gameState.gamePhase = 'dealing-remaining';
+    if (!Array.isArray(gameState.roundTrumps)) gameState.roundTrumps = [];
+    if (!gameState.roundTrumps.some((call) => call && call.round === gameState.roundNumber)) {
+        gameState.roundTrumps.push({
+            suit,
+            selector: gameState.lastTrumpSelector,
+            round: gameState.roundNumber
+        });
+    }
     
     // Hide select trump button since trump is now selected
     GameView.hideSelectTrumpButton();
@@ -1549,6 +1573,7 @@ function startGame() {
     clearSavedMatch();
     gameState.gameStarted = true;
     gameState.gameOver = false;
+    matchHistoryRecorded = false;
     gameState.matchTarget = gameState.pendingMatchTarget;
     // startNewRound resets the table and, for the first round of a match, opens
     // with the toss. The shuffle that follows the toss is its own beat.
@@ -1582,6 +1607,8 @@ function restartGame() {
     gameState.roundOver = false;
     gameState.isFirstRound = true;  // Reset for coin toss
     gameState.coinTossWinner = null;
+    gameState.roundTrumps = [];
+    matchHistoryRecorded = false;
 
     // A new match has to forget the previous deal, not just the table DOM.
     // Otherwise the first render after "Deal the cards" repaints the old hand
@@ -1755,6 +1782,21 @@ function readSavedPlayedCards(value) {
     return cards;
 }
 
+function readSavedRoundTrumps(value) {
+    if (value === undefined) return [];
+    if (!Array.isArray(value) || value.length > 24) return null;
+    const trumps = [];
+    for (const call of value) {
+        if (!call || typeof call !== 'object') return null;
+        if (!MATCH_SAVE_SUITS.includes(call.suit)) return null;
+        if (call.selector !== 'player' && call.selector !== 'computer') return null;
+        if (!Number.isInteger(call.round) || call.round < 1 || call.round > 99) return null;
+        if (trumps.some((entry) => entry.round === call.round)) return null;
+        trumps.push({ suit: call.suit, selector: call.selector, round: call.round });
+    }
+    return trumps.sort((a, b) => a.round - b.round);
+}
+
 function parseSavedMatch(value) {
     if (!value || value.v !== MATCH_SAVE_VERSION || !value.state || typeof value.state !== 'object') return null;
     const raw = value.state;
@@ -1772,7 +1814,8 @@ function parseSavedMatch(value) {
     const voids = readSavedVoids(raw.voids);
     const playedCards = readSavedPlayedCards(raw.playedCards || []);
     const remainingCards = readSavedCardArray(raw.remainingCards || [], 20);
-    if (!voids || !playedCards || !remainingCards) return null;
+    const roundTrumps = readSavedRoundTrumps(raw.roundTrumps);
+    if (!voids || !playedCards || !remainingCards || !roundTrumps) return null;
     if (raw.gamePhase === 'trump-selection') {
         if (raw.trumpSuit !== null || remainingCards.length < 10) return null;
         if (player.hand.filter(Boolean).length !== 5 || computer.hand.filter(Boolean).length !== 5) return null;
@@ -1817,7 +1860,8 @@ function parseSavedMatch(value) {
         coinTossWinner: null,
         isFirstRound: false,
         roundOver,
-        remainingCards
+        remainingCards,
+        roundTrumps
     };
 }
 
@@ -1860,7 +1904,8 @@ function currentMatchSnapshot() {
             playedCards: gs.playedCards.slice(),
             voids: { player: gs.voids.player.slice(), computer: gs.voids.computer.slice() },
             remainingCards: (gs.remainingCards || []).slice(),
-            roundOver: !!gs.roundOver
+            roundOver: !!gs.roundOver,
+            roundTrumps: (Array.isArray(gs.roundTrumps) ? gs.roundTrumps : []).slice(0, 24)
         }
     };
 }

@@ -15,6 +15,7 @@ function initializeUI() {
     const settingsModal = $('settings-modal');
     const rulesModal = $('rules-modal');
     const logModal = $('game-log-modal');
+    const historyModal = $('match-history-modal');
     const trumpModal = $('trump-selection-modal');
     const confirmModal = $('confirm-modal');
     const gameOverModal = $('game-over-modal');
@@ -22,6 +23,7 @@ function initializeUI() {
     let settingsReturnFocus = null;
     let rulesOrigin = null;
     let confirmReturnFocus = null;
+    let historyOrigin = null;
 
     const focusSoon = (el) => {
         if (!el) return;
@@ -474,7 +476,32 @@ function initializeUI() {
         focusSoon(logModal.querySelector('.close-modal'));
     }
 
+    function openHistory(origin) {
+        if (!historyModal) return;
+        historyOrigin = origin || $('settings-match-history');
+        if (settingsModal) settingsModal.style.display = 'none';
+        if (window.MatchHistory) window.MatchHistory.render($('match-history-list'));
+        historyModal.style.display = 'flex';
+        focusSoon($('close-history'));
+    }
+
+    function closeHistory() {
+        if (!historyModal) return;
+        historyModal.style.display = 'none';
+        if (settingsModal) {
+            settingsModal.style.display = 'flex';
+            focusSoon($('settings-match-history'));
+        } else if (historyOrigin && historyOrigin.isConnected) {
+            focusSoon(historyOrigin);
+        }
+        historyOrigin = null;
+    }
+
     if (settingsGameLog) settingsGameLog.onclick = openLog;
+    const settingsMatchHistory = $('settings-match-history');
+    if (settingsMatchHistory) settingsMatchHistory.onclick = () => openHistory(settingsMatchHistory);
+    const closeHistoryBtn = $('close-history');
+    if (closeHistoryBtn) closeHistoryBtn.onclick = closeHistory;
     if (settingsRules) settingsRules.onclick = () => openRules(settingsRules);
     if (closeLogBtn) closeLogBtn.onclick = () => {
         logModal.style.display = 'none';
@@ -497,6 +524,7 @@ function initializeUI() {
         // chosen; a stray backdrop click must not hide the only summary.
         if (e.target.id === 'game-over-modal') return;
         if (e.target.id === 'confirm-modal') { closeConfirm(); return; }
+        if (e.target.id === 'match-history-modal') { closeHistory(); return; }
         if (e.target.id === 'game-log-modal') {
             logModal.style.display = 'none';
             if (settingsModal) settingsModal.style.display = 'flex';
@@ -522,6 +550,7 @@ function initializeUI() {
         if (e.key !== 'Escape') return;
         if (isOpen(confirmModal)) { closeConfirm(); return; }
         if (isOpen(settingsModal)) { closeSettings(); return; }
+        if (isOpen(historyModal)) { closeHistory(); return; }
         if (isOpen(rulesModal)) { closeRules(); return; }
         if (isOpen(logModal) && logModal) {
             logModal.style.display = 'none';

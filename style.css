@@ -817,6 +817,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
     border-radius: calc(var(--cw) * .072);
     backface-visibility: hidden; -webkit-backface-visibility: hidden;
 }
+/* Some WebKit builds paint the rear face even when backface-visibility is set.
+   Keep the intended face above its mirror image so the card is still readable. */
+.card[data-face="front"] .card-front,
+.card[data-face="back"] .card-back { z-index: 1; }
 .card-front {
     background:
         radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.8), transparent 55%),
