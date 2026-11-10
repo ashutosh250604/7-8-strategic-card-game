@@ -39,7 +39,7 @@ The current architecture separates:
 - `character.js`: Anne's local dialogue and avatar registry. Presentation-only, with two empty slots reserved for future tables.
 - `tutorial.js`: the opt-in, sample-card tutorial. UI-only; it never changes `gameState` or the rules. Finishing the tour arms the live coach for the next real game.
 - `coach.js`: the first-round live coach. UI-only and read-only: it reads the real hand/trick to recommend a trump and explain the first follow-suit turn, then retires. It never chooses a card or changes the deal, scoring, or rules.
-- `match-history.js`: the device-local last-eight match log opened from Settings. It stores result, scores, target, difficulty, per-round trump calls and timestamp in `localStorage`; presentation-only, with no network or engine changes.
+- `match-history.js`: the device-local last-eight match log opened from Settings. It stores result, scores, target, difficulty, per-round trump calls and timestamp in `localStorage`; a compact strip derives matches, record, win rate and trump calls. Presentation-only, with no network or engine changes.
 - `games/7-8/index.html`: the game page. Shared game scripts/styles live at the project root; the root `index.html` is the launcher.
 - `home.css` / `index.html`: the collection homepage.
 
@@ -80,7 +80,7 @@ Treat this as the established architecture. Inspect the current implementation b
 - Keep the launcher/tutorial/live-coach browser coverage in `tests/tutorial-e2e.js` (`npm run test:e2e`); it fails on console errors and checks first-run state, keyboard flow and the first live round.
 - Keep `tests/browser-smoke.js --full` for the complete animated match and rematch, and `tests/settings-e2e.js` (`npm run test:settings`) for preference persistence, target deferral, reduced motion and haptic fallbacks.
 - Keep `tests/mobile-pass.js` (`npm run test:mobile`) for the emulated touch path, audio unlock, haptics call path and the "tap again" selection cue. Layout changes must keep 320×568, 360×800, 390×664 (Safari toolbar viewport), 390×844 and 844×390 free of page scrolling, with the full phone hand visible and HUD controls at least 36px and labels at least 10.5px; do not solve fit by shrinking the 320 hand below 52×73.
-- Keep `tests/tutorial-e2e.js` and `tests/resume-e2e.js` covering the device-local match history, its eight-row cap and saved trump calls. Match history must stay local; do not add a server dependency for it.
+- Keep `tests/tutorial-e2e.js` and `tests/resume-e2e.js` covering the device-local match history, its eight-row cap, the totals strip and saved trump calls. Match history must stay local; do not add a server dependency for it.
 - Safari/WebKit checks use the dev-only Playwright probe under `tests/out/safari-check.js` (generated and git-ignored). Treat it as engine coverage, not an iOS hardware pass; Chromium touch emulation is not an Android hardware pass either.
 - Measure AI changes with `tests/sim/ai-match.js` and `tests/sim/ai-rules.js`; do not describe a difficulty change as stronger without a repeatable sample.
 - Do not spend time repeatedly running expensive or redundant tests when a focused test is sufficient; run comprehensive verification at major milestones.

@@ -74,9 +74,9 @@ closes.
 - Physical speaker output, vibration hardware and iOS Safari behavior were not tested
   on a real phone; browser emulation cannot prove those.
 - Save/resume now restores a settled live deal, trump choice, one-card trick or
-  between-rounds gap. Match history is now device-local; aggregate statistics are
-  still not built, and the other collection tiles remain clearly labelled
-  placeholders.
+  between-rounds gap. Match history and its recent totals are device-local; all-time
+  statistics are still not built, and the other collection tiles remain clearly
+  labelled placeholders.
 - The 320×568 layout is deliberately dense; it is verified to fit, not to feel as
   spacious as a 390×844 phone.
 
@@ -88,6 +88,10 @@ closes.
   `78-match-history-v1`; no account, request or server state is involved. The
   match is written once at game end, and the same trump calls are saved in the
   live snapshot so a reload keeps the record accurate.
+- **Recent totals.** The history sheet derives matches, record, win rate and total
+  trump calls from the stored rows on every open. Nothing extra is persisted, so
+  the strip cannot disagree with the list; empty history hides it. At 320px the
+  four tiles reflow to 2×2 and eight history rows still fit above the close button.
 - **Short Safari viewport.** At 390×664 the old short-screen rule still applied
   `flex: none` and `min-height: 640px` to the board while the phone document was
   fixed. The board now shrinks to the visual viewport. The settled hand occupies
@@ -102,8 +106,8 @@ closes.
   screenshots then showed every dealt and face-up card correctly face-up.
 - **Verification.** `tests/tutorial-e2e.js`, `tests/resume-e2e.js` and
   `tests/mobile-pass.js` pass, and a Playwright WebKit 18.2 probe at 390×664 and
-  320×568 passed home scrolling, Settings, empty/populated history, the full hand,
-  first/second tap, card-face stacking and a finished-match record. The WebKit
+  320×568 passed home scrolling, Settings, empty/populated history with totals, the
+  full hand, first/second tap, card-face stacking and a finished-match record. The WebKit
   probe is generated under the git-ignored `tests/out/`.
 - **Still not a hardware pass.** No physical iPhone or Android was attached.
   Speaker output, vibration, true safe-area behavior and real iOS Safari input

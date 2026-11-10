@@ -34,7 +34,7 @@ playing without a lobby or an account.
 - 3D coin toss with heads and tails faces, plus an in-app Calm motion setting that shortens every beat
 - Optional haptics on browsers that support vibration, with a setting and a clear unsupported state
 - Automatic local save/resume: refreshing or closing the tab reopens the same settled deal, trick and score; a new match deliberately clears it
-- Local match history: Settings → Match history keeps the eight most recent finished matches on this device, with result, score, target, per-round trump calls and date; no account or network
+- Local match history: Settings → Match history keeps the eight most recent finished matches on this device, with result, score, target, per-round trump calls and date, plus a compact summary of matches, record, win rate and total trump calls. No account or network
 - Victory and defeat screens with the final score, Anne's reaction, optional canvas fireworks on a win (off by default; enable in Settings) and a one-click rematch
 - Optional interactive tutorial: trump choice, the 8-vs-7 target, and follow-suit
 - Live first-round coaching after the tour: a recommendation from your real hand, then your first real follow-suit decision

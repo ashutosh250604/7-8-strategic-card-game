@@ -627,6 +627,10 @@ function browserExecutable() {
         rows: document.querySelectorAll('#match-history-list .history-row').length,
         text: document.getElementById('match-history-list').innerText.replace(/\s+/g, ' ').trim(),
         calls: [...document.querySelectorAll('#match-history-list .history-trump')].map((el) => el.textContent.trim()),
+        stats: [...document.querySelectorAll('#match-history-stats .history-stat')].map((el) => ({
+            label: el.querySelector('dt').textContent.trim(),
+            value: el.querySelector('dd').textContent.trim()
+        })),
         stored: JSON.parse(localStorage.getItem('78-match-history-v1') || '[]')
     }));
     console.log('match history:', JSON.stringify(history));
@@ -634,6 +638,8 @@ function browserExecutable() {
     if (!/3.*1/.test(history.text) || !/First to 3/i.test(history.text)) bad('match history does not show the result and score');
     if (!history.calls.length) bad('match history does not show the called trump');
     if (history.stored.length < 1 || history.stored[0].result !== 'win') bad('match history was not persisted locally');
+    const totals = Object.fromEntries(history.stats.map((stat) => [stat.label, stat.value]));
+    if (totals.Matches !== '1' || totals.Record !== '1–0' || totals['Win rate'] !== '100%' || totals['Trump calls'] !== '1') bad(`match history totals are wrong: ${JSON.stringify(totals)}`);
     await page.click('#close-history');
     await page.click('#close-settings');
 
@@ -670,6 +676,8 @@ function browserExecutable() {
     if (/stupid|idiot|lose badly|pathetic/i.test(lossResult.anne)) bad('Anne reaction is not friendly');
     const historyAfterLoss = await page.evaluate(() => JSON.parse(localStorage.getItem('78-match-history-v1') || '[]'));
     if (historyAfterLoss.length < 2 || historyAfterLoss[0].result !== 'loss') bad('loss was not added to match history');
+    const totalsAfterLoss = await page.evaluate(() => MatchHistory.summarize(MatchHistory.read()));
+    if (totalsAfterLoss.played !== 2 || totalsAfterLoss.wins !== 1 || totalsAfterLoss.losses !== 1 || totalsAfterLoss.winRate !== 50) bad(`match history totals did not update after a loss: ${JSON.stringify(totalsAfterLoss)}`);
     await page.evaluate(() => { document.getElementById('play-again').click(); GameEngine.restartGame(); });
     await page.waitForFunction(() => !GameEngine.state.gameStarted && GameEngine.state.gamePhase === 'setup', { timeout: 5000 });
 

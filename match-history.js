@@ -88,9 +88,51 @@
         return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
     }
 
-    function render(target) {
+    function summarize(entries) {
+        const list = Array.isArray(entries) ? entries : [];
+        const wins = list.filter((entry) => entry.result === 'win').length;
+        const trumps = list.reduce((total, entry) => total + entry.trumps.length, 0);
+        return {
+            played: list.length,
+            wins,
+            losses: list.length - wins,
+            winRate: list.length ? Math.round((wins / list.length) * 100) : 0,
+            trumps
+        };
+    }
+
+    function renderStats(target, entries) {
+        if (!target) return;
+        const stats = summarize(entries);
+        target.replaceChildren();
+        target.hidden = stats.played === 0;
+        if (!stats.played) return;
+
+        const list = document.createElement('dl');
+        list.className = 'history-stats';
+        list.setAttribute('aria-label', 'Recent match statistics');
+        [
+            ['Matches', String(stats.played)],
+            ['Record', `${stats.wins}\u2013${stats.losses}`],
+            ['Win rate', `${stats.winRate}%`],
+            ['Trump calls', String(stats.trumps)]
+        ].forEach(([label, value]) => {
+            const cell = document.createElement('div');
+            cell.className = 'history-stat';
+            const term = document.createElement('dt');
+            term.textContent = label;
+            const detail = document.createElement('dd');
+            detail.textContent = value;
+            cell.append(term, detail);
+            list.appendChild(cell);
+        });
+        target.appendChild(list);
+    }
+
+    function render(target, statsTarget) {
         if (!target) return [];
         const entries = read();
+        renderStats(statsTarget, entries);
         target.textContent = '';
         if (!entries.length) {
             const empty = document.createElement('p');
@@ -171,5 +213,5 @@
         return entries;
     }
 
-    window.MatchHistory = { key: KEY, limit: LIMIT, read, add, render };
+    window.MatchHistory = { key: KEY, limit: LIMIT, read, add, summarize, render };
 })();

@@ -480,7 +480,7 @@ function initializeUI() {
         if (!historyModal) return;
         historyOrigin = origin || $('settings-match-history');
         if (settingsModal) settingsModal.style.display = 'none';
-        if (window.MatchHistory) window.MatchHistory.render($('match-history-list'));
+        if (window.MatchHistory) window.MatchHistory.render($('match-history-list'), $('match-history-stats'));
         historyModal.style.display = 'flex';
         focusSoon($('close-history'));
     }

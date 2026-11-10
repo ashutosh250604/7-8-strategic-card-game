@@ -55,8 +55,8 @@ and motion plumbing.
 Remaining honest limits: Anne is a designed illustration rather than a
 photograph, so she reads as the game's host rather than a real person; her
 speaking mouth is a stylised loop, not phoneme lip-sync. The collection's other
-games are still clearly labelled placeholders; aggregate statistics are not
-built, while the device-local match history arrived in the November 10 pass.
+games are still clearly labelled placeholders; aggregate totals sit in the history
+sheet, while the device-local match history arrived in the November 10 pass.
 Save/resume now covers settled live turns.
 
 ## Current Pass - Portrait, AI and Riffle Polish (November 2026)
@@ -94,6 +94,10 @@ remaining defaults and game-feel gaps from the previous pass were closed.
   target, difficulty, timestamp and the per-round trump calls with who chose
   them. It opens from Settings and renders locally; there is no account,
   analytics payload or network request. Malformed or old entries are discarded.
+- **Recent totals.** The same sheet derives four totals from the stored entries:
+  matches, win–loss record, win rate and total trump calls. They are computed on
+  open, not stored separately, so they cannot drift from the rows. Empty history
+  hides the strip; below 380px the four tiles become a 2×2 grid.
 - **Trump calls survive a reload.** `gameState.roundTrumps` records each call
   once in `setTrump()`, is included in the live snapshot and is restored only
   after validation. A match is recorded once at `checkGameEnd()`; restarting
@@ -123,7 +127,7 @@ output, vibration hardware, true safe-area behavior and real-device Safari input
 are still unverified. Android coverage is Chromium touch emulation; iPhone
 coverage is the WebKit engine on the desktop test host, not iOS hardware. Match
 history is local to one browser/device and intentionally capped at eight rows;
-aggregate statistics are still not built.
+the new totals cover only those stored matches, not all-time play.
 
 ## Mobile Compact, Touch and Repo Audit (November 8, 2026)
 
@@ -388,7 +392,7 @@ The baseline is the same seeded `sensible` heuristic for every cell; all matches
 - Anne is the supplied reference photograph, mounted from the single asset `assets/anne/anne-portrait.png` on every screen. Breath, mood grading, the speaking ring and voice bars animate the photo; it is not a phoneme-level lip-sync rig.
 - All fourteen sound slots have a file. Thirteen are recordings; `matchPoint` is rendered from the game's own synth by `tests/render-sound.js` (a rising two-note bell, gain 3.5 so it matches the other event cues) until a recording replaces it. The synth remains the fallback for any slot whose file is missing or fails to decode.
 - Haptics were verified through the API path and a simulated missing-API fallback in headless Edge; they have not been felt on real mobile hardware.
-- Save/resume is implemented for the opening trump choice, a settled live turn, a one-card trick and the between-rounds gap; it clears on a new match or game over. Statistics/history, achievements, and additional tables are not implemented. 3–2–5 and Coat & Shuffle remain status-only tiles; the character registry has two empty avatar slots for them.
+- Save/resume is implemented for the opening trump choice, a settled live turn, a one-card trick and the between-rounds gap; it clears on a new match or game over. All-time statistics beyond the eight-match summary, achievements, and additional tables are not implemented. 3–2–5 and Coat & Shuffle remain status-only tiles; the character registry has two empty avatar slots for them.
 - The rules modal remains the long reference; the tutorial and first-round coach cover the opening decisions, not every scoring edge case.
 - The setup hero cards and sample tutorial cards are decorative/sample only; the live coach reads the real hand and trick but never changes them.
 
@@ -411,7 +415,8 @@ parity; victory fireworks are opt-in.
 audio unlock, iOS Safari, landscape) and a human visual review of the result and
 settings screens; browser emulation verifies fit and input, not speaker or
 vibration hardware. A phoneme-level mouth or second pose would add more than
-another CSS pass. Match history is the next product feature.
+another CSS pass. A persistent all-time statistics store would be the next step beyond the
+eight-match summary.
 Do not start 3-2-5 or Coat & Shuffle until their rules and hosts are approved.
 
 ## Visual Symmetry and Trump Clarity (November 9, 2026)

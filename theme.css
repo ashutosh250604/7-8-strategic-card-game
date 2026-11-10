@@ -902,7 +902,20 @@ input[type="range"] { accent-color: var(--gold); }
    the scroll so the sheet and its close button never leave the viewport. */
 .history-modal { width: min(94vw, 500px); text-align: left; }
 .history-note { margin: -4px 0 14px; color: var(--arc-mute); font: 500 11.5px/1.5 var(--font-ui); }
-.match-history-list { max-height: min(52dvh, 380px); overflow-y: auto; padding-right: 3px; }
+.history-stats-wrap { margin: 0 0 12px; }
+.history-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin: 0; }
+.history-stat {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 8px 9px 7px;
+    border: 1px solid rgba(201, 163, 92, .18);
+    border-radius: 7px;
+    background: rgba(0, 0, 0, .2);
+}
+.history-stat dt { color: var(--arc-mute); font: 600 8.5px/1.2 var(--font-ui); letter-spacing: .07em; text-transform: uppercase; }
+.history-stat dd { margin: auto 0 0; padding-top: 3px; color: var(--cream); font: 500 22px/1 var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.match-history-list { max-height: min(40dvh, 300px); overflow-y: auto; padding-right: 3px; }
 .match-history-list::-webkit-scrollbar { width: 6px; }
 .match-history-list::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 99px; }
 .match-history-list { scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent; }
@@ -942,6 +955,10 @@ input[type="range"] { accent-color: var(--gold); }
 .history-empty { padding: 20px 12px; text-align: center; color: var(--arc-mute); font: 500 12px/1.5 var(--font-ui); }
 
 @media (max-width: 380px) {
+    .history-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .history-stat { padding: 7px 8px 6px; }
+    .history-stat dt { font-size: 8px; }
+    .history-stat dd { font-size: 20px; }
     .history-row { grid-template-columns: 24px 50px minmax(0, 1fr); gap: 7px; padding: 8px; }
     .history-date { grid-column: 1 / -1; justify-self: start; margin-top: -3px; }
     .history-score b { font-size: 17px; }
